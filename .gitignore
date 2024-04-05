@@ -1,9 +1,9 @@
-/work
+work
 nextflow
-/.nextflow
+.nextflow
 **/.nextflow.log*
 **/history
-
+nf-test
 .nextflow.pid
 /.nextflow/history
 results

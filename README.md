@@ -41,7 +41,10 @@ nextflow run main.nf -profile myriad --ensembl_dataset example_insects.txt --dow
 `--download true`: tells the program to download the samples from ensembl
 
 
-
+#Running the insect data through go assignment, cafe (expansion contraction) and go enrichment:
+```
+nextflow run main.nf -resume -profile myriad -bg --predownloaded_fasta 'Insect_data/fasta/*' --predownloaded_gofiles 'Insect_data/gofiles/*' --input input.csv --go_assign --cafe --cafe_go
+```
 
 
 
