@@ -1,0 +1,11 @@
+/work
+nextflow
+/.nextflow
+**/.nextflow.log*
+**/history
+
+.nextflow.pid
+/.nextflow/history
+results
+lib
+Focal_targets/*

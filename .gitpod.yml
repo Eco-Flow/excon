@@ -1,0 +1,19 @@
+image: nfcore/gitpod:latest
+
+# List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
+tasks:    
+  - name: Download Nextflow Tutorial
+    init: |
+      echo 'init script' # runs during prebuild
+      curl -s https://get.nextflow.io | bash
+      curl -fsSL https://code.askimed.com/install/nf-test | bash
+    command: |
+      export PATH=/workspace/excon:$PATH
+      nextflow info
+      unset JAVA_TOOL_OPTIONS
+      echo 'Starting workspace !'
+      sudo apt-get update
+      sudo apt-get install -y screen
+# List the ports to expose. Learn more https://www.gitpod.io/docs/config-ports/
+ports:
+  - port: 8000
