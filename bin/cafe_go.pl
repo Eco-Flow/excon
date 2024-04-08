@@ -79,7 +79,7 @@ while (my $line = <$filein>){
 my %PVALUE_DATA;
 my %COUNT_DATA;
 my $file2=`ls Out_cafe/Base_branch_probabilities.tab`;
-my $file3=`ls Out_cafe/Base_change.tab `;
+my $file3=`ls Out_cafe/Base_change.tab`;
 chomp $file2;
 chomp $file3;
 open(my $filein2, "<", $file2)   or die "Could not open $file2\n";

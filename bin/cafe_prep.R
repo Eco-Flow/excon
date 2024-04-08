@@ -1,4 +1,4 @@
-#!/opt/conda/bin/Rscript --vanilla 
+#!/usr/bin/Rscript
 library(ape)
 library(data.table)
 
