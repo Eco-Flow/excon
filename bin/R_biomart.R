@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript 
+#!/usr/bin/Rscript
 args = commandArgs(trailingOnly=TRUE)
 library(biomaRt)
 ensembl_entry <- useEnsembl(biomart = (args[1]), dataset=(args[3]), mirror="uswest" , host=(args[2]))

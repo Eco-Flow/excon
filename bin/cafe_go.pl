@@ -79,7 +79,7 @@ while (my $line = <$filein>){
 my %PVALUE_DATA;
 my %COUNT_DATA;
 my $file2=`ls Out_cafe/Base_branch_probabilities.tab`;
-my $file3=`ls Out_cafe/Base_change.tab `;
+my $file3=`ls Out_cafe/Base_change.tab`;
 chomp $file2;
 chomp $file3;
 open(my $filein2, "<", $file2)   or die "Could not open $file2\n";
@@ -159,16 +159,9 @@ foreach my $species (keys %PVALUE_DATA){
                 my $direction=$COUNT_DATA{$species}{$hog};
                 #print "HERE $direction\n";
                 $SPECIES_TOTAL{$species}++;
-                if ($direction eq "\+0"){
+                if ($direction eq "\+0" || $direction eq "0"){
                     #Do nothing
                     print "HEY, why is this true:\n$species $hog $PVALUE_DATA{$species}{$hog} has a direction $direction\n";
-                }
-                elsif ($direction =~ m/\+/g){
-                    $SPECIES_EXPANSION{$species}++;
-                    $SPECIES_EXPANSION_SUM{$species}+=$direction;
-
-                    #print the hog lines of expansions
-                    print $outgene6 "$HOG_to_line{$hog}\n";
                 }
                 elsif($direction =~ m/\-/g){
                     $SPECIES_CONTRACTION{$species}++;
@@ -177,8 +170,12 @@ foreach my $species (keys %PVALUE_DATA){
                     #print the hog lines of contractions
                     print $outgene5 "$HOG_to_line{$hog}\n";
                 }
-                else{
-                    print "WEIRD<<<< What is this $direction\n";
+                else {
+                    $SPECIES_EXPANSION{$species}++;
+                    $SPECIES_EXPANSION_SUM{$species}+=$direction;
+
+                    #print the hog lines of expansions
+                    print $outgene6 "$HOG_to_line{$hog}\n";
                 }
             }
         }
@@ -205,42 +202,9 @@ foreach my $species3 (keys %COUNT_DATA){
 
 
     foreach my $hog (keys %{$COUNT_DATA{$species3}}){
-        if ($COUNT_DATA{$species3}{$hog} eq "\+0"){
+        if ($COUNT_DATA{$species3}{$hog} eq "\+0" || $COUNT_DATA{$species3}{$hog} eq "0"){
             #Do nothing
             #print "NO $species3 $hog $COUNT_DATA{$species3}{$hog}\n";
-        }
-        elsif($COUNT_DATA{$species3}{$hog} =~ m/\+/g){
-            #print "X   $species3 $hog $COUNT_DATA{$species3}{$hog}\n";
-            $SPECIES_EXPANSION_C{$species3}++;
-            $SPECIES_TOTAL_C{$species3}++;
-            my $og=$HOG_TO_OG{$hog};
-            
-            if ($SPECIES_C_OGS{$species3}{'pos'}){
-                my $old=$SPECIES_C_OGS{$species3}{'pos'};
-                $SPECIES_C_OGS{$species3}{'pos'}="$old\n$og";
-
-                #print "genes: $genes_related_to_OG $species3 $og\n";
-                my $genes_related_to_OG=$GENE_DATA_OG{$species3}{$og};
-                if ($genes_related_to_OG){
-                    print $outgene4 "$og\t$genes_related_to_OG\n";
-                }
-                else{
-                    print $outgene4 "$og\tNo_genes\n";
-                }
-            }
-            else{
-                $SPECIES_C_OGS{$species3}{'pos'}="$og";
-
-                #print "genes: $genes_related_to_OG $species3 $og\n";
-                my $genes_related_to_OG=$GENE_DATA_OG{$species3}{$og};
-                if ($genes_related_to_OG){
-                    print $outgene4 "$og\t$genes_related_to_OG\n";
-                }
-                else{
-                    print $outgene4 "$og\tNo_genes\n";
-                }
-            }
-            
         }
         elsif($COUNT_DATA{$species3}{$hog} =~ m/\-/g){
         
@@ -279,9 +243,37 @@ foreach my $species3 (keys %COUNT_DATA){
                 }
             }
         }
-        else{
-            #doesnt fit what we expect. This can be because the #FamiyID is on the first column,,,, we have to just ignore this error, it is expected. 
-            #print "Should not happen, contact maintainer\n$hog  equals $species3 $hog $COUNT_DATA{$species3}{$hog}\n";
+        else {
+            #print "X   $species3 $hog $COUNT_DATA{$species3}{$hog}\n";
+            $SPECIES_EXPANSION_C{$species3}++;
+            $SPECIES_TOTAL_C{$species3}++;
+            my $og=$HOG_TO_OG{$hog};
+            
+            if ($SPECIES_C_OGS{$species3}{'pos'}){
+                my $old=$SPECIES_C_OGS{$species3}{'pos'};
+                $SPECIES_C_OGS{$species3}{'pos'}="$old\n$og";
+
+                #print "genes: $genes_related_to_OG $species3 $og\n";
+                my $genes_related_to_OG=$GENE_DATA_OG{$species3}{$og};
+                if ($genes_related_to_OG){
+                    print $outgene4 "$og\t$genes_related_to_OG\n";
+                }
+                else{
+                    print $outgene4 "$og\tNo_genes\n";
+                }
+            }
+            else{
+                $SPECIES_C_OGS{$species3}{'pos'}="$og";
+
+                #print "genes: $genes_related_to_OG $species3 $og\n";
+                my $genes_related_to_OG=$GENE_DATA_OG{$species3}{$og};
+                if ($genes_related_to_OG){
+                    print $outgene4 "$og\t$genes_related_to_OG\n";
+                }
+                else{
+                    print $outgene4 "$og\tNo_genes\n";
+                }
+            }
         }
     }
 }
@@ -313,6 +305,7 @@ foreach my $species6 (keys %Background_OGs){
     my $out_back="$species6\.BK.txt";
     open(my $outb, ">", $out_back)   or die "Could not open $out_back\n";
     print $outb "$Background_OGs{$species6}\n";
+    #print "$species6\.BK.txt | uniq > $species6\.BK.txt.uniq\n";
     `sort $species6\.BK.txt | uniq > $species6\.BK.txt.uniq`;
 }
 

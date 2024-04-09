@@ -13,22 +13,6 @@
  * given `params.input` specify on the run command line `--input /path/to/input`.
  */
 
-params.input= "data/Example.csv"
-params.ensembl_repo="metazoa_mart"
-params.ensembl_host='https://metazoa.ensembl.org'
-params.ensembl_dataset="example.txt"
-params.predownloaded_fasta= "./Background_species_folder/*"
-params.predownloaded_gofiles= "./Background_gofiles_folder/*"
-params.outdir = "results"
-params.download= false
-
-params.cafe= false
-params.chromo_go= false
-params.orthofinder= false
-params.go_assign= false
-params.go_expansion= false
-params.cafe_go= false
-
 //For CPU and Memory of each process: see conf/docker.config
 
 log.info """\
@@ -55,7 +39,7 @@ include { CAFE } from './modules/cafe.nf'
 include { CHROMO_GO } from './modules/chromo_go.nf'
 include { CAFE_GO } from './modules/cafe_go.nf'
 
-
+include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-validation'
 
 Channel
     .fromPath(params.input)
@@ -67,11 +51,20 @@ Channel
     .set { input_type }
 
 workflow {
+  if (params.help) {
+    log.info paramsHelp("nextflow run main.nf --input input_file.csv")
+    exit 0
+  }
 
-	DOWNLOAD_NCBI ( input_type.ncbi )
+  // Validate input parameters
+  validateParameters()
 
-	GFFREAD ( DOWNLOAD_NCBI.out.genome.mix(input_type.local) )
+  // Print summary of supplied parameters
+  log.info paramsSummaryLog(workflow)
 
+  DOWNLOAD_NCBI ( input_type.ncbi )
+
+  GFFREAD ( DOWNLOAD_NCBI.out.genome.mix(input_type.local) )
 	merge_ch = GFFREAD.out.longest.collect()
 
 	if (params.go_assign || params.cafe_go ){
@@ -142,10 +135,4 @@ workflow {
                         }
 		}
 	}
-
 }
-
-workflow.onComplete {
-	println ( workflow.success ? "\nDone! Open your report in your browser --> $params.outdir/report.html (if you added -with-report flag)\n" : "Hmmm .. something went wrong" )
-}
-
