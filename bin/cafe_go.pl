@@ -157,7 +157,7 @@ foreach my $species (keys %PVALUE_DATA){
         if (looks_like_number($pval) ){
             if($pval <= 0.05){
                 my $direction=$COUNT_DATA{$species}{$hog};
-                print "HERE $direction\n";
+                #print "HERE $direction\n";
                 $SPECIES_TOTAL{$species}++;
                 if ($direction eq "\+0" || $direction eq "0"){
                     #Do nothing
@@ -305,7 +305,7 @@ foreach my $species6 (keys %Background_OGs){
     my $out_back="$species6\.BK.txt";
     open(my $outb, ">", $out_back)   or die "Could not open $out_back\n";
     print $outb "$Background_OGs{$species6}\n";
-    print "$species6\.BK.txt | uniq > $species6\.BK.txt.uniq\n";
+    #print "$species6\.BK.txt | uniq > $species6\.BK.txt.uniq\n";
     `sort $species6\.BK.txt | uniq > $species6\.BK.txt.uniq`;
 }
 
