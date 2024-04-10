@@ -11,6 +11,7 @@ process GET_DATA {
     output:
     path("${public_species}.fasta") , emit: fasta_files
     path("${public_species}.go.txt") , emit: gene_ontology_files
+    path "versions.yml", emit: versions
 
     script:
     """
@@ -23,5 +24,11 @@ process GET_DATA {
     sed '/peptide/d' All_fasta2 > All_fasta3
     ${projectDir}/bin/Fix_fasta.pl All_fasta3 > ${public_species}.fasta
     mv go_hash.txt ${public_species}.go.txt
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        R version: \$(R --version | grep "R version" | sed 's/[(].*//' | sed 's/ //g' | sed 's/[^0-9]*//')
+        Perl version: \$(perl --version | grep "version" | sed 's/.*(//g' | sed 's/[)].*//')
+    END_VERSIONS
     """
 }

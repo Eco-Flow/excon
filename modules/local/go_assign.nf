@@ -16,13 +16,20 @@ process GO_ASSIGN {
     path("*results_ALL.tab.pdf") , emit: duplicate_go
     path("*family_expansions.txt") , emit: go_counts
     path("*transcripts_Combine_GO_format.txt"), emit: trans_go
+    path "versions.yml", emit: versions
 
     script:
     """
-    perl -pe 's/\r\n|\n|\r/\n/g' ${Orthogroups} > Orthogroups.nomac.tsv
-    ${projectDir}/bin/Goatee_ortho_go_match.pl Orthogroups.nomac.tsv ${Focal}
+    ${projectDir}/bin/Goatee_ortho_go_match.pl ${Orthogroups} ${Focal}
     ${projectDir}/bin/Orthofinder_duplicate_go.pl
     ${projectDir}/bin/Orthofinder_gene_expansion.pl
     ${projectDir}/bin/GO_make_isoform_hash.pl
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        R version: \$(R --version | grep "R version" | sed 's/[(].*//' | sed 's/ //g' | sed 's/[^0-9]*//')
+        GO version: \$(Rscript -e "as.data.frame(installed.packages())[ ,c(1,3)]" | grep topGO | sed 's/[^0-9]*//')
+        Perl version: \$(perl --version | grep "version" | sed 's/.*(//g' | sed 's/[)].*//')
+    END_VERSIONS
     """
 }

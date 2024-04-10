@@ -5,7 +5,7 @@ use strict;
 
 print "Please be in folder with orthofinder file, plus the GO file of interest\n\n";
 
-my $in_orth="Orthogroups.nomac.tsv";
+my $in_orth="Orthogroups.tsv";
 my $in_gofile=`ls *GO_format`;
 chomp $in_gofile;
 my @namesplit=split(/\./, $in_gofile);

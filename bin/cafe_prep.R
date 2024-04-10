@@ -13,7 +13,7 @@ if(is.ultrametric(tre)) {
 }
 write.tree(utre, 'SpeciesTree_rooted_ultra.txt')
 
-hog <- fread('N0.ex.tsv')
+hog <- fread('N0.tsv')
 hog[, OG := NULL]
 hog[, `Gene Tree Parent Clade` := NULL]
 hog <- melt(hog, id.vars='HOG', variable.name='species', value.name='pid')

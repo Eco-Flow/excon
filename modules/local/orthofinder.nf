@@ -10,6 +10,7 @@ process ORTHOFINDER {
     path("My_result/*/Orthogroups/Orthogroups.tsv") , emit: orthologues
     path("My_result/*/Species_Tree/SpeciesTree_rooted_node_labels.txt") , emit:speciestree
     path("My_result/*/Phylogenetic_Hierarchical_Orthogroups/N0.tsv"), emit: no_ortho
+    path "versions.yml", emit: versions
 
     script:
     """
@@ -18,5 +19,11 @@ process ORTHOFINDER {
     fi
 
     orthofinder -f . -o My_result
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        Python version: \$(python --version | cut -f 2 -d " ")
+        Orthofinder version: \$(orthofinder | grep version | cut -f 3 -d " ")
+    END_VERSIONS
     """
 }
