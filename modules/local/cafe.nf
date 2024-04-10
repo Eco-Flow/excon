@@ -1,7 +1,6 @@
 process CAFE {
     label 'process_low'
     label 'error_ignore'
-    tag "cafe"
     container= 'ecoflowucl/cafe:r-4.3.1'
 
     input:
