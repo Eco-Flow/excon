@@ -13,7 +13,7 @@ open(my $out1, ">", $outname1)   or die "Could not open $outname1\n";
 my $go="OG_GO_format.tsv";
 
 #Read in Orthofinder file
-my $file=`ls N0.ex.tsv`;
+my $file=`ls N0.tsv`;
 chomp $file;
 open(my $filein, "<", $file)   or die "Could not open $file\n";
 my $header=<$filein>;

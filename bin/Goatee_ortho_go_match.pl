@@ -48,11 +48,14 @@ my %Nested_species_go_store;
 
 foreach my $col (@split_head){
   chomp $col;
+  $col =~ s/\r\n|\n|\R|\r//g;
   #my @split_dot=split("\.", $col);
   my $exp_gofile="$col\.go.txt";
-  print "Here: $col\.go.txt\n";
+  print "Col of Orthofinder table: $col\n";
 
+  print "TESTED: $exp_gofile\n";
   if (-e "$exp_gofile"){
+    print "3. Match to GO database\n";
     $col_to_sp_store{$colposition}=$exp_gofile;
     $sp_store_to_col{$exp_gofile}=$colposition;
     #Read in the go txt files and make them into a hash of species gene ID to a list of all GO terms associated (e.g. ENS23523525 -> "GO:000032342,GO:0000248214")
@@ -60,35 +63,40 @@ foreach my $col (@split_head){
     open(my $goin, "<", $GO)   or die "Could not open $GO\n";
     my $ignoreheader=<$goin>;
     while (my $line=<$goin>){
-      chomp $goin;
+      chomp $line;
+      $line =~ s/\r\n|\n|\R|\r//g;
       my @sp=split("\t", $line);
       my $gene=$sp[1];
       my $go_id=$sp[2];
-      if ($go_id =~ m/GO/){
-        $go_id =~ s/\r\n|\n|\R|\r//g;
-        #print "<-$go_id\->\n";
-        if ($Nested_species_go_store{$exp_gofile}{$gene}){
-          my $old=$Nested_species_go_store{$exp_gofile}{$gene};
-          $Nested_species_go_store{$exp_gofile}{$gene}="$old\t$go_id";
-        }
-        else{
-          $Nested_species_go_store{$exp_gofile}{$gene}=$go_id;
+      #print "$line\n";
+      if ($go_id){
+        if ($go_id =~ m/GO/){
+          
+          #print "<-$go_id\->\n";
+          if ($Nested_species_go_store{$exp_gofile}{$gene}){
+            my $old=$Nested_species_go_store{$exp_gofile}{$gene};
+            $Nested_species_go_store{$exp_gofile}{$gene}="$old\t$go_id";
+          }
+          else{
+            $Nested_species_go_store{$exp_gofile}{$gene}=$go_id;
+          }
         }
       }
     }
   }
   #If we find the focal column:
   elsif($FOCAL eq "$col\.fa" || $FOCAL eq "$col\.fasta"){
+    print "1. This happened $FOCAL eq $col\.fa || $FOCAL eq $col\.fasta \n";
     $col_to_sp_store{$colposition}=$FOCAL;
   }
   #Else, means we probably messed up or a typo:
   else{
-    print "\n\n";
-    print "Did not find a match for $col, expected to be: $exp_gofile\nMake sure this is the behaviour you expect, else, maybe you didn't put the correctly titled file in the folder with the GO or protein files.\n";
-    print "\n\n";
+    print "2. Did not find a match for $col, expected to be: $exp_gofile\nMake sure this is the behaviour you expect, else, maybe you didn't put the correctly titled file in the folder with the GO or protein files.\n";
   }
   $colposition++;
 }
+
+
 
 
 print "\n\nRead in the Orthofinder to GO information ( step 1 )\n\n";
@@ -181,3 +189,4 @@ close $outhandle;
 close $outhandle2;
 close $outhandle3;
 print "Finished\n";
+

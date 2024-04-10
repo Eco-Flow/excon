@@ -19,16 +19,17 @@ process CAFE {
     script:
     """
     cp  ${tree_newick} pruned_tree
-    sed -i 's/.prot.fa.largestIsoform//g' pruned_tree 
+    sed -i 's/.prot.fa.largestIsoform//g' pruned_tree
     sed -i 's/.prot.fa.largestIsoform//g' N0.tsv
 
-    ${projectDir}/bin/cafe_prep.R 
+    ${projectDir}/bin/cafe_prep.R
 
-    cafe5 -i hog_gene_counts.tsv -t SpeciesTree_rooted_ultra.txt --cores ${task.cpus} -o Out_cafe 
+    cafe5 -i hog_gene_counts.tsv -t SpeciesTree_rooted_ultra.txt --cores ${task.cpus} -o Out_cafe
     cafe5 -i hog_gene_counts.tsv -t SpeciesTree_rooted_ultra.txt --cores ${task.cpus} -o Out_cafe_k3 -k 3
     cafe5 -i hog_gene_counts.tsv -t SpeciesTree_rooted_ultra.txt --cores ${task.cpus} -o Out_cafe_p_k3 -p -k 3
 
-    echo '#nexus\nbegin trees;' > Significant_trees.tre
+    echo '#nexus' > Significant_trees.tre
+    echo 'begin trees;' >> Significant_trees.tre
     grep "*" Out_cafe_k3/Gamma_asr.tre >> Significant_trees.tre
     echo "end;">>Significant_trees.tre
 
