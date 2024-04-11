@@ -1,29 +1,30 @@
 process GET_DATA {
     label 'process_low'
 
-    container = 'ecoflowucl/biomart_perl:r-4.3.3_perl-5.38.2'
+    container = 'ecoflowucl/biomart_perl:r-4.3.1_perl-5.38.2'
     
     input:
-    val(ensembl_repo)
-    val(ensembl_host)
-    val(public_species)
+    val(ensembl_biomart)
+    val(ensembl_dataset)
         
     output:
-    path("${public_species}.fasta") , emit: fasta_files
-    path("${public_species}.go.txt") , emit: gene_ontology_files
+    path("${ensembl_dataset}.fasta") , emit: fasta_files
+    path("${ensembl_dataset}.go.txt") , emit: gene_ontology_files
     path "versions.yml", emit: versions
 
     script:
     """
+
+    echo $BIOMART_CACHE
     #Pull all Biomart records for species.
-    ${projectDir}/bin/R_biomart.R '$ensembl_repo' '$ensembl_host' '$public_species'
+    ${projectDir}/bin/R_biomart.R ${ensembl_biomart} ${ensembl_dataset}
     #Tidy up records
     #Insert custom perl/unix script.
     cat Myoutput* > All_fasta
     sed '/ensembl_gene_id/d' All_fasta > All_fasta2
     sed '/peptide/d' All_fasta2 > All_fasta3
-    ${projectDir}/bin/Fix_fasta.pl All_fasta3 > ${public_species}.fasta
-    mv go_hash.txt ${public_species}.go.txt
+    ${projectDir}/bin/Fix_fasta.pl All_fasta3 > ${ensembl_dataset}.fasta
+    mv go_hash.txt ${ensembl_dataset}.go.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

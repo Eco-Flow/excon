@@ -79,21 +79,18 @@ workflow {
          //ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
       }
    }
-   else if (params.ensembl_dataset && params.ensembl_host && params.ensembl_repo){
-      background_species = channel
-         .fromPath(params.ensembl_dataset) 
+   else if ( params.ensembl_dataset && params.ensembl_biomart ){
+
+      input_biomart = channel
+         .value(params.ensembl_biomart)
+         .ifEmpty { error "Cannot find the host name: ${params.ensembl_biomart}" }
+
+      input_dataset = channel
+         .fromPath(params.ensembl_dataset)
          .splitText().map{it -> it.trim()}
          .ifEmpty { error "Cannot find the dataset file: ${params.ensembl_dataset}" }
 
-      input_host = channel
-         .value(params.ensembl_host)
-         .ifEmpty { error "Cannot find the host name: ${params.ensembl_host}" }
-
-      input_repo = channel
-         .value(params.ensembl_repo)
-         .ifEmpty { error "Cannot find the repo name: ${params.ensembl_repo}" }
-
-      GET_DATA ( input_repo, input_host, background_species )
+      GET_DATA ( input_biomart, input_dataset )
       ch_versions = ch_versions.mix(GET_DATA.out.versions)
 
       GET_DATA.out.gene_ontology_files.set{ go_file_ch }
@@ -108,20 +105,17 @@ workflow {
          //ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
       }
    }
-   else {
-      //User chooses not to run GO enrichment analysis
-   }
 
    //Run GO expansion analysis
    if (params.go_expansion) {
-     GO_EXPANSION ( GO_ASSIGN.out.go_counts.collect() )
-     ch_versions = ch_versions.mix(GO_EXPANSION.out.versions)
+      GO_EXPANSION ( GO_ASSIGN.out.go_counts.collect() )
+      ch_versions = ch_versions.mix(GO_EXPANSION.out.versions)
    }
 
    //Run chromosome GO analysis
    if (params.chromo_go) {
-     CHROMO_GO ( GFFREAD.out.gffs.collect() , GO_ASSIGN.out.go_hash.collect() , ORTHOFINDER.out.orthologues )
-     ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
+      CHROMO_GO ( GFFREAD.out.gffs.collect() , GO_ASSIGN.out.go_hash.collect() , ORTHOFINDER.out.orthologues )
+      ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
    }
 
    //Run Orthofinder for CAFE using just input (focal) species.
@@ -136,7 +130,7 @@ workflow {
       CAFE_GO ( CAFE.out.result, CAFE.out.N0_table, GO_ASSIGN.out.go_og )
       ch_versions = ch_versions.mix(CAFE_GO.out.versions.first())
    }
-   else{
+   else{           
       //Do nothing no go data to run this part. 
    }
 
