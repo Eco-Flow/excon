@@ -14,8 +14,6 @@ process GET_DATA {
 
     script:
     """
-
-    echo $BIOMART_CACHE
     #Pull all Biomart records for species.
     ${projectDir}/bin/R_biomart.R ${ensembl_biomart} ${ensembl_dataset}
     #Tidy up records

@@ -84,7 +84,7 @@
           "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"]
         },
         "forks": {
-          "type": "string"
+          "type": "integer"
         },
         "clean": {
           "type": "boolean",
@@ -106,44 +106,27 @@
       "default": "",
       "properties": {
         "ensembl_repo": {
-          "type": "string",
-          "default": "metazoa_mart"
+          "type": "string"
         },
         "ensembl_host": {
-          "type": "string",
-          "default": "https://metazoa.ensembl.org"
+          "type": "string"
         },
         "ensembl_dataset": {
-          "type": "string",
-          "default": "example.txt"
+          "type": "string"
         },
         "predownloaded_fasta": {
-          "type": "string",
-          "default": "./Background_species_folder/*"
+          "type": "string"
         },
         "predownloaded_gofiles": {
-          "type": "string",
-          "default": "./Background_gofiles_folder/*"
-        },
-        "download": {
-          "type": "boolean"
-        },
-        "cafe": {
-          "type": "boolean"
+          "type": "string"
         },
         "chromo_go": {
-          "type": "boolean"
-        },
-        "orthofinder": {
-          "type": "boolean"
-        },
-        "go_assign": {
           "type": "boolean"
         },
         "go_expansion": {
           "type": "boolean"
         },
-        "cafe_go": {
+        "skip_cafe": {
           "type": "boolean"
         }
       }

@@ -58,11 +58,9 @@ workflow {
    log.info paramsSummaryLog(workflow)
 
    DOWNLOAD_NCBI ( input_type.ncbi )
-
    ch_versions = ch_versions.mix(DOWNLOAD_NCBI.out.versions.first())
 
    GFFREAD ( DOWNLOAD_NCBI.out.genome.mix(input_type.local) )
-
    ch_versions = ch_versions.mix(GFFREAD.out.versions.first())
 
    merge_ch = GFFREAD.out.longest.collect()
@@ -71,13 +69,12 @@ workflow {
    if (params.predownloaded_fasta && params.predownloaded_gofiles) {
       channel.fromPath(params.predownloaded_fasta).mix(merge_ch).collect().set{ proteins_ch }
       channel.fromPath(params.predownloaded_gofiles).collect().set{ go_file_ch }
+
       ORTHOFINDER_GO ( proteins_ch )
       ch_versions = ch_versions.mix(ORTHOFINDER_GO.out.versions)
 
-      if (params.predownloaded_fasta || params.ensembl_dataset){
-         GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
-         //ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
-      }
+      GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
+      ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
    }
    else if ( params.ensembl_dataset && params.ensembl_biomart ){
 
@@ -93,17 +90,15 @@ workflow {
       GET_DATA ( input_biomart, input_dataset )
       ch_versions = ch_versions.mix(GET_DATA.out.versions)
 
-      GET_DATA.out.gene_ontology_files.set{ go_file_ch }
+      GET_DATA.out.gene_ontology_files.collect().set{ go_file_ch }
 
       GET_DATA.out.fasta_files.mix(merge_ch).collect().set{ proteins_ch }
 
       ORTHOFINDER_GO ( proteins_ch )
       ch_versions = ch_versions.mix(ORTHOFINDER_GO.out.versions)
 
-      if (params.predownloaded_fasta || params.ensembl_dataset){
-         GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
-         //ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
-      }
+      GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
+      ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
    }
 
    //Run GO expansion analysis
@@ -114,26 +109,24 @@ workflow {
 
    //Run chromosome GO analysis
    if (params.chromo_go) {
-      CHROMO_GO ( GFFREAD.out.gffs.collect() , GO_ASSIGN.out.go_hash.collect() , ORTHOFINDER.out.orthologues )
+      CHROMO_GO ( GFFREAD.out.gffs.collect() , GO_ASSIGN.out.go_hash.collect() , ORTHOFINDER_GO.out.orthologues )
       ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
    }
 
-   //Run Orthofinder for CAFE using just input (focal) species.
-   ORTHOFINDER_CAFE ( merge_ch )
-   //No need to collect versions from orthofinder module twice
+   if (params.skip_cafe == null) {
+      //Run Orthofinder for CAFE using just input (focal) species.
+      ORTHOFINDER_CAFE ( merge_ch )
+      //No need to collect versions from orthofinder module twice
 
-   //Run Cafe analysis of expanded and contracted gene families.
-   CAFE ( ORTHOFINDER_CAFE.out.no_ortho, ORTHOFINDER_CAFE.out.speciestree )
-   ch_versions = ch_versions.mix(CAFE.out.versions)
+      //Run Cafe analysis of expanded and contracted gene families.
+      CAFE ( ORTHOFINDER_CAFE.out.no_ortho, ORTHOFINDER_CAFE.out.speciestree )
+      ch_versions = ch_versions.mix(CAFE.out.versions)
 
-   if (params.predownloaded_fasta || params.ensembl_dataset) {
-      CAFE_GO ( CAFE.out.result, CAFE.out.N0_table, GO_ASSIGN.out.go_og )
-      ch_versions = ch_versions.mix(CAFE_GO.out.versions.first())
-   }
-   else{           
-      //Do nothing no go data to run this part. 
+      if (params.predownloaded_fasta || params.ensembl_dataset) {
+         CAFE_GO ( CAFE.out.result, CAFE.out.N0_table, GO_ASSIGN.out.go_og )
+         ch_versions = ch_versions.mix(CAFE_GO.out.versions.first())
+      }
    }
 
    CUSTOM_DUMPSOFTWAREVERSIONS ( ch_versions.collectFile(name: 'collated_versions.yml') )
-
 }
