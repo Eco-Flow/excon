@@ -84,23 +84,27 @@
           "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"]
         },
         "forks": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Maximum number of each process that will be run in parallel"
         },
         "clean": {
           "type": "boolean",
-          "default": true
+          "default": true,
+          "description": "Enable cleanup function"
         },
         "architecture": {
           "type": "string",
-          "default": "amd"
+          "default": "amd",
+          "description": "An amd or arm value assigned to this parameter determines whether containers built for the amd or arm CPU architecture are used"
         },
         "custom_config": {
-          "type": "string"
+          "type": "string",
+          "description": "A path/url to a custom configuration file"
         }
       }
     },
-    "goatee_options": {
-      "title": "Goatee options",
+    "excon_options": {
+      "title": "Excon options",
       "type": "object",
       "description": "",
       "default": "",
@@ -112,22 +116,28 @@
           "type": "string"
         },
         "ensembl_dataset": {
-          "type": "string"
+          "type": "string",
+          "description": "A path to a file containing a list of ensembl biomart dataset names separated by newline"
         },
         "predownloaded_fasta": {
-          "type": "string"
+          "type": "string",
+          "description": "A path to a folder containing a singular or multiple fasta files for each species you wish to use for GO assignment"
         },
         "predownloaded_gofiles": {
-          "type": "string"
+          "type": "string",
+          "description": "A path to a folder containing a singular or multiple go files for each species you wish to use for GO assignment."
         },
         "chromo_go": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "A flag to optionally choose to run GO analysis on each chromosome"
         },
         "go_expansion": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "A flag optionally choose to run a basic expansion/contraction analysis"
         },
         "skip_cafe": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "A flag to skip the cafe section. Used if you just wish to run go assignment for a species without runnig Cafe"
         }
       }
     }
@@ -143,7 +153,7 @@
       "$ref": "#/definitions/generic_options"
     },
     {
-      "$ref": "#/definitions/goatee_options"
+      "$ref": "#/definitions/excon_options"
     }
   ]
 }
