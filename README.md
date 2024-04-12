@@ -3,12 +3,13 @@ A Nextflow pipeline to run gene expansion and contraction analysis with CAFE.
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
 (minimum of 5 species ideally up to around 15).
 
-As well as running CAFE, you can also run GO enrichment analysis (with user-provided GO files, or with go files semi-automaticcaly downloaded from Ensembl biomart). This will check what GO terms are associated with expanded or contracted gene sets.
+As well as running CAFE, you can also run GO enrichment analysis (with user-provided GO files, or with GO files semi-automatically downloaded from Ensembl biomart). This will check what GO terms are associated with expanded or contracted gene sets.
 
 
 The general pipeline logic is as follows:
 
 * Downloads the genome and gene annotation files from NCBI `[DOWNLOAD]`.
+  - Or you provide your own genomes/annotations
 * Extract longest protein fasta sequences `[GFFREAD]`.
 * Finds orthologous genes `[ORTHOFINDER_CAFE]`.
 * Runs cafe analysis on the output of orthofinder `[CAFE]`.
@@ -115,8 +116,6 @@ input = "input_small-s3.csv"
 predownloaded_fasta = "s3://excon/data/Insect_data/fasta/*"
 predownloaded_gofiles = "s3://excon/data/Insect_data/gofiles/*"
 
-
-
 2. To run on your own data (minimal run), cafe only. 
 
 ```
@@ -179,8 +178,6 @@ aagca019059575v1_eg_gene
 aagca914969975_eg_gene
 aagca933228735v1_eg_gene
 ```
-
-
 
 ## Citation
 
