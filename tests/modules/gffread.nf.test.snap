@@ -1,0 +1,12 @@
+{
+    "gffread": {
+        "content": [
+            "Drosophila_santomea.prot.fa:md5,6656122d68fea5afe7506d1cb778590f"
+        ],
+        "meta": {
+            "nf-test": "0.8.4",
+            "nextflow": "23.10.1"
+        },
+        "timestamp": "2024-04-12T13:41:10.759867"
+    }
+}
