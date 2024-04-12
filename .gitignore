@@ -11,3 +11,5 @@ lib
 Focal_targets/*
 RESUME
 cache
+.nf-test
+.nf-test.log
