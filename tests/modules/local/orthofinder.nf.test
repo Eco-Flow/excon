@@ -1,0 +1,43 @@
+nextflow_process {
+
+    name "Test Process ORTHOFINDER"
+    script "modules/local/orthofinder.nf"
+    process "ORTHOFINDER"
+
+    test("Should run without failures") {
+
+        when {
+            params {
+                // define parameters here:
+                clean = false
+                outdir = "results"
+            }
+            process {
+                """
+                // define inputs of the process here. Example:
+                Channel.fromPath( "${projectDir}/data/orthofinder_input/*.fa" ).collect().set{ in_channel } 
+                input[0] = in_channel
+                """
+            }
+        }
+
+        then {
+            //check if test case succeeded
+            assert process.success
+            //analyze trace file
+            //assert process.trace.tasks().size() == 1 
+            with(process.out) {
+              //checks one file exists in proteins channel
+              assert orthologues.size() == 1
+              //checks one file exists in gff channel
+              assert speciestree.size() == 1
+              //checks output files aren't corrupted
+              assert path(orthologues[0]).md5 == '7d1c15f8d74eda5e11fabc8aa8ae0b0a'
+            }
+
+            assert snapshot(
+              path("${launchDir}/${params.outdir}/orthofinder/"),
+            ).match("orthofinder") 
+        }
+    }
+}
