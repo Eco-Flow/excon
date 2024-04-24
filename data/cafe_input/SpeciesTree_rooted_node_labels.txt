@@ -1,0 +1,1 @@
+(Bombus_pyrosoma.prot.fa.largestIsoform:0.013259,((Bombus_affinis.prot.fa.largestIsoform:0.00831863,Bombus_terrestris.prot.fa.largestIsoform:0.00739454)N2:0.0225361,(Bombus_bifarius.prot.fa.largestIsoform:0.0123444,Bombus_huntii.prot.fa.largestIsoform:0.0134765)N3:0.0185577)N1:0.013259)N0;
