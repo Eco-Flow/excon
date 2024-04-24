@@ -19,6 +19,8 @@ process ORTHOFINDER {
     fi
 
     orthofinder -f . -o My_result
+    
+    #Remove Dated folder system that prevents unit testing
     mv My_result/*/* .
 
     cat <<-END_VERSIONS > versions.yml
