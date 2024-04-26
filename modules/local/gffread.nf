@@ -59,6 +59,17 @@ process GFFREAD {
     ${projectDir}/bin/prot_fasta_to_longest.pl ${sample_id}.prot.fa ${sample_id}_longestisoform.txt
     ${projectDir}/bin/fasta_topIsoform.pl ${sample_id}.splicedcds.fa ${sample_id}_longestisoform.txt
 
+
+    #This part checks if longest isoform worked, if not we will continue with all proteins into Orthofinder. Warning sent to screen.
+    #Largest isoforms has content if true
+    #Largest isoforms does not have content if false. Just use full protein file (could be a genome without isoforms)
+
+    if [[ -s ${sample_id}.prot.fa.largestIsoform.fa ]];then
+      echo all_good
+    else
+      cp ${sample_id}.prot.fa ${sample_id}.prot.fa.largestIsoform.fa
+    fi
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         gffread version: \$(gffread --version)
