@@ -9,7 +9,7 @@ nf-test
 results
 lib
 Focal_targets/*
-RESUME
+RESUME*
 cache
 .nf-test
 .nf-test.log
