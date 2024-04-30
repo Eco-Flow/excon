@@ -13,6 +13,7 @@ process CAFE {
     path("Out_cafe_k3") , emit: result_k3
     path("Out_cafe_p_k3") , emit: result_p_k3
     path("N0.tsv") , emit: N0_table
+    path("Out_cafe/Base_count.tab") , emit: result_nftest
     path "versions.yml", emit: versions
 
     script:

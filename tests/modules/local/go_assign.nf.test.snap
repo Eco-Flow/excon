@@ -1,0 +1,12 @@
+{
+    "go_assign": {
+        "content": [
+            "Bombus_bifarius.prot.fa.largestIsoform.fa_Sort_Result_All_Combine_GO_format:md5,212d965698fd238a02947f7c26f4e6cc"
+        ],
+        "meta": {
+            "nf-test": "0.8.4",
+            "nextflow": "23.10.1"
+        },
+        "timestamp": "2024-04-30T15:50:32.348951"
+    }
+}
