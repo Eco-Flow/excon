@@ -42,31 +42,31 @@ jobs:
       run: echo "/opt" >> $GITHUB_PATH;
 
     - name: Run ncbi_download test
-      run: nf-test test tests/modules/download_ncbi.nf.test
+      run: nf-test test tests/modules/local/download_ncbi.nf.test
 
     - name: Run gffread test
-      run: nf-test test tests/modules/gffread.nf.test
+      run: nf-test test tests/modules/local/gffread.nf.test
 
     - name: Run get data test
-      run: nf-test test tests/modules/getdata.nf.test
+      run: nf-test test tests/modules/local/getdata.nf.test
 
     - name: Run orthofinder test
-      run: nf-test test tests/modules/orthofinder.nf.test
+      run: nf-test test tests/modules/local/orthofinder.nf.test
 
     - name: Run cafe test
-      run: nf-test test tests/modules/cafe.nf.test
+      run: nf-test test tests/modules/local/cafe.nf.test
 
     - name: Run cafe_go test
-      run: nf-test test tests/modules/cafe_go.nf.test
+      run: nf-test test tests/modules/local/cafe_go.nf.test
 
-    - name: Run chromo_go test
-      run: nf-test test tests/modules/chromo_go.nf.test
+    #- name: Run chromo_go test (Not needed as this module is not in final pipeline [for now])
+    #  run: nf-test test tests/modules/local/chromo_go.nf.test
 
     - name: Run go assign test
-      run: nf-test test tests/modules/go_assign.nf.test
+      run: nf-test test tests/modules/local/go_assign.nf.test
 
-    - name: Run go expansion test
-      run: nf-test test tests/modules/go_expansion.nf.test
+    #- name: Run go expansion test (Not needed as this module is not in final pipeline [for now])
+    #  run: nf-test test tests/modules/local/go_expansion.nf.test
 
     - name: Download aws module test cds files
       run:  aws s3 cp s3://excon/data/Insect_data/fasta/* data/; aws s3 cp s3://excon/data/Insect_data/gofiles/* data/

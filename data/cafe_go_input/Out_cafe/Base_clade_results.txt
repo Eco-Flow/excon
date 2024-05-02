@@ -1,0 +1,7 @@
+#Taxon_ID	Increase	Decrease
+Bombus_bifarius<1>	113	37
+<6>	1	34
+Bombus_pyrosoma<2>	72	225
+<7>	35	246
+Bombus_affinis<3>	45	154
+Bombus_terrestris<4>	44	166

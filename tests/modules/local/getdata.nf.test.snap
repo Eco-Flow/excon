@@ -1,0 +1,13 @@
+{
+    "getdata": {
+        "content": [
+            "amellifera_eg_gene.go.txt:md5,45469f5443f8a0e6623b8fa2ac554e13",
+            "amellifera_eg_gene.fasta:md5,6a6b20f3e0bb91079cc3426288285397"
+        ],
+        "meta": {
+            "nf-test": "0.8.4",
+            "nextflow": "23.10.1"
+        },
+        "timestamp": "2024-05-02T22:24:34.596451"
+    }
+}

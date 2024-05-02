@@ -109,15 +109,12 @@
       "description": "",
       "default": "",
       "properties": {
-        "ensembl_repo": {
-          "type": "string"
-        },
-        "ensembl_host": {
-          "type": "string"
-        },
         "ensembl_dataset": {
           "type": "string",
           "description": "A path to a file containing a list of ensembl biomart dataset names separated by newline"
+        },
+        "ensembl_biomart": {
+          "type": "string"
         },
         "predownloaded_fasta": {
           "type": "string",

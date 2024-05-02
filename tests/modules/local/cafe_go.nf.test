@@ -1,0 +1,40 @@
+nextflow_process {
+
+    name "Test Process CAFE_GO"
+    script "modules/local/cafe_go.nf"
+    process "CAFE_GO"
+
+    test("Should run without failures") {
+
+        when {
+            params {
+                // define parameters here:
+                clean = false
+                outdir = "results"
+            }
+            process {
+                """
+                // define inputs of the process here.
+                input[0] = Channel.of( file("${projectDir}/data/cafe_go_input/N0.tsv") )
+                input[1] = Channel.of( file("${projectDir}/data/cafe_go_input/OG_GO_format.tsv") )
+                input[2] = Channel.of( file("${projectDir}/data/cafe_go_input/Out_cafe") )
+                """
+            }
+        }
+
+        then {
+            //check if test case succeeded
+            assert process.success
+            //analyze trace file
+            assert process.trace.tasks().size() == 1 
+
+            //Assert snapshot of the two main output files
+            assert snapshot(
+              path("${launchDir}/${params.outdir}/cafe_go/Go_summary_neg.pdf"),
+              path("${launchDir}/${params.outdir}/cafe_go/Go_summary_pos.pdf"),
+              path("${launchDir}/${params.outdir}/cafe_go/TopGO_Pval_barplot_Bombus_affinis.neg.txt_TopGo_results_ALL.tab.pdf"),
+              path("${launchDir}/${params.outdir}/cafe_go/TopGO_Pval_barplot_Bombus_affinis.pos.txt_TopGo_results_ALL.tab.pdf"),
+            ).match("cafe_go") 
+        }
+    }
+}

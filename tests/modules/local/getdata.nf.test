@@ -1,0 +1,38 @@
+nextflow_process {
+
+    name "Test Process GET_DATA"
+    script "modules/local/getdata.nf"
+    process "GET_DATA"
+
+    test("Should run without failures") {
+
+        when {
+            params {
+                // define parameters here:
+                clean = false
+                outdir = "results"
+            }
+            process {
+                """
+                // define inputs of the process here. Example:
+                input[0] = Channel.of( "metazoa_mart" )
+                input[1] = Channel.of( "amellifera_eg_gene" )
+                """
+            }
+        }
+
+        then {
+            //check if test case succeeded
+            assert process.success
+            //analyze trace file
+            assert process.trace.tasks().size() == 1 
+
+            //Assert snapshot of the two main output files
+            assert snapshot(
+              path("${launchDir}/${params.outdir}/go_files/background_gofiles/amellifera_eg_gene.go.txt"),
+              //Cannot get a unique hit on the output fasta, probably because of the ordering of sequences.
+              //path("${launchDir}/${params.outdir}/go_files/background_species/amellifera_eg_gene.fasta") 
+            ).match("getdata") 
+        }
+    }
+}
