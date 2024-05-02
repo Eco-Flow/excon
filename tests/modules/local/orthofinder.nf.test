@@ -1,0 +1,44 @@
+nextflow_process {
+
+    name "Test Process ORTHOFINDER"
+    script "modules/local/orthofinder.nf"
+    process "ORTHOFINDER"
+
+    test("Should run without failures") {
+
+        when {
+            params {
+                // define parameters here:
+                clean = false
+                outdir = "results"
+            }
+            process {
+                """
+                // define inputs of the process here. Example:
+                Channel.fromPath( "${projectDir}/data/orthofinder_input/*.fa" ).collect().set{ in_channel } 
+                input[0] = in_channel
+                """
+            }
+        }
+
+        then {
+            //check if test case succeeded
+            assert process.success
+            //analyze trace file
+            //assert process.trace.tasks().size() == 1 
+            with(process.out) {
+              //checks one file exists in orthologues channel
+              assert orthologues.size() == 1
+              //checks one file exists in species tree channel
+              assert speciestree.size() == 1
+              //checks output files aren't corrupted
+              assert path(orthologues[0]).md5 == 'd05504abd3f1f7437e606c8a0a41d6c4'
+              assert path(versions[0]).md5 == '76d821b267ab1de6f1fcc8840eb7dca9'
+
+            }
+
+
+            //Cannot assert snapsnot, as output differs each time we run it due to random seeding. Means each phylogentic tree scores are slightly different.
+        }
+    }
+}
