@@ -68,8 +68,8 @@ jobs:
     #- name: Run go expansion test (Not needed as this module is not in final pipeline [for now])
     #  run: nf-test test tests/modules/local/go_expansion.nf.test
 
-    - name: Download aws module test cds files
-      run:  aws s3 cp s3://excon/data/Insect_data/fasta/* data/; aws s3 cp s3://excon/data/Insect_data/gofiles/* data/
+    #- name: Download aws module test cds files
+    #  run:  aws s3 cp s3://excon/data/Insect_data/fasta/* data/; aws s3 cp s3://excon/data/Insect_data/gofiles/* data/
 
     - name: Clean workspace after finish
       run: rm -rf $GITHUB_WORKSPACE/*
