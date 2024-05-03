@@ -1,15 +1,13 @@
 {
     "cafe_go": {
         "content": [
-            "Go_summary_neg.pdf:md5,741d23b669ee48d0a1a342e3f61a6fbc",
-            "Go_summary_pos.pdf:md5,fe9e2a9c8d1f4c230c4617fb76564748",
-            "TopGO_Pval_barplot_Bombus_affinis.neg.txt_TopGo_results_ALL.tab.pdf:md5,aba8c67927da9696fc958b4b7ba5e130",
-            "TopGO_Pval_barplot_Bombus_affinis.pos.txt_TopGo_results_ALL.tab.pdf:md5,3580af1c7b66146a11e2646b358f74a2"
+            "CAFE_summary.txt:md5,b6cbf4877b159864b97d514273b4ab67",
+            "versions.yml:md5,acfc3dae393e700a8add474731579ae8"
         ],
         "meta": {
             "nf-test": "0.8.4",
             "nextflow": "23.10.1"
         },
-        "timestamp": "2024-05-02T22:50:02.180953"
+        "timestamp": "2024-05-03T12:01:52.31372"
     }
 }

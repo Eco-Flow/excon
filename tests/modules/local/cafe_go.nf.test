@@ -30,10 +30,8 @@ nextflow_process {
 
             //Assert snapshot of the two main output files
             assert snapshot(
-              path("${launchDir}/${params.outdir}/cafe_go/Go_summary_neg.pdf"),
-              path("${launchDir}/${params.outdir}/cafe_go/Go_summary_pos.pdf"),
-              path("${launchDir}/${params.outdir}/cafe_go/TopGO_Pval_barplot_Bombus_affinis.neg.txt_TopGo_results_ALL.tab.pdf"),
-              path("${launchDir}/${params.outdir}/cafe_go/TopGO_Pval_barplot_Bombus_affinis.pos.txt_TopGo_results_ALL.tab.pdf"),
+              path("${launchDir}/${params.outdir}/cafe_go/CAFE_summary.txt"),
+              path("${launchDir}/${params.outdir}/cafe_go/versions.yml")
             ).match("cafe_go") 
         }
     }

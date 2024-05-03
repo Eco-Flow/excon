@@ -314,7 +314,7 @@ foreach my $species6 (keys %Background_OGs){
 
 print $out1 "Total_HOGs_significant\tExpansion_HOGs_significant\tContraction_HOGs_significant\tExpansion_genes_significant\tContraction_genes_significant\tExpansion_HOGs_total\tContraction_HOGs_total\n";
 
-foreach my $species2 (keys %SPECIES_TOTAL){
+foreach my $species2 (sort keys %SPECIES_TOTAL){
     print $out1 "$species2\t$SPECIES_TOTAL{$species2}";
     if ($SPECIES_EXPANSION{$species2}){
         print $out1 "\t$SPECIES_EXPANSION{$species2}";
