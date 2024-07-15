@@ -166,7 +166,7 @@ ensembl <- useEnsembl(biomart = "genes", host="https://ensembl.org")
 Then you can run the excon script as follows:
 
 ```
-nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv --cafe --cafe_go --ensembl_repo "metazoa_mart" --ensembl_host 'https://metazoa.ensembl.org' --ensembl_dataset "example.txt" --download
+nextflow run main.nf -resume -profile <apptainer/docker/singularity> --input data/input_small-s3.csv --cafe --cafe_go --ensembl_biomart "metazoa_mart" --ensembl_dataset "example.txt"
 ```
 
 where `example.txt` is a file of dataset IDs from ensembl biomart (as shown above), separated by newline characters.
