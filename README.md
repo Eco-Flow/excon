@@ -189,6 +189,4 @@ If you need any support do not hesitate to contact us at any of:
 
 `c.wyatt [at] ucl.ac.uk` 
 
-`simon.murray [at] ucl.ac.uk`
-
 `ecoflow.ucl [at] gmail.com`
