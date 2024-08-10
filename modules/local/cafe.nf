@@ -1,5 +1,6 @@
 process CAFE {
-    label 'process_low'
+    label 'process_medium'
+    label 'process_long'
     label 'error_ignore'
     container= 'ecoflowucl/cafe:r-4.3.1'
 
