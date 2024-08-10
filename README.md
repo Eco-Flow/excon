@@ -74,7 +74,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 * `--skip_cafe` - A flag to skip the cafe section. Used if you just wish to run go assignment for a species without runnig Cafe (**Default:** `null`).
 * `--go_expansion` - A flag optionally choose to run a basic expansion/contraction analysis (**Default:** `null`).
 * `--chromo_go` - A flag to optionally choose to run GO analysis on each chromosome (**Default:** `null`).
-* `--clean` - A true or false value assigned to this parameter will determine whether the work directory is automatically deleted or not if the pipeline is successful. Deleting the work directory saves space however it will not be possible to use this work directory in future for caching (**Default:** `true`).
+* `--clean` - A true or false value assigned to this parameter will determine whether the work directory is automatically deleted or not if the pipeline is successful. Deleting the work directory saves space however it will not be possible to use this work directory in future for caching (**Default:** `false`).
 * `--help` - A true value assigned to this parameter will cause the help message to be displayed instead of pipeline running (**Default:** `false`).
 * `--custom_config` - A path or URL to a custom configuration file.
 
