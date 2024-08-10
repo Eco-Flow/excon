@@ -18,7 +18,7 @@ process GO_EXPANSION {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        Perl version: \$(perl --version | grep "version" | sed 's/.*(//g' | sed 's/[)].*//')
+        Python version: \$(python --version | cut -f 2 -d " ")
     END_VERSIONS
     """
 }

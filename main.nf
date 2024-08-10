@@ -27,6 +27,7 @@ include { GFFREAD } from './modules/local/gffread.nf'
 include { CAFE } from './modules/local/cafe.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_GO } from './modules/local/cafe_go.nf'
+include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
 
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-validation'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main'
@@ -121,6 +122,9 @@ workflow {
       //Run Cafe analysis of expanded and contracted gene families.
       CAFE ( ORTHOFINDER_CAFE.out.no_ortho, ORTHOFINDER_CAFE.out.speciestree )
       ch_versions = ch_versions.mix(CAFE.out.versions)
+
+      CAFE_PLOT ( CAFE.out.result )
+      ch_versions = ch_versions.mix(CAFE_PLOT.out.versions)
 
       if (params.predownloaded_fasta || params.ensembl_dataset) {
          CAFE_GO ( CAFE.out.result, CAFE.out.N0_table, GO_ASSIGN.out.go_og )
