@@ -6,12 +6,12 @@ process CAFE_PLOT {
     path Cafe_dir
 
     output:
-    path("*.pdf") , emit: cafe_go_pdfs
+    path("cafe_plotter") , emit: cafe_plot_results
     path "versions.yml", emit: versions
 
     script:
     """
-    cafeplotter -i ${Cafe_dir} -o cafe_plotter
+    cafeplotter -i ${Cafe_dir} -o cafe_plotter --format 'pdf'
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
