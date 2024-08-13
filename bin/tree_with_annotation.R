@@ -8,13 +8,13 @@ if (!requireNamespace("ggtree", quietly = TRUE)) {
 if (!requireNamespace("ggplot2", quietly = TRUE)) {
   install.packages("ggplot2")
 }
-if (!requireNamespace("patchwork", quietly = TRUE)) {
-  install.packages("patchwork")
+if (!requireNamespace("cowplot", quietly = TRUE)) {
+  install.packages("cowplot")
 }
 
 library(ggtree)
 library(ggplot2)
-library(patchwork)
+library(cowplot)
 library(argparse)
 library(dplyr)
 
@@ -22,7 +22,7 @@ library(dplyr)
 parser <- ArgumentParser(description = 'Plot phylogenetic tree with statistics and true/false data')
 parser$add_argument('tree_file', type = 'character', help = 'Path to the Newick formatted tree file')
 parser$add_argument('data_file', type = 'character', help = 'Path to the CSV file with statistic and true/false data')
-parser$add_argument('phylogeny_width', type = 'integer', help = 'Width percentage of the phylogeny plot (0-100)')
+parser$add_argument('--text_size', type = 'double', default = 3, help = 'Text size for the plots')
 args <- parser$parse_args()
 
 # Read the Newick tree from the file
@@ -46,17 +46,31 @@ print(data$species)
 cat("\nPlot types:\n")
 print(plot_types)
 
+# Debugging: Print the data frame to check its structure
+cat("\nData frame:\n")
+print(data)
+
 # Ensure species names match the tree tips
 if (!all(data$species %in% tree$tip.label)) {
   stop("Species names in the data do not match the tree tips")
 }
 
-# Ensure the 'statistic' column is numeric
-data$statistic <- as.numeric(data$statistic)
+# Normalize the numeric columns to range from 0 to 1
+normalize <- function(x) {
+  return((x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE)))
+}
+
+for (i in 2:length(column_headers)) {
+  if (plot_types[i] == "bar") {
+    data[[column_headers[i]]] <- normalize(as.numeric(data[[column_headers[i]]]))
+  }
+}
 
 # Plot the phylogenetic tree
 tree_plot <- ggtree(tree) + 
-  geom_tiplab(size=3)  # Add labels to the tips of the tree
+  geom_tiplab(size=args$text_size) +  # Add labels to the tips of the tree
+  ggtitle("Phylogenetic Tree") +
+  theme(plot.margin = margin(0, 0, 0, 0))
 
 # Create plots based on the plot types
 plots <- list()
@@ -72,14 +86,19 @@ for (i in 2:length(column_headers)) {
             axis.text.y = element_blank(), 
             axis.ticks.y = element_blank(),
             panel.grid.major.y = element_blank(),  # Remove horizontal grid lines
-            panel.grid.minor.y = element_blank()) + 
-      labs(x = column_name)
+            panel.grid.minor.y = element_blank(),
+            plot.margin = margin(0, 0, 0, 0)) + 
+      labs(x = column_name) +
+      ggtitle(column_name) +
+      scale_x_continuous(limits = c(0, 1))  # Set x-axis scale from 0 to 1
     plots[[length(plots) + 1]] <- bar_plot
   } else if (plot_type == "text") {
-    text_plot <- ggplot(data, aes(y = reorder(species, statistic), x = 1, label = !!sym(column_name))) + 
-      geom_text(size = 3, hjust = 0) + 
+    text_plot <- ggplot(data, aes(y = reorder(species, !!sym(column_headers[2])), x = 1, label = !!sym(column_name))) + 
+      geom_text(size = args$text_size, hjust = 0) + 
       theme_void() + 
-      labs(x = NULL, y = NULL)
+      labs(x = NULL, y = NULL) +
+      ggtitle(column_name) +
+      theme(plot.margin = margin(0, 0, 0, 0))
     plots[[length(plots) + 1]] <- text_plot
   } else {
     cat("Unknown plot type:", plot_type, "for column:", column_name, "\n")
@@ -90,15 +109,10 @@ for (i in 2:length(column_headers)) {
 cat("List of plots:\n")
 print(plots)
 
-# Calculate the widths for the plot layout
-phylogeny_width <- args$phylogeny_width / 100
-other_plots_width <- (1 - phylogeny_width) / length(plots)
-
 # Combine the plots if there are any
 if (length(plots) > 0) {
-  combined_plot <- tree_plot + 
-    wrap_plots(plots, ncol = length(plots)) + 
-    plot_layout(ncol = length(plots) + 1, widths = c(phylogeny_width, rep(other_plots_width, length(plots))))  # Adjust widths based on input
+  combined_plot <- plot_grid(tree_plot, plot_grid(plotlist = plots, ncol = length(plots)), 
+                             ncol = 2, rel_widths = c(1, length(plots)))  # Adjust widths
 
   # Save the plot to a PDF file
   ggsave("Phyloplot.pdf", plot = combined_plot, width = 10, height = 8)
