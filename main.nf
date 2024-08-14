@@ -64,12 +64,15 @@ workflow {
    GFFREAD ( DOWNLOAD_NCBI.out.genome.mix(input_type.local) )
    ch_versions = ch_versions.mix(GFFREAD.out.versions.first())
 
-   BUSCO_BUSCO ( GFFREAD.out.proteins_busco , 
-                 params.busco_mode,
-                 params.busco_lineage,
-                 params.busco_lineages_path ?: [],
-                 params.busco_config ?: [], 
-               )
+   if (params.busco){
+      BUSCO_BUSCO (  GFFREAD.out.proteins_busco , 
+                     params.busco_mode,
+                     params.busco_lineage,
+                     params.busco_lineages_path ?: [],
+                     params.busco_config ?: [], 
+                  )
+   }
+   
 
    merge_ch = GFFREAD.out.longest.collect()
    
