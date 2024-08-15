@@ -89,7 +89,6 @@
         },
         "clean": {
           "type": "boolean",
-          "default": false,
           "description": "Enable cleanup function"
         },
         "architecture": {
@@ -114,7 +113,8 @@
           "description": "A path to a file containing a list of ensembl biomart dataset names separated by newline"
         },
         "ensembl_biomart": {
-          "type": "string"
+          "type": "string",
+          "description": "A biomart choice (e.g. ensembl)"
         },
         "predownloaded_fasta": {
           "type": "string",
@@ -138,13 +138,12 @@
         },
         "busco": {
           "type": "boolean",
-          "default": false,
-          "description": "Choose whether to run busco or not" 
-        },        
+          "description": "Choose whether to run busco or not"
+        },
         "busco_mode": {
           "type": "string",
           "default": "proteins",
-          "description": "A flag to set the busco mode. Either genome, proteins, transcriptome" 
+          "description": "A flag to set the busco mode. Either genome, proteins, transcriptome"
         },
         "busco_lineage": {
           "type": "string",
@@ -153,12 +152,10 @@
         },
         "busco_lineages_path": {
           "type": "string",
-          "default": null,
           "description": "A flag to set the BUSCO lineages directory"
         },
         "busco_config": {
           "type": "string",
-          "default": null,
           "description": "A path to a BUSCO config file (optional)"
         }
       }
