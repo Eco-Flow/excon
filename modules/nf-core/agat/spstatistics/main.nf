@@ -1,5 +1,5 @@
 process AGAT_SPSTATISTICS {
-    tag "$meta.id"
+    //tag "$meta.id"
     label 'process_low'
 
     conda "${moduleDir}/environment.yml"
@@ -19,11 +19,11 @@ process AGAT_SPSTATISTICS {
 
     script:
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    //def prefix = task.ext.prefix ?: "${meta.id}"
     """
     agat_sp_statistics.pl \\
         --gff $gff \\
-        --output ${prefix}.stats.txt \\
+        --output ${meta}.stats.txt \\
         $args
 
     cat <<-END_VERSIONS > versions.yml
@@ -34,9 +34,9 @@ process AGAT_SPSTATISTICS {
 
     stub:
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    //def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    touch ${prefix}.stats.txt
+    touch ${meta}.stats.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

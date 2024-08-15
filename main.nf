@@ -75,7 +75,7 @@ workflow {
    }
    
    if (params.agat){
-      AGAT_SPSTATISTICS (
+      AGAT_SPSTATISTICS (  GFFREAD.out.gffs_agat  )
    }
 
 

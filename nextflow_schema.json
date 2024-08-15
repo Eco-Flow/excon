@@ -157,6 +157,10 @@
         "busco_config": {
           "type": "string",
           "description": "A path to a BUSCO config file (optional)"
+        },
+        "agat": {
+          "type": "boolean",
+          "description": "Choose whether to run busco or not"
         }
       }
     }
