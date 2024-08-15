@@ -9,7 +9,7 @@ log.info """\
 
  Authors:
    - Chris Wyatt <c.wyatt@ucl.ac.uk>
-   - Simon Murray <simon.murray@ucl.ac.uk>
+   - Simon Murray
 
  -----------------------------------------
 
@@ -30,8 +30,8 @@ include { CAFE_GO } from './modules/local/cafe_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
 
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-validation'
-include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main'
-
+include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main.nf'
+include { BUSCO_BUSCO } from './modules/nf-core/busco/busco/main.nf'
 
 workflow {
 
@@ -63,6 +63,16 @@ workflow {
 
    GFFREAD ( DOWNLOAD_NCBI.out.genome.mix(input_type.local) )
    ch_versions = ch_versions.mix(GFFREAD.out.versions.first())
+
+   if (params.busco){
+      BUSCO_BUSCO (  GFFREAD.out.proteins_busco , 
+                     params.busco_mode,
+                     params.busco_lineage,
+                     params.busco_lineages_path ?: [],
+                     params.busco_config ?: [], 
+                  )
+   }
+   
 
    merge_ch = GFFREAD.out.longest.collect()
    

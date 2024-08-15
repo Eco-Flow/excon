@@ -8,6 +8,7 @@ process GFFREAD {
 
     output:
     path( "${sample_id}.prot.fa" ), emit: proteins
+    tuple val(sample_id), path("${sample_id}.prot.fa.largestIsoform.fa" ), emit: proteins_busco
     path( "${sample_id}.prot.fa.largestIsoform.fa" ), emit: longest
     path( "${sample_id}.splicedcds.fa" )
     path( "${sample_id}.splicedexons.fa" )

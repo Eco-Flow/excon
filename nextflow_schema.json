@@ -89,7 +89,6 @@
         },
         "clean": {
           "type": "boolean",
-          "default": false,
           "description": "Enable cleanup function"
         },
         "architecture": {
@@ -114,7 +113,8 @@
           "description": "A path to a file containing a list of ensembl biomart dataset names separated by newline"
         },
         "ensembl_biomart": {
-          "type": "string"
+          "type": "string",
+          "description": "A biomart choice (e.g. ensembl)"
         },
         "predownloaded_fasta": {
           "type": "string",
@@ -135,6 +135,28 @@
         "skip_cafe": {
           "type": "boolean",
           "description": "A flag to skip the cafe section. Used if you just wish to run go assignment for a species without runnig Cafe"
+        },
+        "busco": {
+          "type": "boolean",
+          "description": "Choose whether to run busco or not"
+        },
+        "busco_mode": {
+          "type": "string",
+          "default": "proteins",
+          "description": "A flag to set the busco mode. Either genome, proteins, transcriptome"
+        },
+        "busco_lineage": {
+          "type": "string",
+          "default": "auto",
+          "description": "A flag to set the busco lineage, default:auto"
+        },
+        "busco_lineages_path": {
+          "type": "string",
+          "description": "A flag to set the BUSCO lineages directory"
+        },
+        "busco_config": {
+          "type": "string",
+          "description": "A path to a BUSCO config file (optional)"
         }
       }
     }
