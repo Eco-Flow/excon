@@ -13,7 +13,7 @@ The general pipeline logic is as follows:
 * Extract longest protein fasta sequences `[GFFREAD]`.
 * Finds orthologous genes `[ORTHOFINDER_CAFE]`.
 * Runs cafe analysis on the output of orthofinder `[CAFE]`.
-* Runs gene to GO assignment (optional) `[ORTHOFINDER_GO], [GO_ASSIGN]`.
+* Runs gene to GO assignment (optional) `[ORTHOFINDER_GO], [GO_ASSIGN]`.  REQUIRES GO FILES TO RUN, check [optional inputs](#optional).
 * Plot GO enrichment for excon genes (optional) `[CAFE_GO]`.
 
 ## Installation
