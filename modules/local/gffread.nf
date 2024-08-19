@@ -16,6 +16,7 @@ process GFFREAD {
     tuple val(sample_id), path("${sample_id}.gff_for_jvci.gff3"), emit: gffs_agat
     path( "${sample_id}_gene_alltran_list.txt" ), emit: gene_to_isoforms
     path( "${sample_id}.splicedcds.fa.nucl.longest.fa" )
+    tuple val( "${sample_id}" ), path( "${fasta}" ), emit: fasta_quast
     path "versions.yml", emit: versions
 
     script:

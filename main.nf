@@ -33,6 +33,7 @@ include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-val
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main.nf'
 include { BUSCO_BUSCO } from './modules/nf-core/busco/busco/main.nf'
 include { AGAT_SPSTATISTICS } from './modules/nf-core/agat/spstatistics/main.nf'
+include { QUAST } from './modules/nf-core/quast/main.nf'
 
 workflow {
 
@@ -78,6 +79,12 @@ workflow {
       AGAT_SPSTATISTICS (  GFFREAD.out.gffs_agat  )
    }
 
+   if (params.quast){
+      QUAST (  GFFREAD.out.fasta_quast,
+               //reference
+               GFFREAD.out.gffs_agat
+            )
+   }
 
    merge_ch = GFFREAD.out.longest.collect()
    
