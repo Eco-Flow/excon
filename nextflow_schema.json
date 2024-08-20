@@ -161,6 +161,10 @@
         "agat": {
           "type": "boolean",
           "description": "Choose whether to run busco or not"
+        },
+        "quast": {
+          "type": "boolean",
+          "description": "Choose whether to run quast or not"
         }
       }
     }

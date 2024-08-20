@@ -13,7 +13,7 @@ The general pipeline logic is as follows:
 * Extract longest protein fasta sequences `[GFFREAD]`.
 * Finds orthologous genes `[ORTHOFINDER_CAFE]`.
 * Runs cafe analysis on the output of orthofinder `[CAFE]`.
-* Runs gene to GO assignment (optional) `[ORTHOFINDER_GO], [GO_ASSIGN]`.  REQUIRES GO FILES TO RUN, check [optional inputs](#optional).
+* Runs gene to GO assignment (optional) `[ORTHOFINDER_GO], [GO_ASSIGN]`.
 * Plot GO enrichment for excon genes (optional) `[CAFE_GO]`.
 
 ## Installation
@@ -67,18 +67,21 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 ### Optional 
 
 * `--outdir /path/to/output/directory` - A path to the output directory where the results will be written to (**Default:** `Results`).
-* `--predownloaded_fasta /path/to/predownloaded/fasta` - A path to a folder containing a singular or multiple file for each species you wish to use for GO assignment (**Default:** `null`).
-* `--predownloaded_gofiles /path/to/predownloaded_gofiles` - A path to a folder containing a singular or multiple file for each species you wish to use for GO assignment. Matched to above flag. One GO file and one protein fasta for each species with matched names (**Default:** `null`). 
-* `--ensembl_dataset  /path/to/ensembl/dataset` - A path to a file containing a list of ensembl biomart dataset names separated by newline i.e. `data/biomart.txt` (**Default:** `null`).
-* `--ensembl_biomart /path/to/ensembl_biomart` - A name of an ensembl biomart that contains the species data you want (e.g. metazoa_mart for insects) (**Default:** `null`).
+* For GO assignment:
+  * `--predownloaded_fasta /path/to/predownloaded/fasta` - A path to a folder containing a singular or multiple file for each species you wish to use for GO assignment (**Default:** `null`) AND
+  * `--predownloaded_gofiles /path/to/predownloaded_gofiles` - A path to a folder containing a singular or multiple file for each species you wish to use for GO assignment. Matched to above flag. One GO file and one protein fasta for each species with matched names (**Default:** `null`) \
+  **OR**
+  * `--ensembl_dataset  /path/to/ensembl/dataset` - A path to a file containing a list of ensembl biomart dataset names you wish to use for GO assignment. Separated by newline i.e. `data/biomart.txt` (**Default:** `null`) AND
+  * `--ensembl_biomart /path/to/ensembl_biomart` - A name of an ensembl biomart that contains the species data you want to use for GO assignment (e.g. metazoa_mart for insects) (**Default:** `null`).
 * `--skip_cafe` - A flag to skip the cafe section. Used if you just wish to run go assignment for a species without runnig Cafe (**Default:** `null`).
 * `--go_expansion` - A flag optionally choose to run a basic expansion/contraction analysis (**Default:** `null`).
 * `--chromo_go` - A flag to optionally choose to run GO analysis on each chromosome (**Default:** `null`).
 * `--clean` - A true or false value assigned to this parameter will determine whether the work directory is automatically deleted or not if the pipeline is successful. Deleting the work directory saves space however it will not be possible to use this work directory in future for caching (**Default:** `false`).
 * `--help` - A true value assigned to this parameter will cause the help message to be displayed instead of pipeline running (**Default:** `false`).
 * `--custom_config` - A path or URL to a custom configuration file.
-* `--busco` - A flag to optionally choose to run BUSCO on each genome.
-* `--atag` - A flag to optionally choose to run ATAG statistics on each genome.
+* `--busco` - A flag to optionally choose to run BUSCO on each genome. (**Default:** `null`)
+* `--atag` - A flag to optionally choose to run ATAG statistics on each genome. (**Default:** `null`)
+* `--quast` - A flag to optionally choose to run QUAST on each genome. (**Default:** `null`)
 
 ## Profiles
 
