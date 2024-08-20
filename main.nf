@@ -73,10 +73,12 @@ workflow {
                      params.busco_lineages_path ?: [],
                      params.busco_config ?: [], 
                   )
+      ch_versions = ch_versions.mix(BUSCO_BUSCO.out.versions.first())
    }
    
    if (params.agat){
       AGAT_SPSTATISTICS (  GFFREAD.out.gffs_agat  )
+      ch_versions = ch_versions.mix(AGAT_SPSTATISTICS.out.versions.first())
    }
 
    if (params.quast){
@@ -84,6 +86,7 @@ workflow {
                //reference
                GFFREAD.out.gffs_agat
             )
+      ch_versions = ch_versions.mix(QUAST.out.versions.first())
    }
 
    merge_ch = GFFREAD.out.longest.collect()
