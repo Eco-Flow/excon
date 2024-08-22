@@ -80,7 +80,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 * `--help` - A true value assigned to this parameter will cause the help message to be displayed instead of pipeline running (**Default:** `false`).
 * `--custom_config` - A path or URL to a custom configuration file.
 * `--busco` - A flag to optionally choose to run BUSCO on each genome. (**Default:** `null`)
-* `--atag` - A flag to optionally choose to run ATAG statistics on each genome. (**Default:** `null`)
+* `--agat` - A flag to optionally choose to run AGAT statistics on each genome. (**Default:** `null`)
 * `--quast` - A flag to optionally choose to run QUAST on each genome. (**Default:** `null`)
 
 ## Profiles
