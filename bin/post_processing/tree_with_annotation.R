@@ -55,16 +55,12 @@ if (!all(data$species %in% tree$tip.label)) {
   stop("Species names in the data do not match the tree tips")
 }
 
-# Normalize the numeric columns to range from 0 to 1
-normalize <- function(x) {
-  return((x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE)))
-}
+# Reorder the data based on the order of species in the tree
+data <- data %>% arrange(match(species, tree$tip.label))
 
-for (i in 2:length(column_headers)) {
-  if (plot_types[i] == "bar") {
-    data[[column_headers[i]]] <- normalize(as.numeric(data[[column_headers[i]]]))
-  }
-}
+# Debugging: Print the reordered data frame to check its structure
+cat("\nReordered data frame:\n")
+print(data)
 
 # Plot the phylogenetic tree
 tree_plot <- ggtree(tree) + 
@@ -79,7 +75,7 @@ for (i in 2:length(column_headers)) {
   plot_type <- plot_types[i]
   
   if (plot_type == "bar") {
-    bar_plot <- ggplot(data, aes(y = reorder(species, !!sym(column_name)), x = !!sym(column_name))) + 
+    bar_plot <- ggplot(data, aes(y = factor(species, levels = tree$tip.label), x = !!sym(column_name))) + 
       geom_bar(stat = "identity", fill = "darkblue") + 
       theme_minimal() + 
       theme(axis.title.y = element_blank(), 
@@ -90,10 +86,10 @@ for (i in 2:length(column_headers)) {
             plot.margin = margin(0, 0, 0, 0)) + 
       labs(x = column_name) +
       ggtitle(column_name) +
-      scale_x_continuous(limits = c(0, 1))  # Set x-axis scale from 0 to 1
+      coord_flip()  # Flip coordinates to make the bar plot horizontal
     plots[[length(plots) + 1]] <- bar_plot
   } else if (plot_type == "text") {
-    text_plot <- ggplot(data, aes(y = reorder(species, !!sym(column_headers[2])), x = 1, label = !!sym(column_name))) + 
+    text_plot <- ggplot(data, aes(y = factor(species, levels = tree$tip.label), x = 1, label = !!sym(column_name))) + 
       geom_text(size = args$text_size, hjust = 0) + 
       theme_void() + 
       labs(x = NULL, y = NULL) +
