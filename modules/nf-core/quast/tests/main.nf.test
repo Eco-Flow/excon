@@ -1,0 +1,40 @@
+nextflow_process {
+
+    name "Test Process QUAST"
+    script "../main.nf"
+    process "QUAST"
+
+    tag "modules"
+    tag "modules_nfcore"
+    tag "quast"
+
+    test("Should run without failures") {
+
+        when {
+            params {
+                // define parameters here. Example:
+                clean = false
+                outdir = "results"
+            }
+            process {
+                """
+                // define inputs of the process here. Example:
+                input[0] = Channel.of( ["sarscov2", file(params.modules_testdata_base_path + 'genomics/sarscov2/genome/genome.fasta.gz')] )
+                input[1] = Channel.of( ["sarscov2", file(params.modules_testdata_base_path + 'genomics/sarscov2/genome/genome.gff3.gz')] )
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert process.out.results[0].size() == 12 },
+                { assert snapshot(
+                    process.out.tsv,
+                    process.out.versions,
+                    ).match() }
+            )
+        }
+    }
+
+}

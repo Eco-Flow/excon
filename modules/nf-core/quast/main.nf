@@ -13,12 +13,12 @@ process QUAST {
     tuple val(meta3), path(gff)
 
     output:
-    tuple val(meta), path("${meta}")                   , emit: results
+    tuple val(meta), path("${meta}/*")                 , emit: results
     tuple val(meta), path("${meta}.tsv")               , emit: tsv
     tuple val(meta), path("${meta}_transcriptome.tsv") , optional: true , emit: transcriptome
     tuple val(meta), path("${meta}_misassemblies.tsv") , optional: true , emit: misassemblies
     tuple val(meta), path("${meta}_unaligned.tsv")     , optional: true , emit: unaligned
-    path "versions.yml"                                  , emit: versions
+    path "versions.yml"                                , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
