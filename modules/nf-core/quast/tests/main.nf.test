@@ -18,9 +18,14 @@ nextflow_process {
             }
             process {
                 """
-                // define inputs of the process here. Example:
-                input[0] = Channel.of( ["sarscov2", file(params.modules_testdata_base_path + 'genomics/sarscov2/genome/genome.fasta.gz')] )
-                input[1] = Channel.of( ["sarscov2", file(params.modules_testdata_base_path + 'genomics/sarscov2/genome/genome.gff3.gz')] )
+                input[0] = [
+                            [ id: 'test1' ], // meta map
+                            file(params.modules_testdata_base_path + 'genomics/sarscov2/genome/genome.fasta.gz', checkIfExists: true)
+                ]
+                input[1] = [
+                            [ id: 'test1' ], // meta map
+                            file(params.modules_testdata_base_path + 'genomics/sarscov2/genome/genome.gff3.gz', checkIfExists: true)
+                ]                
                 """
             }
         }
@@ -30,7 +35,7 @@ nextflow_process {
                 { assert process.success },
                 { assert process.out.results[0].size() == 12 },
                 { assert snapshot(
-                    process.out.tsv,
+                    file(process.out.tsv[0]),
                     process.out.versions,
                     ).match() }
             )
