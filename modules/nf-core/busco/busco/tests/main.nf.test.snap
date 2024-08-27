@@ -4,9 +4,7 @@
             {
                 "0": [
                     [
-                        {
-                            "id": "test"
-                        },
+                        "test",
                         "test-bacteria_odb10-busco.batch_summary.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
                     ]
                 ],
@@ -27,9 +25,7 @@
                 ],
                 "6": [
                     [
-                        {
-                            "id": "test"
-                        },
+                        "test",
                         [
                             
                         ]
@@ -40,9 +36,7 @@
                 ],
                 "8": [
                     [
-                        {
-                            "id": "test"
-                        },
+                        "test",
                         [
                             [
                                 [
@@ -59,17 +53,13 @@
                 ],
                 "batch_summary": [
                     [
-                        {
-                            "id": "test"
-                        },
+                        "test",
                         "test-bacteria_odb10-busco.batch_summary.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
                     ]
                 ],
                 "busco_dir": [
                     [
-                        {
-                            "id": "test"
-                        },
+                        "test",
                         [
                             [
                                 [
@@ -89,9 +79,7 @@
                 ],
                 "seq_dir": [
                     [
-                        {
-                            "id": "test"
-                        },
+                        "test",
                         [
                             
                         ]
@@ -115,10 +103,10 @@
             }
         ],
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "23.10.1"
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.4"
         },
-        "timestamp": "2024-05-03T13:28:04.451297"
+        "timestamp": "2024-08-27T12:26:09.40763"
     },
     "test_busco_eukaryote_augustus": {
         "content": [
@@ -126,10 +114,10 @@
             "versions.yml:md5,3fc94714b95c2dc15399a4229d9dd1d9"
         ],
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "23.10.1"
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.4"
         },
-        "timestamp": "2024-05-03T13:26:36.974986"
+        "timestamp": "2024-08-27T12:25:14.37586"
     },
     "test_busco_genome_single_fasta": {
         "content": [
@@ -139,10 +127,10 @@
             "versions.yml:md5,3fc94714b95c2dc15399a4229d9dd1d9"
         ],
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "23.10.1"
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.4"
         },
-        "timestamp": "2024-05-03T13:22:45.07816"
+        "timestamp": "2024-08-27T12:22:37.757271"
     },
     "test_busco_genome_multi_fasta": {
         "content": [
@@ -158,10 +146,10 @@
             "versions.yml:md5,3fc94714b95c2dc15399a4229d9dd1d9"
         ],
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "23.10.1"
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.4"
         },
-        "timestamp": "2024-05-03T13:23:50.255602"
+        "timestamp": "2024-08-27T12:23:24.934431"
     },
     "test_busco_eukaryote_metaeuk": {
         "content": [
@@ -171,10 +159,10 @@
             "versions.yml:md5,3fc94714b95c2dc15399a4229d9dd1d9"
         ],
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "23.10.1"
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.4"
         },
-        "timestamp": "2024-05-03T13:25:38.159041"
+        "timestamp": "2024-08-27T12:24:38.806343"
     },
     "test_busco_transcriptome": {
         "content": [
@@ -209,10 +197,10 @@
             "versions.yml:md5,3fc94714b95c2dc15399a4229d9dd1d9"
         ],
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "23.10.1"
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.4"
         },
-        "timestamp": "2024-05-03T13:27:53.992893"
+        "timestamp": "2024-08-27T12:26:01.147843"
     },
     "test_busco_protein": {
         "content": [
@@ -222,9 +210,9 @@
             "versions.yml:md5,3fc94714b95c2dc15399a4229d9dd1d9"
         ],
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "23.10.1"
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.4"
         },
-        "timestamp": "2024-05-03T13:27:12.724862"
+        "timestamp": "2024-08-27T12:25:36.816676"
     }
 }
