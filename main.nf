@@ -66,7 +66,7 @@ workflow {
    GFFREAD ( DOWNLOAD_NCBI.out.genome.mix(input_type.local) )
    ch_versions = ch_versions.mix(GFFREAD.out.versions.first())
 
-   if (params.busco){
+   if (params.stats){
       BUSCO_BUSCO (  GFFREAD.out.proteins_busco , 
                      params.busco_mode,
                      params.busco_lineage,
@@ -74,14 +74,10 @@ workflow {
                      params.busco_config ?: [], 
                   )
       ch_versions = ch_versions.mix(BUSCO_BUSCO.out.versions.first())
-   }
    
-   if (params.agat){
       AGAT_SPSTATISTICS (  GFFREAD.out.gffs_agat  )
       ch_versions = ch_versions.mix(AGAT_SPSTATISTICS.out.versions.first())
-   }
 
-   if (params.quast){
       QUAST (  GFFREAD.out.fasta_quast,
                //reference
                GFFREAD.out.gffs_agat
