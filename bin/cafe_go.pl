@@ -5,6 +5,10 @@ use Scalar::Util qw(looks_like_number);
 
 print "Please be in folder with N0.tsv, Base/Gamma_change.tab, Base/Gamma_branch_probabilities.tab  and the Go folder\n";
 
+my $pval = $ARGV[0];
+my $type = $ARGV[1];
+my $go_max_plot = $ARGV[2]];
+
 #Set up output name
 my $outname1="CAFE_summary.txt";
 open(my $out1, ">", $outname1)   or die "Could not open $outname1\n";
@@ -369,12 +373,12 @@ foreach my $species5 (keys %SPECIES_TOTAL){
 	`mv $species5\.pos.txt Node_$species5\.pos.txt`;
 	`mv $species5\.neg.txt Node_$species5\.neg.txt`;
 
-	`ChopGO_VTS2.pl -i Node_$species5\.pos.txt --GO_file $go -bg OG_GO_format.tsv`;
-	`ChopGO_VTS2.pl -i Node_$species5\.neg.txt --GO_file $go -bg OG_GO_format.tsv`;
+	`ChopGO_VTS2.pl -i Node_$species5\.pos.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot`;
+	`ChopGO_VTS2.pl -i Node_$species5\.neg.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot`;
     }
     else{
-	`ChopGO_VTS2.pl -i $species5\.pos.txt --GO_file $go -bg $species5\.BK.txt.uniq`;
-	`ChopGO_VTS2.pl -i $species5\.neg.txt --GO_file $go -bg $species5\.BK.txt.uniq`;
+	`ChopGO_VTS2.pl -i      $species5\.pos.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
+	`ChopGO_VTS2.pl -i      $species5\.neg.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
     }
 }
 

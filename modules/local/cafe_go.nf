@@ -15,7 +15,7 @@ process CAFE_GO {
 
     script:
     """
-    ${projectDir}/bin/cafe_go.pl
+    ${projectDir}/bin/cafe_go.pl ${params.go_cutoff} ${params.go_type} ${params.go_max_plot}
     ${projectDir}/bin/sum_cafe.pl
     ${projectDir}/bin/plotting_go.R
 

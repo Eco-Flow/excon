@@ -165,7 +165,24 @@
         "quast": {
           "type": "boolean",
           "description": "Choose whether to run quast or not"
+        },
+        "go_cutoff": {
+          "type": "string",
+          "description": "Choose pval cutoff (default: 0.05)",
+          "default": "0.05"
+        },
+        "go_type": {
+          "type": "string",
+          "description": "Choose pvalue type (e.g. bonferoni)",
+          "default": "none"
+        },
+        "go_max_plot": {
+          "type": "integer",
+          "description": "Choose number of rows to plot in GO figure",
+          "default": 10
         }
+
+
       }
     }
   },
