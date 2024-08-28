@@ -136,9 +136,9 @@
           "type": "boolean",
           "description": "A flag to skip the cafe section. Used if you just wish to run go assignment for a species without runnig Cafe"
         },
-        "busco": {
+        "stats": {
           "type": "boolean",
-          "description": "Choose whether to run busco or not"
+          "description": "A flag to run statistics and other quality checks on genomes and annotations. Based on BUSCO, QUAST a AGAT's spstatistics"
         },
         "busco_mode": {
           "type": "string",
@@ -157,14 +157,6 @@
         "busco_config": {
           "type": "string",
           "description": "A path to a BUSCO config file (optional)"
-        },
-        "agat": {
-          "type": "boolean",
-          "description": "Choose whether to run busco or not"
-        },
-        "quast": {
-          "type": "boolean",
-          "description": "Choose whether to run quast or not"
         }
       }
     }

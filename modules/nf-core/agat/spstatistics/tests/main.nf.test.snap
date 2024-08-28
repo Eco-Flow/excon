@@ -7,19 +7,17 @@
             ]
         ],
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "23.10.1"
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.4"
         },
-        "timestamp": "2024-05-08T10:14:09.802927"
+        "timestamp": "2024-08-27T12:01:53.225479"
     },
     "sarscov2 genome [gff]": {
         "content": [
             {
                 "0": [
                     [
-                        {
-                            "id": "test"
-                        },
+                        "test",
                         "test.stats.txt:md5,0a27bb5a911615023decd8223ba67812"
                     ]
                 ],
@@ -28,9 +26,7 @@
                 ],
                 "stats_txt": [
                     [
-                        {
-                            "id": "test"
-                        },
+                        "test",
                         "test.stats.txt:md5,0a27bb5a911615023decd8223ba67812"
                     ]
                 ],
@@ -40,9 +36,9 @@
             }
         ],
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "23.10.1"
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.4"
         },
-        "timestamp": "2024-05-08T10:14:05.328436"
+        "timestamp": "2024-08-27T12:01:49.279323"
     }
 }
