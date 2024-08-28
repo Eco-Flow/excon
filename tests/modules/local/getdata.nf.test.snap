@@ -1,12 +1,12 @@
 {
     "getdata": {
         "content": [
-            "amellifera_eg_gene.go.txt:md5,45469f5443f8a0e6623b8fa2ac554e13"
+            "amellifera_eg_gene.go.txt:md5,50fb9668e24ab2b3602327ca7b09cd1a"
         ],
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "23.10.1"
+            "nf-test": "0.9.0",
+            "nextflow": "24.04.4"
         },
-        "timestamp": "2024-05-03T11:38:32.886613"
+        "timestamp": "2024-08-28T16:48:21.253066379"
     }
 }
