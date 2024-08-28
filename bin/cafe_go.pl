@@ -410,6 +410,9 @@ foreach my $species5 (keys %SPECIES_TOTAL){
                 print "ChopGO_VTS2.pl -i Node_$species5\.pos.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot\n";
                 `ChopGO_VTS2.pl -i Node_$species5\.pos.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot`;
             }
+            if ( $line_count <= 100){ 
+                print "WARNING, GO likely to fail on $line_count genes (Run $species5)\n";
+            }
 
         }
     	if ( -e "$species5\.neg.txt" ){
@@ -419,16 +422,30 @@ foreach my $species5 (keys %SPECIES_TOTAL){
                 print "ChopGO_VTS2.pl -i Node_$species5\.neg.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot\n";
                 `ChopGO_VTS2.pl -i Node_$species5\.neg.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot`;
             }
-            
+            if ( $line_count <= 100){ 
+                print "WARNING, GO likely to fail on $line_count genes (Run $species5)\n";
+            }
         }
 
     }
     else{
         if ( -e "$species5\.pos.txt" ){
-            `ChopGO_VTS2.pl -i      $species5\.pos.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
+            my $line_count = `wc -l $species5\.pos.txt | awk '{print \$1}'`;
+            if ( $line_count <= 100){ 
+                print "WARNING, GO likely to fail on $line_count genes (Run $species5)\n";
+            }
+            if ( $line_count >= 10){ 
+                `ChopGO_VTS2.pl -i      $species5\.pos.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
+            }
         }
         if( -e "$species5\.neg.txt" ){
+            my $line_count = `wc -l $species5\.neg.txt | awk '{print \$1}'`;
+            if ( $line_count <= 100){ 
+                print "WARNING, GO likely to fail on $line_count genes (Run $species5)\n";
+            }
+            if ( $line_count >= 10){ 
             `ChopGO_VTS2.pl -i      $species5\.neg.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
+            }
         }
     }
 }
