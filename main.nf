@@ -22,7 +22,6 @@ include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/local/orthofinder.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/local/orthofinder.nf'
 include { GO_ASSIGN } from './modules/local/go_assign.nf'
 include { GO_EXPANSION  } from './modules/local/go_expansion.nf'
-//include { DOWNLOAD_NCBI } from './modules/local/download_ncbi.nf'
 include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
 include { GFFREAD } from './modules/local/gffread.nf'
 include { CAFE } from './modules/local/cafe.nf'
@@ -60,23 +59,9 @@ workflow {
 
    // Print summary of supplied parameters
    log.info paramsSummaryLog(workflow)
-
-   //DOWNLOAD_NCBI ( input_type.ncbi )
-   //ch_versions = ch_versions.mix(DOWNLOAD_NCBI.out.versions.first())
-
-   //GFFREAD ( DOWNLOAD_NCBI.out.genome.mix(input_type.local) )
-   
+  
    NCBIGENOMEDOWNLOAD ( input_type.ncbi.map { it[0] }, input_type.ncbi.map { it[1] }, [], "invertebrate")
-   ch_versions = ch_versions.mix(NCBIGENOMEDOWNLOAD.out.versions.first())
-         
-   //NCBIGENOMEDOWNLOAD.out.gff.map { it[1] }.set { gff_out }
-
-   //GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna.map {
-   //                                [ it[0], it[1], gff_out ]
-   //                              }
-   //                             .mix(input_type.local) )
-   //
-   
+   ch_versions = ch_versions.mix(NCBIGENOMEDOWNLOAD.out.versions.first())  
 
    GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna, NCBIGENOMEDOWNLOAD.out.gff ) 
    ch_versions = ch_versions.mix(GFFREAD.out.versions.first())
