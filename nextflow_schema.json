@@ -167,7 +167,7 @@
           "description": "Choose whether to run quast or not"
         },
         "go_cutoff": {
-          "type": "string",
+          "type": "number",
           "description": "Choose pval cutoff (default: 0.05)",
           "default": "0.05"
         },

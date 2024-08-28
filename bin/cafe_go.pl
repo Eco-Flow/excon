@@ -7,7 +7,7 @@ print "Please be in folder with N0.tsv, Base/Gamma_change.tab, Base/Gamma_branch
 
 my $pval = $ARGV[0];
 my $type = $ARGV[1];
-my $go_max_plot = $ARGV[2]];
+my $go_max_plot = $ARGV[2];
 
 #Set up output name
 my $outname1="CAFE_summary.txt";
@@ -21,6 +21,9 @@ my $file=`ls N0.tsv`;
 chomp $file;
 open(my $filein, "<", $file)   or die "Could not open $file\n";
 my $header=<$filein>;
+#get rid of mac and and endings
+$header =~ s/\n//g;
+$header =~ s/\r//g;
 chomp $header;
 my @head_N0=split("\t", $header);
 
@@ -35,9 +38,12 @@ my %HOG_to_line;
 
 #Create a background OG list for each species, for GO. See in next section.
 my %Background_OGs;
+print "Create Background OG list\n";
 
 while (my $line = <$filein>){
     chomp $line;
+    $line =~ s/\n//g;
+    $line =~ s/\r//g;
     my @splitl=split("\t", $line);
     my $hog=$splitl[0];
     my $og=$splitl[1];
@@ -109,7 +115,7 @@ foreach my $colh (@head_pval){
     }
 }
 
-
+print "Reading in Out_cafe/Base_branch_probabilities.tab\n";
 while (my $line2 = <$filein2>){
     chomp $line2;
     my @splitl=split("\t", $line2);
@@ -123,6 +129,7 @@ while (my $line2 = <$filein2>){
     }
 }
 
+print "Reading in Out_cafe/Base_change.tab\n";
 while (my $line_count = <$filein3>){
     chomp $line_count;
     my @splitc=split("\t", $line_count);
@@ -141,6 +148,8 @@ my %SPECIES_CONTRACTION;
 
 my %SPECIES_EXPANSION_SUM;
 my %SPECIES_CONTRACTION_SUM;
+
+print "Calculate significant expanded and contracted gene families\n";
 
 foreach my $species (keys %PVALUE_DATA){
 
@@ -193,6 +202,8 @@ my %SPECIES_TOTAL_C;
 my %SPECIES_EXPANSION_C;
 my %SPECIES_CONTRACTION_C;
 my %SPECIES_C_OGS;
+
+print "Run through the Count data\n";
 
 #Run through the COUNT DATA and count 
 foreach my $species3 (keys %COUNT_DATA){
@@ -282,39 +293,58 @@ foreach my $species3 (keys %COUNT_DATA){
     }
 }
 
+print "Print GO_lists\n";
 
-#Print GO_lists
 foreach my $species4 (keys %SPECIES_C_OGS){
-    if ($species4 eq "#FamilyID"){
-        #Do nothing
+    #print "$species4 $SPECIES_C_OGS{$species4}\n";
+    if ($species4 eq "#FamilyID" || $species4 eq "FamilyID"){
+        #Do nothing, this is not a useful line
     }
     else{
-        #Set up output name
-        my $outna2="$species4\.pos.txt";
-        open(my $out2, ">", $outna2)   or die "Could not open $outna2\n";
-        my $outna3="$species4\.neg.txt";
-        open(my $out3, ">", $outna3)   or die "Could not open $outna3\n";
 
-        print $out2 "$SPECIES_C_OGS{$species4}{'pos'}\n";
-        print $out3 "$SPECIES_C_OGS{$species4}{'neg'}\n";
+        if ($SPECIES_C_OGS{$species4}{'pos'}){
+            my $outna2="$species4\.pos.txt";
+            open(my $out2, ">", $outna2)   or die "Could not open $outna2\n";
+            print $out2 "$SPECIES_C_OGS{$species4}{'pos'}\n";
+            close $out2;
+        }
+        
+        if ($SPECIES_C_OGS{$species4}{'neg'}){
+            my $outna3="$species4\.neg.txt";
+            open(my $out3, ">", $outna3)   or die "Could not open $outna3\n";
+            print $out3 "$SPECIES_C_OGS{$species4}{'neg'}\n";
+            close $out3; 
+        }
 
-        close $out2;
-        close $out3;
     }
 
 }
 
-#Print Background GO lists
+print "Print Background GO lists\n";
+
 foreach my $species6 (keys %Background_OGs){
-    my $out_back="$species6\.BK.txt";
-    open(my $outb, ">", $out_back)   or die "Could not open $out_back\n";
-    print $outb "$Background_OGs{$species6}\n";
-    #print "$species6\.BK.txt | uniq > $species6\.BK.txt.uniq\n";
-    `sort $species6\.BK.txt | uniq > $species6\.BK.txt.uniq`;
+    chomp $species6;
+
+    if ($Background_OGs{$species6}){
+        if ($species6 =~ m/Gene Tree Parent Clade/){
+            #ignore it, this is the header.
+        }
+        else{
+            #print "ITS HERE: $species6 \n";
+            my $out_back="$species6\.BK.txt";
+            open(my $outb, ">", $out_back)   or die "Could not open $out_back\n";
+            print $outb "$Background_OGs{$species6}\n";
+            `sort $species6\.BK.txt | uniq > $species6\.BK.txt.uniq`;
+        }
+
+    }
+    
 }
 
 
-#Print a summary table:
+
+
+print "Print a summary table:\n";
 
 print $out1 "Total_HOGs_significant\tExpansion_HOGs_significant\tContraction_HOGs_significant\tExpansion_genes_significant\tContraction_genes_significant\tExpansion_HOGs_total\tContraction_HOGs_total\n";
 
@@ -370,15 +400,36 @@ foreach my $species2 (sort keys %SPECIES_TOTAL){
 foreach my $species5 (keys %SPECIES_TOTAL){
     print "Running GO on $species5\n";
     if (looks_like_number($species5)){
-	`mv $species5\.pos.txt Node_$species5\.pos.txt`;
-	`mv $species5\.neg.txt Node_$species5\.neg.txt`;
+    	#`mv $species5\.pos.txt Node_$species5\.pos.txt`;
+    	#`mv $species5\.neg.txt Node_$species5\.neg.txt`;
 
-	`ChopGO_VTS2.pl -i Node_$species5\.pos.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot`;
-	`ChopGO_VTS2.pl -i Node_$species5\.neg.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot`;
+        if ( -e "$species5\.pos.txt" ){
+            `cut -f 1 $species5\.pos.txt > Node_$species5\.pos.txt`;
+            my $line_count = `wc -l Node_$species5\.pos.txt | awk '{print \$1}'`;
+            if ( $line_count >= 10){ 
+                print "ChopGO_VTS2.pl -i Node_$species5\.pos.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot\n";
+                `ChopGO_VTS2.pl -i Node_$species5\.pos.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot`;
+            }
+
+        }
+    	if ( -e "$species5\.neg.txt" ){
+            `cut -f 1 $species5\.neg.txt > Node_$species5\.neg.txt`;
+            my $line_count = `wc -l Node_$species5\.neg.txt | awk '{print \$1}'`;
+            if ( $line_count >= 10){ 
+                print "ChopGO_VTS2.pl -i Node_$species5\.neg.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot\n";
+                `ChopGO_VTS2.pl -i Node_$species5\.neg.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot`;
+            }
+            
+        }
+
     }
     else{
-	`ChopGO_VTS2.pl -i      $species5\.pos.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
-	`ChopGO_VTS2.pl -i      $species5\.neg.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
+        if ( -e "$species5\.pos.txt" ){
+            `ChopGO_VTS2.pl -i      $species5\.pos.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
+        }
+        if( -e "$species5\.neg.txt" ){
+            `ChopGO_VTS2.pl -i      $species5\.neg.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
+        }
     }
 }
 
