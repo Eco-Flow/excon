@@ -1,0 +1,45 @@
+nextflow_process {
+
+    name "Test Process QUAST"
+    script "../main.nf"
+    process "QUAST"
+
+    tag "modules"
+    tag "modules_nfcore"
+    tag "quast"
+
+    test("Should run without failures") {
+
+        when {
+            params {
+                // define parameters here. Example:
+                clean = false
+                outdir = "results"
+            }
+            process {
+                """
+                input[0] = [
+                            'test1', // meta map
+                            file(params.modules_testdata_base_path + 'genomics/sarscov2/genome/genome.fasta.gz', checkIfExists: true)
+                ]
+                input[1] = [
+                            'test1', // meta map
+                            file(params.modules_testdata_base_path + 'genomics/sarscov2/genome/genome.gff3.gz', checkIfExists: true)
+                ]                
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                //{ assert process.out.results[0].size() == 12 },
+                { assert snapshot(
+                    process.out.tsv,
+                    process.out.versions,
+                    ).match() }
+            )
+        }
+    }
+
+}
