@@ -136,6 +136,11 @@
           "type": "boolean",
           "description": "A flag to skip the cafe section. Used if you just wish to run go assignment for a species without runnig Cafe"
         },
+        "groups": {
+          "type": "string",
+          "default": "all",
+          "description": "A string with NCBI taxonomic groups to download. Can be a comma-separated list. Options are [\u2018all\u2019, \u2018archaea\u2019, \u2018bacteria\u2019, \u2018fungi\u2019, \u2018invertebrate\u2019, \u2018metagenomes\u2019, \u2018plant\u2019, \u2018protozoa\u2019, \u2018vertebrate_mammalian\u2019, \u2018vertebrate_other\u2019, \u2018viral\u2019]"
+        },
         "stats": {
           "type": "boolean",
           "description": "A flag to run statistics and other quality checks on genomes and annotations. Based on BUSCO, QUAST a AGAT's spstatistics"

@@ -22,7 +22,7 @@ include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/local/orthofinder.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/local/orthofinder.nf'
 include { GO_ASSIGN } from './modules/local/go_assign.nf'
 include { GO_EXPANSION  } from './modules/local/go_expansion.nf'
-include { DOWNLOAD_NCBI } from './modules/local/download_ncbi.nf'
+include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
 include { GFFREAD } from './modules/local/gffread.nf'
 include { CAFE } from './modules/local/cafe.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
@@ -59,11 +59,11 @@ workflow {
 
    // Print summary of supplied parameters
    log.info paramsSummaryLog(workflow)
+  
+   NCBIGENOMEDOWNLOAD ( input_type.ncbi.map { it[0] }, input_type.ncbi.map { it[1] }, [], params.groups)
+   ch_versions = ch_versions.mix(NCBIGENOMEDOWNLOAD.out.versions.first())  
 
-   DOWNLOAD_NCBI ( input_type.ncbi )
-   ch_versions = ch_versions.mix(DOWNLOAD_NCBI.out.versions.first())
-
-   GFFREAD ( DOWNLOAD_NCBI.out.genome.mix(input_type.local) )
+   GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna, NCBIGENOMEDOWNLOAD.out.gff ) 
    ch_versions = ch_versions.mix(GFFREAD.out.versions.first())
 
    if (params.stats){
@@ -154,4 +154,8 @@ workflow {
    }
 
    CUSTOM_DUMPSOFTWAREVERSIONS ( ch_versions.collectFile(name: 'collated_versions.yml') )
+}
+
+workflow.onComplete { 
+        println ( workflow.success ? "\nDone!\n" : "Oops... something went wrong" )
 }

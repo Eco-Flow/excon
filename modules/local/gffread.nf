@@ -4,7 +4,8 @@ process GFFREAD {
     container = 'ecoflowucl/gffread_python:python-3.11.9_Linux_x86_64_perl-5.36.0'
 
     input:
-    tuple val(sample_id), path(fasta), path(gff)
+    tuple val(sample_id), path(fasta)
+    tuple val(sample_id), path(gff)
 
     output:
     path( "${sample_id}.prot.fa" ), emit: proteins
