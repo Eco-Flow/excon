@@ -90,8 +90,7 @@ Pre-requisites:
     R 
 
 *** Questions: 
-    Chris Wyatt (chris.wyatt\@crg.eu)
-    Manuel Irimia (mirimia\@gmail.com)
+    Chris Wyatt
 
 "
 }
@@ -160,6 +159,7 @@ if($background){
     open(my $IN_b, "<", $background)   or die "Could not open $background \n";
     while (my $line=<$IN_b>){
 	$line=~s/\r//g;
+	$line=~s/\-/\_/g;
 	chomp $line;
 	my @input_here=split("\t", $line);
 	if (scalar @input_here > 1.5){
@@ -186,6 +186,7 @@ if($background){
     my %tot_genes;
     while (my $line=<$IN>){
 	$line=~s/\r//g;
+	$line=~s/\-/\_/g;
 	chomp $line;
 	my @linesplit= split("\t", $line);
 	my $gene=$linesplit[0];
@@ -229,8 +230,6 @@ else {
     while (my $line=<$IN>){
 	$line=~s/\r//g;
 	chomp $line;
-	#$line=~s/-/_/g;
-	#$line=~s/:/_/g;
 	my @linesplit= split("\t", $line);
 	my $gene=$linesplit[0];
 	$gene=~s/-/_/g;
@@ -289,29 +288,29 @@ while (my $line=<$IN>){
     #print "$line\n";
     my @linesplit= split("\t", $line);
     my $gene=$linesplit[0];
-    $gene=~s/-/_/g;
-    $gene=~s/:/_/g;
+    $gene=~s/\-/\_/g;
+    $gene=~s/\:/\_/g;
 
 
     if ($linesplit[1]){
-	my $GROUP=$linesplit[1];
-	if ($Gene_Go_Hash{$GROUP}){
-	    my $old=$Gene_Go_Hash{$GROUP};
-	    $Gene_Go_Hash{$GROUP}="$old\",\"$gene";
-	}
-	else{
-	    $Gene_Go_Hash{$GROUP}=$gene;
-	}
+		my $GROUP=$linesplit[1];
+		if ($Gene_Go_Hash{$GROUP}){
+		    my $old=$Gene_Go_Hash{$GROUP};
+		    $Gene_Go_Hash{$GROUP}="$old\",\"$gene";
+		}
+		else{
+		    $Gene_Go_Hash{$GROUP}=$gene;
+		}
     }
     else{
-	my $GROUP="$Table_i";
-	if ($Gene_Go_Hash{$GROUP}){
-	    my $old=$Gene_Go_Hash{$GROUP};
-	    $Gene_Go_Hash{$GROUP}="$old\",\"$gene";
-	}
-	else{
-	    $Gene_Go_Hash{$GROUP}=$gene;
-	}
+		my $GROUP="$Table_i";
+		if ($Gene_Go_Hash{$GROUP}){
+		    my $old=$Gene_Go_Hash{$GROUP};
+		    $Gene_Go_Hash{$GROUP}="$old\",\"$gene";
+		}
+		else{
+		    $Gene_Go_Hash{$GROUP}=$gene;
+		}
     }
 }	
 
@@ -391,19 +390,21 @@ print "Start Plotting\n\n";
 if (defined $plot){
     my @files=@ALL_made_files;
     foreach my $results (@files){
-	chomp $results;
-	my $in_here="$binPath\/MakeHist_fromChartGO-10.pl";
-	if ($in_here=~ m/ /){
-	    $in_here=~ s/ /\\ /g;
-	}
-	if ($in_here=~ m/\(/){
-	    $in_here=~ s/\(/\\(/g;
-	}
-	if ($in_here=~ m/\)/){
-	    $in_here=~ s/\)/\\)/g;
-	}
-	#print "HERE: $in_here\n";
-	`MakeHist_fromChartGO-10.pl $results $pval_cutoff $num_cutoff $plot_open $meth $sort_enrich $min_genes $max_genes $infer`;
+		chomp $results;
+		my $in_here="$binPath\/MakeHist_fromChartGO-10.pl";
+		if ($in_here=~ m/ /){
+		    $in_here=~ s/ /\\ /g;
+		}
+		if ($in_here=~ m/\(/){
+		    $in_here=~ s/\(/\\(/g;
+		}
+		if ($in_here=~ m/\)/){
+		    $in_here=~ s/\)/\\)/g;
+		}
+		
+		if ($results){
+			`MakeHist_fromChartGO-10.pl $results $pval_cutoff $num_cutoff $plot_open $meth $sort_enrich $min_genes $max_genes $infer`;		
+		}
     }
 }
 
@@ -450,19 +451,21 @@ else {
     
     
     foreach my $results (@ALL_made_files){
-	chomp $results;
-	my $in_here="$binPath\/MakeHist_fromChartGO-10.pl";
-	if ($in_here=~ m/ /){
-	    $in_here=~ s/ /\\ /g;
-	}
-	if ($in_here=~ m/\(/){
-	    $in_here=~ s/\(/\\(/g;
-	}
-	if ($in_here=~ m/\)/){
-	    $in_here=~ s/\)/\\)/g;
-	}
-	print "MakeHist_fromChartGO-10.pl $results $pval_cutoff $num_cutoff $plot_open $meth $sort_enrich $min_genes $max_genes $infer\n";
-	`MakeHist_fromChartGO-10.pl $results $pval_cutoff $num_cutoff $plot_open $meth $sort_enrich $min_genes $max_genes $infer`;
+		chomp $results;
+		my $in_here="$binPath\/MakeHist_fromChartGO-10.pl";
+		if ($in_here=~ m/ /){
+		    $in_here=~ s/ /\\ /g;
+		}
+		if ($in_here=~ m/\(/){
+		    $in_here=~ s/\(/\\(/g;
+		}
+		if ($in_here=~ m/\)/){
+		    $in_here=~ s/\)/\\)/g;
+		}
+		if ($results){
+			print "MakeHist_fromChartGO-10.pl $results $pval_cutoff $num_cutoff $plot_open $meth $sort_enrich $min_genes $max_genes $infer\n";
+			`MakeHist_fromChartGO-10.pl $results $pval_cutoff $num_cutoff $plot_open $meth $sort_enrich $min_genes $max_genes $infer`;
+		}
     }
 }
 

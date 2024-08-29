@@ -36,6 +36,8 @@ foreach my $col (@splithead){
 
 print "Our species col is $sp_col\n\n";
 
+my $output=0;
+
 while (my $line=<$filein>){
     chomp $line;
     my @split=split("\t", $line);
@@ -51,12 +53,17 @@ while (my $line=<$filein>){
 				$bit="GENE_$bit";
 			}
 	    		print $fileout "$bit\n";
+	    		$output++;
 	    	}
 	    }
     }
 }
 
-print "Now run the GO enrichment test\n\n";
-`ChopGO_VTS2.pl -i $species\_duplications.txt --GO_file $in_gofile`
-#print "Will run:\n\nperl ./ChopGO_VTS2.pl -i $species\_duplications.txt --GO_file $in_gofile\n";
 
+if ($output){
+	print "Now run the GO enrichment test\n\n";
+	`ChopGO_VTS2.pl -i $species\_duplications.txt --GO_file $in_gofile`
+}
+else{
+	print "No genes satisfied the cutoff, will not run orthofinder duplicate go\n";
+}
