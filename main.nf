@@ -60,7 +60,7 @@ workflow {
    // Print summary of supplied parameters
    log.info paramsSummaryLog(workflow)
   
-   NCBIGENOMEDOWNLOAD ( input_type.ncbi.map { it[0] }, input_type.ncbi.map { it[1] }, [], "invertebrate")
+   NCBIGENOMEDOWNLOAD ( input_type.ncbi.map { it[0] }, input_type.ncbi.map { it[1] }, [], params.groups)
    ch_versions = ch_versions.mix(NCBIGENOMEDOWNLOAD.out.versions.first())  
 
    GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna, NCBIGENOMEDOWNLOAD.out.gff ) 
@@ -154,4 +154,8 @@ workflow {
    }
 
    CUSTOM_DUMPSOFTWAREVERSIONS ( ch_versions.collectFile(name: 'collated_versions.yml') )
+}
+
+workflow.onComplete { 
+        println ( workflow.success ? "\nDone!\n" : "Oops... something went wrong" )
 }
