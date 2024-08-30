@@ -18,8 +18,10 @@ log.info """\
  =========================================""".stripIndent()
 
 include { GET_DATA } from './modules/local/getdata.nf'
-include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/local/orthofinder.nf'
-include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/local/orthofinder.nf'
+//include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/local/orthofinder.nf'
+//include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/local/orthofinder.nf'
+include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/nf-core/orthofinder/main.nf'
+include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
 include { GO_ASSIGN } from './modules/local/go_assign.nf'
 include { GO_EXPANSION  } from './modules/local/go_expansion.nf'
 include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
@@ -116,7 +118,7 @@ workflow {
 
       GET_DATA.out.fasta_files.mix(merge_ch).collect().set{ proteins_ch }
 
-      ORTHOFINDER_GO ( proteins_ch )
+      ORTHOFINDER_GO ( proteins_ch.map { ["ortho_go", it] } )
       ch_versions = ch_versions.mix(ORTHOFINDER_GO.out.versions)
 
       GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
@@ -137,7 +139,7 @@ workflow {
 
    if (params.skip_cafe == null) {
       //Run Orthofinder for CAFE using just input (focal) species.
-      ORTHOFINDER_CAFE ( merge_ch )
+      ORTHOFINDER_CAFE ( merge_ch.map { ["ortho_cafe", it] } )
       //No need to collect versions from orthofinder module twice
 
       //Run Cafe analysis of expanded and contracted gene families.
