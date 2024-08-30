@@ -121,6 +121,8 @@ input = "input_small-s3.csv"
 predownloaded_fasta = "s3://excon/data/Insect_data/fasta/*"
 predownloaded_gofiles = "s3://excon/data/Insect_data/gofiles/*"
 
+For the fastest run use: `nextflow run main.nf -resume -profile docker,test_bacteria`
+
 2. To run on your own data (minimal run), cafe only. 
 
 ```
@@ -130,7 +132,7 @@ nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv
 3. To run on your own data with GO enrichment analysis (using predownloaded fasta/go files for GO assignment)
 
 ```
-nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv --cafe \|
+nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv \|
 --predownloaded_fasta 's3://excon/data/Insect_data/fasta/*' --predownloaded_gofiles 's3://excon/data/Insect_data/gofiles/*' 
 ```
 
@@ -171,7 +173,7 @@ ensembl <- useEnsembl(biomart = "genes", host="https://ensembl.org")
 Then you can run the excon script as follows:
 
 ```
-nextflow run main.nf -resume -profile <apptainer/docker/singularity> --input data/input_small-s3.csv --cafe --cafe_go --ensembl_biomart "metazoa_mart" --ensembl_dataset "example.txt"
+nextflow run main.nf -resume -profile <apptainer/docker/singularity> --input data/input_small-s3.csv --ensembl_biomart "metazoa_mart" --ensembl_dataset "example.txt"
 ```
 
 where `example.txt` is a file of dataset IDs from ensembl biomart (as shown above), separated by newline characters.
