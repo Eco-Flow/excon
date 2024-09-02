@@ -1,15 +1,19 @@
-A Nextflow pipeline to run gene expansion and contraction analysis with CAFE. 
+A Nextflow pipeline to describe and compare genomes across species. It also performs gene epansion and contraction analysis using CAFE.
 
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
 (minimum of 5 species ideally up to around 15).
 
-As well as running CAFE, you can also run GO enrichment analysis (with user-provided GO files, or with GO files semi-automatically downloaded from Ensembl biomart). This will check what GO terms are associated with expanded or contracted gene sets.
+You can also run GO enrichment analysis (with user-provided GO files, or with GO files semi-automatically downloaded from Ensembl biomart). This will check what GO terms are associated with expanded or contracted gene sets.
 
 
 The general pipeline logic is as follows:
 
-* Downloads the genome and gene annotation files from NCBI `[DOWNLOAD]`.
+* Downloads the genome and gene annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`.
   - Or you provide your own genomes/annotations
+* Describes genome assembly and annotation (optional):
+  - `[BUSCO_BUSCO]`: Determines how complete is the gneome compared to expected.
+  - `[QUAST]`: Determines the N50, how contiguous the genome is.
+  - `[AGAT_SPSTATISTICS]`: Checks the length, number of genes, exons, introns, etc.
 * Extract longest protein fasta sequences `[GFFREAD]`.
 * Finds orthologous genes `[ORTHOFINDER_CAFE]`.
 * Runs cafe analysis on the output of orthofinder `[CAFE]`.
@@ -79,9 +83,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 * `--clean` - A true or false value assigned to this parameter will determine whether the work directory is automatically deleted or not if the pipeline is successful. Deleting the work directory saves space however it will not be possible to use this work directory in future for caching (**Default:** `false`).
 * `--help` - A true value assigned to this parameter will cause the help message to be displayed instead of pipeline running (**Default:** `false`).
 * `--custom_config` - A path or URL to a custom configuration file.
-* `--busco` - A flag to optionally choose to run BUSCO on each genome. (**Default:** `null`)
-* `--agat` - A flag to optionally choose to run AGAT statistics on each genome. (**Default:** `null`)
-* `--quast` - A flag to optionally choose to run QUAST on each genome. (**Default:** `null`)
+* `--stats` - A flag to optionally choose to run statistics and other quality checks on the gnomes. Stats are provided by BUSCO, QUAST and AGAT spstatistics (**Default:** `null`).
 
 ## Profiles
 

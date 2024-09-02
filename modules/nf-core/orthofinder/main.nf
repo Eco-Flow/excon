@@ -13,7 +13,7 @@ process ORTHOFINDER {
     output:
     tuple val(meta), path("$meta")                                , emit: orthofinder
     path("$meta/Orthogroups/Orthogroups.tsv")                     , emit: orthologues
-    path("$meta/Species_Tree/SpeciesTree_rooted_node_lables.txt") , emit: speciestree
+    path("$meta/Species_Tree/SpeciesTree_rooted_node_labels.txt") , emit: speciestree
     path("$meta/Phylogenetic_Hierarchical_Orthogroups/N0.tsv")    , emit: no_ortho
     path "versions.yml"                                           , emit: versions
 
