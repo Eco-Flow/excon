@@ -18,8 +18,6 @@ log.info """\
  =========================================""".stripIndent()
 
 include { GET_DATA } from './modules/local/getdata.nf'
-//include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/local/orthofinder.nf'
-//include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/local/orthofinder.nf'
 include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/nf-core/orthofinder/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
 include { GO_ASSIGN } from './modules/local/go_assign.nf'
