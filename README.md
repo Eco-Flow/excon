@@ -3,7 +3,7 @@ A Nextflow pipeline to describe and compare genomes across species. It also perf
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
 (minimum of 5 species ideally up to around 15).
 
-You can also run GO enrichment analysis (with user-provided GO files, or with GO files semi-automatically downloaded from Ensembl biomart). This will check what GO terms are associated with expanded or contracted gene sets.
+You can also run GO annotation (with user-provided GO files, or with GO files semi-automatically downloaded from Ensembl biomart). This is then used to check what GO terms are associated with expanded or contracted gene sets (from CAFE).
 
 
 The general pipeline logic is as follows:
