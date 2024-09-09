@@ -28,6 +28,7 @@ include { CAFE } from './modules/local/cafe.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_GO } from './modules/local/cafe_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
+include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
 
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-validation'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main.nf'
@@ -60,7 +61,12 @@ workflow {
    // Print summary of supplied parameters
    log.info paramsSummaryLog(workflow)
   
-   NCBIGENOMEDOWNLOAD ( input_type.ncbi.map { it[0] }, input_type.ncbi.map { it[1] }, [], params.groups)
+   NCBIGENOMEDOWNLOAD (  input_type.ncbi.map { it[0] },
+                         input_type.ncbi.map { it[1] },
+                         [],
+                         params.groups
+                      )
+
    ch_versions = ch_versions.mix(NCBIGENOMEDOWNLOAD.out.versions.first())  
 
    GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna, NCBIGENOMEDOWNLOAD.out.gff ) 
@@ -79,11 +85,16 @@ workflow {
       ch_versions = ch_versions.mix(AGAT_SPSTATISTICS.out.versions.first())
 
       QUAST (  GFFREAD.out.fasta_quast,
-               //reference
+               ["", file("NO_FILE")],
                GFFREAD.out.gffs_agat
             )
       ch_versions = ch_versions.mix(QUAST.out.versions.first())
    }
+
+   EGGNOGMAPPER (  GFFREAD.out.proteins_busco,
+                   [], [],
+                   ["", file("NO_FILE")]
+                )
 
    merge_ch = GFFREAD.out.longest.collect()
    
