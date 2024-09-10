@@ -85,15 +85,16 @@ workflow {
       ch_versions = ch_versions.mix(AGAT_SPSTATISTICS.out.versions.first())
 
       QUAST (  GFFREAD.out.fasta_quast,
-               ["", file("NO_FILE")],
+               //["", []],
                GFFREAD.out.gffs_agat
             )
       ch_versions = ch_versions.mix(QUAST.out.versions.first())
    }
 
    EGGNOGMAPPER (  GFFREAD.out.proteins_busco,
-                   [], [],
-                   ["", file("NO_FILE")]
+                   file(params.eggnog_db),
+                   file(params.eggnog_data_dir),
+                   ["", []]
                 )
 
    merge_ch = GFFREAD.out.longest.collect()
