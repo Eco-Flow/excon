@@ -63,7 +63,7 @@ workflow {
    NCBIGENOMEDOWNLOAD ( input_type.ncbi.map { it[0] }, input_type.ncbi.map { it[1] }, [], params.groups)
    ch_versions = ch_versions.mix(NCBIGENOMEDOWNLOAD.out.versions.first())  
 
-   GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna, NCBIGENOMEDOWNLOAD.out.gff ) 
+   GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna.mix( input_type.local.map { [it[0],file(it[1])] } ), NCBIGENOMEDOWNLOAD.out.gff.mix(input_type.local.map { [it[0],file(it[2])] } ) ) 
    ch_versions = ch_versions.mix(GFFREAD.out.versions.first())
 
    if (params.stats){
