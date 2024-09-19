@@ -92,7 +92,7 @@ workflow {
       channel.fromPath(params.predownloaded_fasta).mix(merge_ch).collect().set{ proteins_ch }
       channel.fromPath(params.predownloaded_gofiles).collect().set{ go_file_ch }
 
-      ORTHOFINDER_GO ( proteins_ch )
+      ORTHOFINDER_GO ( proteins_ch.map { ["ortho_go", it] } )
       ch_versions = ch_versions.mix(ORTHOFINDER_GO.out.versions)
 
       GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
