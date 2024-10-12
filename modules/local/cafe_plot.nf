@@ -1,5 +1,5 @@
 process CAFE_PLOT {
-    label 'process_low'
+    label 'process_single'
     container = 'ecoflowucl/cafeplotter:latest'
 
     input:

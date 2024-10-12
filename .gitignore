@@ -14,3 +14,7 @@ cache
 .nf-test
 .nf-test.log
 .DS_Store
+apptainer
+singularity
+input.csv
+*.config

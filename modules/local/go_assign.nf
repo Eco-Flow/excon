@@ -1,5 +1,5 @@
 process GO_ASSIGN {
-    label 'process_low'
+    label 'process_single'
     label 'error_ignore'
     tag "GO_assign_${Focal}"
     container = 'ecoflowucl/chopgo:r-4.3.2_python-3.10_perl-5.38'
