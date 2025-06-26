@@ -23,6 +23,7 @@ include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/
 include { GO_ASSIGN } from './modules/local/go_assign.nf'
 include { GO_EXPANSION  } from './modules/local/go_expansion.nf'
 include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
+include { LONGEST } from './modules/local/longest.nf'
 include { GFFREAD } from './modules/local/gffread.nf'
 include { CAFE } from './modules/local/cafe.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
@@ -63,7 +64,17 @@ workflow {
    NCBIGENOMEDOWNLOAD ( input_type.ncbi.map { it[0] }, input_type.ncbi.map { it[1] }, [], params.groups)
    ch_versions = ch_versions.mix(NCBIGENOMEDOWNLOAD.out.versions.first())  
 
-   GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna.mix( input_type.local.map { [it[0],file(it[1])] } ), NCBIGENOMEDOWNLOAD.out.gff.mix(input_type.local.map { [it[0],file(it[2])] } ) ) 
+   // Combine NCBI downloaded files with local files for LONGEST process
+   fasta_inputs = NCBIGENOMEDOWNLOAD.out.fna.mix( input_type.local.map { [it[0],file(it[1])] } )
+   gff_inputs = NCBIGENOMEDOWNLOAD.out.gff.mix(input_type.local.map { [it[0],file(it[2])] } )
+   
+   // Combine fasta and gff inputs for LONGEST process
+   fasta_inputs.join(gff_inputs).set { fasta_gff_inputs }
+
+   LONGEST ( fasta_gff_inputs )
+   ch_versions = ch_versions.mix(LONGEST.out.versions.first())
+
+   GFFREAD ( LONGEST.out.longest_proteins ) 
    ch_versions = ch_versions.mix(GFFREAD.out.versions.first())
 
    if (params.stats){
