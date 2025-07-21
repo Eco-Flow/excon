@@ -1,7 +1,7 @@
 process ORTHOFINDER {
     label 'process_medium'
     label 'process_long'
-    container = 'ecoflowucl/orthofinder:2.5.5'
+    container = 'biocontainers/orthofinder:3.1.0--hdfd78af_0'
     
     input:
     path '*'
