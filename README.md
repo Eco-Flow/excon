@@ -1,4 +1,4 @@
-A Nextflow pipeline to describe and compare genomes across species. It also performs gene epansion and contraction analysis using CAFE.
+A Nextflow pipeline to describe and compare genomes across species. It also performs gene expansion and contraction analysis using CAFE.
 
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
 (minimum of 5 species ideally up to around 15).
