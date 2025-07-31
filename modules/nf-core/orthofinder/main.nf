@@ -1,11 +1,9 @@
 process ORTHOFINDER {
     //tag "$meta.id"
     label 'process_high'
-
-    conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/orthofinder:2.5.5--hdfd78af_2':
-        'biocontainers/orthofinder:2.5.5--hdfd78af_2' }"
+    label 'process_long'
+    label 'process_high_memory'
+    container = 'biocontainers/orthofinder:3.1.0--hdfd78af_0'
 
     input:
     tuple val(meta), path(fastas, stageAs: 'input/')
