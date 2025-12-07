@@ -88,11 +88,12 @@ process CAFE {
     echo "end;" >> Significant_trees.tre
 
     cat <<-END_VERSIONS > versions.yml
-    "\${task.process}":
-        R version: \$(R --version | grep "R version" | sed 's/[(].*//' | sed 's/ //g' | sed 's/[^0-9]*//')
-        attempt: ${task.attempt}
-        filtering_applied: ${use_filtering}
-    END_VERSIONS
+\t"CAFE":
+\t    cafe5: \$(cafe5 --version 2>&1 | grep -oP 'CAFE5 v\\K[0-9.]+' || echo "unknown")
+\t    R version: \$(R --version 2>&1 | grep "R version" | sed 's/R version \\([0-9.]*\\).*/\\1/')
+\t    attempt: ${task.attempt}
+\t    filtering_applied: \$([ ${task.attempt} -eq 2 ] && echo "true" || echo "false")
+\tEND_VERSIONS
     
     # Log completion status
     if [ "${use_filtering}" = "true" ]; then
