@@ -22,7 +22,7 @@ process CAFE {
     path("Out_cafe_k3") , emit: result_k3, optional: true
     path("Out_cafe_p_k3") , emit: result_p_k3, optional: true
     path("N0.tsv") , emit: N0_table
-    path("Out_cafe/Base_count.tab") , emit: result_nftest, optional: true
+    path("Out_cafe/Base_count.tab") , emit: result_nftest
     path("hog_filtering_report.tsv"), emit: filtering_report, optional: true
     path "versions.yml", emit: versions
 
@@ -59,7 +59,7 @@ process CAFE {
     echo "Running CAFE5 analysis..."
     
     # Run CAFE5 with error checking
-    if ! cafe5 -i hog_gene_counts.tsv -t SpeciesTree_rooted_ultra.txt --cores ${task.cpus} -o Out_cafe 2>&1 | tee cafe_base.log; then
+    if ! cafe5 -i hog_gene_counts.tsv -t pruned_tree --cores ${task.cpus} -o Out_cafe 2>&1 | tee cafe_base.log; then
         echo "ERROR: CAFE5 base run failed"
         
         # Check if it's a differential error

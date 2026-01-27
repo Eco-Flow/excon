@@ -25,6 +25,7 @@ include { GO_EXPANSION  } from './modules/local/go_expansion.nf'
 include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
 include { GFFREAD } from './modules/local/gffread.nf'
 include { CAFE } from './modules/local/cafe_with_retry.nf'
+include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_GO } from './modules/local/cafe_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
@@ -63,7 +64,8 @@ workflow {
    NCBIGENOMEDOWNLOAD ( input_type.ncbi.map { it[0] }, input_type.ncbi.map { it[1] }, [], params.groups)
    ch_versions = ch_versions.mix(NCBIGENOMEDOWNLOAD.out.versions.first())  
 
-   GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna.mix( input_type.local.map { [it[0],file(it[1])] } ), NCBIGENOMEDOWNLOAD.out.gff.mix(input_type.local.map { [it[0],file(it[2])] } ) ) 
+   GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna.mix( input_type.local.map { [it[0],file(it[1])] } ), NCBIGENOMEDOWNLOAD.out.gff.mix(input_type.local.map { [it[0],file(it[2])] 
+} ) ) 
    ch_versions = ch_versions.mix(GFFREAD.out.versions.first())
 
    if (params.stats){
@@ -87,61 +89,17 @@ workflow {
 
    merge_ch = GFFREAD.out.longest.collect()
    
-   // If you have precomiled GO data, or want to download from biomart else do not do GO enrichmetn analysis:
-   if (params.predownloaded_fasta && params.predownloaded_gofiles) {
-      channel.fromPath(params.predownloaded_fasta).mix(merge_ch).collect().set{ proteins_ch }
-      channel.fromPath(params.predownloaded_gofiles).collect().set{ go_file_ch }
-
-      ORTHOFINDER_GO ( proteins_ch.map { ["ortho_go", it] } )
-      ch_versions = ch_versions.mix(ORTHOFINDER_GO.out.versions)
-
-      GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
-      ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
-   }
-   else if ( params.ensembl_dataset && params.ensembl_biomart ){
-
-      input_biomart = channel
-         .value(params.ensembl_biomart)
-         .ifEmpty { error "Cannot find the host name: ${params.ensembl_biomart}" }
-
-      input_dataset = channel
-         .fromPath(params.ensembl_dataset)
-         .splitText().map{it -> it.trim()}
-         .ifEmpty { error "Cannot find the dataset file: ${params.ensembl_dataset}" }
-
-      GET_DATA ( input_biomart, input_dataset )
-      ch_versions = ch_versions.mix(GET_DATA.out.versions)
-
-      GET_DATA.out.gene_ontology_files.collect().set{ go_file_ch }
-
-      GET_DATA.out.fasta_files.mix(merge_ch).collect().set{ proteins_ch }
-
-      ORTHOFINDER_GO ( proteins_ch.map { ["ortho_go", it] } )
-      ch_versions = ch_versions.mix(ORTHOFINDER_GO.out.versions)
-
-      GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
-      ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
-   }
-
-   //Run GO expansion analysis
-   if (params.go_expansion) {
-      GO_EXPANSION ( GO_ASSIGN.out.go_counts.collect() )
-      ch_versions = ch_versions.mix(GO_EXPANSION.out.versions)
-   }
-
-   //Run chromosome GO analysis
-   if (params.chromo_go) {
-      CHROMO_GO ( GFFREAD.out.gffs.collect() , GO_ASSIGN.out.go_hash.collect() , ORTHOFINDER_GO.out.orthologues )
-      ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
-   }
-
+   
    if (params.skip_cafe == null) {
       //Run Orthofinder for CAFE using just input (focal) species.
       ORTHOFINDER_CAFE ( merge_ch.map { ["ortho_cafe", it] } )
       //No need to collect versions from orthofinder module twice
 
+      //Rescale tree branch lengths to prevent numerical precision issues
+      RESCALE_TREE ( ORTHOFINDER_CAFE.out.speciestree )
+
       //Run Cafe analysis of expanded and contracted gene families.
-      CAFE ( ORTHOFINDER_CAFE.out.no_ortho, ORTHOFINDER_CAFE.out.speciestree )
+      CAFE ( ORTHOFINDER_CAFE.out.no_ortho, RESCALE_TREE.out.rescaled_tree )
       ch_versions = ch_versions.mix(CAFE.out.versions)
 
       CAFE_PLOT ( CAFE.out.result )
@@ -159,3 +117,4 @@ workflow {
 workflow.onComplete { 
         println ( workflow.success ? "\nDone!\n" : "Oops... something went wrong" )
 }
+
