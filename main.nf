@@ -88,7 +88,58 @@ workflow {
    }
 
    merge_ch = GFFREAD.out.longest.collect()
+
+// If you have precomiled GO data, or want to download from biomart else do not do GO enrichmetn analysis:
+   if (params.predownloaded_fasta && params.predownloaded_gofiles) {
+      channel.fromPath(params.predownloaded_fasta).mix(merge_ch).collect().set{ proteins_ch }
+      channel.fromPath(params.predownloaded_gofiles).collect().set{ go_file_ch }
+
+      ORTHOFINDER_GO ( proteins_ch.map { ["ortho_go", it] } )
+      ch_versions = ch_versions.mix(ORTHOFINDER_GO.out.versions)
+
+      GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , 
+GFFREAD.out.gene_to_isoforms.collect() )
+      ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
+   }
+   else if ( params.ensembl_dataset && params.ensembl_biomart ){
+
+      input_biomart = channel
+         .value(params.ensembl_biomart)
+         .ifEmpty { error "Cannot find the host name: ${params.ensembl_biomart}" }
+
+      input_dataset = channel
+         .fromPath(params.ensembl_dataset)
+         .splitText().map{it -> it.trim()}
+         .ifEmpty { error "Cannot find the dataset file: ${params.ensembl_dataset}" }
+
+      GET_DATA ( input_biomart, input_dataset )
+      ch_versions = ch_versions.mix(GET_DATA.out.versions)
+
+      GET_DATA.out.gene_ontology_files.collect().set{ go_file_ch }
+
+      GET_DATA.out.fasta_files.mix(merge_ch).collect().set{ proteins_ch }
+
+      ORTHOFINDER_GO ( proteins_ch.map { ["ortho_go", it] } )
+      ch_versions = ch_versions.mix(ORTHOFINDER_GO.out.versions)
+
+      GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , 
+GFFREAD.out.gene_to_isoforms.collect() )
+      ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
+   }
    
+
+   //Run GO expansion analysis
+   if (params.go_expansion) {
+      GO_EXPANSION ( GO_ASSIGN.out.go_counts.collect() )
+      ch_versions = ch_versions.mix(GO_EXPANSION.out.versions)
+   }
+
+   //Run chromosome GO analysis
+   if (params.chromo_go) {
+      CHROMO_GO ( GFFREAD.out.gffs.collect() , GO_ASSIGN.out.go_hash.collect() , ORTHOFINDER_GO.out.orthologues )
+      ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
+   }
+
    
    if (params.skip_cafe == null) {
       //Run Orthofinder for CAFE using just input (focal) species.
