@@ -2,7 +2,7 @@ process ORTHOFINDER {
     //tag "$meta.id"
     label 'process_high'
     label 'process_long'
-    label 'process_high_memory'
+
     container = 'biocontainers/orthofinder:3.1.0--hdfd78af_0'
 
     input:
