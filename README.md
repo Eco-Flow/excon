@@ -28,7 +28,7 @@ Nextflow pipelines require a few prerequisites. There is further documentation o
 
 - [Docker](https://docs.docker.com/engine/install/) or [Singularity](https://docs.sylabs.io/guides/3.11/admin-guide/installation.html).
 - [Java](https://www.java.com/en/download/help/download_options.html) and [openJDK](https://openjdk.org/install/) >= 8 (**Please Note:** When installing Java versions are `1.VERSION` so `Java 8` is `Java 1.8`).
-- [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html) >= `v23.07.0`  but **not** >v25.
+- [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html) >= `v23.07.0`.
 - When running nextflow with this pipeline, ideally run `NXF_VER=24.10.1` beforehand, to ensure functionality on this version.
 
 ### Install
@@ -130,14 +130,14 @@ For the fastest run use: `nextflow run main.nf -resume -profile docker,test_bact
 2. To run on your own data (minimal run), cafe only. 
 
 ```
-NXF_VER=24.10.1 
+# NXF_VER=25.04.8   - Is latest it is tested on  
 nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv
 ```
 
 3. To run on your own data with GO enrichment analysis (using predownloaded fasta/go files for GO assignment)
 
 ```
-NXF_VER=24.10.1 
+# NXF_VER=25.04.8   - Is latest it is tested on  
 nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv \|
 --predownloaded_fasta 's3://excon/data/Insect_data/fasta/*' --predownloaded_gofiles 's3://excon/data/Insect_data/gofiles/*' 
 ```
@@ -179,7 +179,7 @@ ensembl <- useEnsembl(biomart = "genes", host="https://ensembl.org")
 Then you can run the excon script as follows:
 
 ```
-NXF_VER=24.10.1 
+# NXF_VER=25.04.8   - Is latest it is tested on  
 nextflow run main.nf -resume -profile <apptainer/docker/singularity> --input data/input_small-s3.csv --ensembl_biomart "metazoa_mart" --ensembl_dataset "example.txt"
 ```
 
