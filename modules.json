@@ -27,7 +27,7 @@
           },
           "orthofinder": {
             "branch": "master",
-            "git_sha": "07f10f34d88408af7c71f13227d11f23b7f53b50",
+            "git_sha": "1bde3edb5e586e16a4993dac87bc83b494017192",
             "installed_by": ["modules"]
           },
           "quast": {
