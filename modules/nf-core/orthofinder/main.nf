@@ -3,10 +3,7 @@ process ORTHOFINDER {
     label 'process_high'
     label 'process_long'
 
-    conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/orthofinder:2.5.5--hdfd78af_2':
-        'biocontainers/orthofinder:2.5.5--hdfd78af_2' }"
+    container = 'biocontainers/orthofinder:3.1.0--hdfd78af_0'
 
     input:
     tuple val(meta), path(fastas, stageAs: 'input/')
@@ -15,7 +12,7 @@ process ORTHOFINDER {
     tuple val(meta), path("$meta")                                , emit: orthofinder
     path("$meta/Orthogroups/Orthogroups.tsv")                     , emit: orthologues
     path("$meta/Species_Tree/SpeciesTree_rooted_node_labels.txt") , emit: speciestree
-    path("$meta/Phylogenetic_Hierarchical_Orthogroups/N0.tsv")    , emit: no_ortho
+    path("$meta/Phylogenetic_Hierarchical_Orthogroups/N1.tsv")    , emit: no_ortho
     path "versions.yml"                                           , emit: versions
 
     when:
