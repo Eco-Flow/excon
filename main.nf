@@ -63,21 +63,24 @@ workflow {
    // Print summary of supplied parameters
    log.info paramsSummaryLog(workflow)
   
+   // Write each accession string to its own file, named by sample id
+   ch_ncbi = input_type.ncbi
+      .collectFile { row -> [ "${row[0]}.txt", row[1] + '\n' ] }
+      .map { f -> [ [id: f.baseName], f ] }
+
    NCBIGENOMEDOWNLOAD (
-      input_type.ncbi.map { it[0] },   // already a meta map from samplesheet
-      input_type.ncbi.map { it[1] },
-      [],
+      ch_ncbi.map { meta, f -> meta },   // val meta
+      ch_ncbi.map { meta, f -> f },      // path accessions (now an actual file)
+      [],                                 // path taxids
       params.groups
    )
 
    // Build input channels
    ch_gff = NCBIGENOMEDOWNLOAD.out.gff
-    .map { accession, gff -> [ [id: accession.toString()], gff ] }
-    .mix( input_type.local.map { [ [id: it[0].toString()], file(it[2]) ] } )
+    .mix( input_type.local.map { [ [id: it[0]], file(it[2]) ] } )
 
    ch_fna_raw = NCBIGENOMEDOWNLOAD.out.fna
-      .map { accession, fna -> [ [id: accession.toString()], fna ] }
-      .mix( input_type.local.map { [ [id: it[0].toString()], file(it[1]) ] } )
+      .mix( input_type.local.map { [ [id: it[0]], file(it[1]) ] } )
 
    // Split on .gz, decompress only what needs it
    ch_fna_gz    = ch_fna_raw.filter { meta, fna -> fna.name.endsWith('.gz') }
