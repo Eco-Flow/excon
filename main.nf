@@ -37,6 +37,8 @@ include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/nf-core/orthofinder/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
+include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
+include { EGGNOGMAPPER    } from './modules/nf-core/eggnogmapper/main.nf'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main.nf'
 
 workflow {
@@ -101,6 +103,25 @@ workflow {
       ch_fna_gff.map { meta, fna, gff -> [ meta, gff ] },  // tuple val(meta), path(gff)
       ch_fna_gff.map { meta, fna, gff -> fna }             // path fasta (no meta)
    )
+
+   // If you wish to run GO, we use eggnogmapper:
+   if (params.run_eggnog) {
+
+      if (params.eggnog_data_dir) {
+         // User provided — use directly
+         ch_eggnog_data = channel.fromPath(params.eggnog_data_dir)
+      } else {
+         // Not provided — download automatically
+         EGGNOG_DOWNLOAD()
+         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir
+      }
+
+      EGGNOGMAPPER (
+         GFFREAD.out.gffread_fasta,
+         channel.value([ 'diamond', [] ]),
+         ch_eggnog_data
+      )
+   }
 
    if (params.stats){
       BUSCO_BUSCO (  GFFREAD.out.proteins_busco , 

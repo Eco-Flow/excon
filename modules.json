@@ -25,6 +25,11 @@
             "git_sha": "de45447d060b8c8b98575bc637a4a575fd0638e1",
             "installed_by": ["modules"]
           },
+          "eggnogmapper": {
+            "branch": "master",
+            "git_sha": "e11b95631ff49d1e2530b0e493289e7579ee259b",
+            "installed_by": ["modules"]
+          },
           "gffread": {
             "branch": "master",
             "git_sha": "51f2b493a7ff28b40a9f99faca64245521f2bb24",
