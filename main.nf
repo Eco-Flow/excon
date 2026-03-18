@@ -22,7 +22,9 @@ include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-val
 include { GET_DATA } from './modules/local/getdata.nf'
 include { GO_ASSIGN } from './modules/local/go_assign.nf'
 include { GO_EXPANSION  } from './modules/local/go_expansion.nf'
+include { CAFE } from './modules/local/cafe_with_retry.nf'
 include { CAFE } from './modules/local/cafe.nf'
+include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_GO } from './modules/local/cafe_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
@@ -101,8 +103,6 @@ workflow {
       ch_fna_gff.map { meta, fna, gff -> fna }             // path fasta (no meta)
    )
 
-
-
    if (params.stats){
       BUSCO_BUSCO (  GFFREAD.out.proteins_busco , 
                      params.busco_mode,
@@ -155,8 +155,8 @@ workflow {
       ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] } , [[],[]] )
 
       //GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
-      ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
    }
+   
 
    //Run GO expansion analysis
    if (params.go_expansion) {
@@ -170,12 +170,16 @@ workflow {
       ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
    }
 
+   
    if (params.skip_cafe == null) {
       //Run Orthofinder for CAFE using just input (focal) species.
       ORTHOFINDER_CAFE ( merge_ch.map { [[id: "ortho_cafe"], it] } , [[],[]] )
 
+      //Rescale tree branch lengths to prevent numerical precision issues
+      RESCALE_TREE ( ORTHOFINDER_CAFE.out.speciestree )
+
       //Run Cafe analysis of expanded and contracted gene families.
-      CAFE ( ORTHOFINDER_CAFE.out.no_ortho, ORTHOFINDER_CAFE.out.speciestree )
+      CAFE ( ORTHOFINDER_CAFE.out.no_ortho, RESCALE_TREE.out.rescaled_tree )
       ch_versions = ch_versions.mix(CAFE.out.versions)
 
       CAFE_PLOT ( CAFE.out.result )
@@ -193,3 +197,4 @@ workflow {
 workflow.onComplete { 
         println ( workflow.success ? "\nDone!\n" : "Oops... something went wrong" )
 }
+
