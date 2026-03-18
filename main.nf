@@ -198,7 +198,7 @@ workflow {
 
    //Run chromosome GO analysis
    if (params.chromo_go) {
-      CHROMO_GO ( GFFREAD.out.gffs.collect() , ch_go_files , ORTHOFINDER_GO.out.orthologues )
+      CHROMO_GO ( GFFREAD.out.gffread_fasta.collect() , ch_go_files , ORTHOFINDER_GO.out.orthologues )
       ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
    }
 
