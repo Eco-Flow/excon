@@ -108,12 +108,10 @@ workflow {
    if (params.run_eggnog) {
 
       if (params.eggnog_data_dir) {
-         // User provided — use directly
-         ch_eggnog_data = channel.fromPath(params.eggnog_data_dir)
+         ch_eggnog_data = channel.fromPath(params.eggnog_data_dir).first()
       } else {
-         // Not provided — download automatically
          EGGNOG_DOWNLOAD()
-         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir
+         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir.first()
       }
 
       EGGNOGMAPPER (
@@ -121,6 +119,7 @@ workflow {
          channel.value([ 'diamond', [] ]),
          ch_eggnog_data
       )
+      ch_versions = ch_versions.mix(EGGNOGMAPPER.out.versions.first())
    }
 
    if (params.stats){
