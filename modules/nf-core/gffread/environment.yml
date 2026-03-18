@@ -4,4 +4,4 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - bioconda::ncbi-genome-download=0.3.3
+  - bioconda::gffread=0.12.7

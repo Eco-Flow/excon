@@ -17,23 +17,26 @@ log.info """\
 
  =========================================""".stripIndent()
 
+include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-validation'
+
 include { GET_DATA } from './modules/local/getdata.nf'
-include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/nf-core/orthofinder/main.nf'
-include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
 include { GO_ASSIGN } from './modules/local/go_assign.nf'
 include { GO_EXPANSION  } from './modules/local/go_expansion.nf'
-include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
-include { GFFREAD } from './modules/local/gffread.nf'
 include { CAFE } from './modules/local/cafe.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_GO } from './modules/local/cafe_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
 
-include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-validation'
-include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main.nf'
+include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
+include { GFFREAD } from './modules/nf-core/gffread/main.nf'
 include { BUSCO_BUSCO } from './modules/nf-core/busco/busco/main.nf'
 include { AGAT_SPSTATISTICS } from './modules/nf-core/agat/spstatistics/main.nf'
+include { AGAT_SPKEEPLONGESTISOFORM } from './modules/nf-core/agat/spkeeplongestisoform/main.nf'
 include { QUAST } from './modules/nf-core/quast/main.nf'
+include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
+include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/nf-core/orthofinder/main.nf'
+include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
+include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main.nf'
 
 workflow {
 
@@ -60,11 +63,42 @@ workflow {
    // Print summary of supplied parameters
    log.info paramsSummaryLog(workflow)
   
-   NCBIGENOMEDOWNLOAD ( input_type.ncbi.map { it[0] }, input_type.ncbi.map { it[1] }, [], params.groups)
-   ch_versions = ch_versions.mix(NCBIGENOMEDOWNLOAD.out.versions.first())  
+   NCBIGENOMEDOWNLOAD (
+      input_type.ncbi.map { it[0] },   // already a meta map from samplesheet
+      input_type.ncbi.map { it[1] },
+      [],
+      params.groups
+   )
 
-   GFFREAD ( NCBIGENOMEDOWNLOAD.out.fna.mix( input_type.local.map { [it[0],file(it[1])] } ), NCBIGENOMEDOWNLOAD.out.gff.mix(input_type.local.map { [it[0],file(it[2])] } ) ) 
-   ch_versions = ch_versions.mix(GFFREAD.out.versions.first())
+   // Build input channels
+   ch_gff = NCBIGENOMEDOWNLOAD.out.gff
+    .map { accession, gff -> [ [id: accession.toString()], gff ] }
+    .mix( input_type.local.map { [ [id: it[0].toString()], file(it[2]) ] } )
+
+   ch_fna_raw = NCBIGENOMEDOWNLOAD.out.fna
+      .map { accession, fna -> [ [id: accession.toString()], fna ] }
+      .mix( input_type.local.map { [ [id: it[0].toString()], file(it[1]) ] } )
+
+   // Split on .gz, decompress only what needs it
+   ch_fna_gz    = ch_fna_raw.filter { meta, fna -> fna.name.endsWith('.gz') }
+   ch_fna_plain = ch_fna_raw.filter { meta, fna -> !fna.name.endsWith('.gz') }
+
+   GUNZIP ( ch_fna_gz )
+
+   ch_fna = GUNZIP.out.gunzip.mix( ch_fna_plain )
+
+   // AGAT: gff channel + empty config
+   AGAT_SPKEEPLONGESTISOFORM ( ch_gff, [] )
+
+   // Join fna + agat gff by meta, then split for GFFREAD's two inputs
+   ch_fna_gff = ch_fna.join( AGAT_SPKEEPLONGESTISOFORM.out.gff )
+
+   GFFREAD (
+      ch_fna_gff.map { meta, fna, gff -> [ meta, gff ] },  // tuple val(meta), path(gff)
+      ch_fna_gff.map { meta, fna, gff -> fna }             // path fasta (no meta)
+   )
+
+
 
    if (params.stats){
       BUSCO_BUSCO (  GFFREAD.out.proteins_busco , 
@@ -85,7 +119,7 @@ workflow {
       ch_versions = ch_versions.mix(QUAST.out.versions.first())
    }
 
-   merge_ch = GFFREAD.out.longest.collect()
+   merge_ch = GFFREAD.out.gffread_fasta.collect()
    
    // If you have precomiled GO data, or want to download from biomart else do not do GO enrichmetn analysis:
    if (params.predownloaded_fasta && params.predownloaded_gofiles) {
@@ -94,8 +128,8 @@ workflow {
 
       ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] } , [[],[]] )
 
-      GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
-      ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
+      //GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.gffread_fasta , GFFREAD.out.gene_to_isoforms.collect() )
+      //ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
    }
    else if ( params.ensembl_dataset && params.ensembl_biomart ){
 
@@ -117,19 +151,19 @@ workflow {
 
       ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] } , [[],[]] )
 
-      GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
+      //GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
       ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
    }
 
    //Run GO expansion analysis
    if (params.go_expansion) {
-      GO_EXPANSION ( GO_ASSIGN.out.go_counts.collect() )
-      ch_versions = ch_versions.mix(GO_EXPANSION.out.versions)
+      //GO_EXPANSION ( GO_ASSIGN.out.go_counts.collect() )
+      //ch_versions = ch_versions.mix(GO_EXPANSION.out.versions)
    }
 
    //Run chromosome GO analysis
    if (params.chromo_go) {
-      CHROMO_GO ( GFFREAD.out.gffs.collect() , GO_ASSIGN.out.go_hash.collect() , ORTHOFINDER_GO.out.orthologues )
+      //CHROMO_GO ( GFFREAD.out.gffs.collect() , GO_ASSIGN.out.go_hash.collect() , ORTHOFINDER_GO.out.orthologues )
       ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
    }
 
@@ -145,8 +179,8 @@ workflow {
       ch_versions = ch_versions.mix(CAFE_PLOT.out.versions)
 
       if (params.predownloaded_fasta || params.ensembl_dataset) {
-         CAFE_GO ( CAFE.out.result, CAFE.out.N0_table, GO_ASSIGN.out.go_og )
-         ch_versions = ch_versions.mix(CAFE_GO.out.versions.first())
+         //CAFE_GO ( CAFE.out.result, CAFE.out.N0_table, GO_ASSIGN.out.go_og )
+         //ch_versions = ch_versions.mix(CAFE_GO.out.versions.first())
       }
    }
 
