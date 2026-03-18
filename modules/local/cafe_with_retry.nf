@@ -29,7 +29,7 @@ process CAFE {
     def use_filtering = task.attempt > 1 ? true : false
     
     """
-    #!/bin/bash
+    export PATH=\$PATH:/usr/bin
     set -e
     mv Orthogroups.tsv N0.tsv    
     cp ${tree_newick} pruned_tree
