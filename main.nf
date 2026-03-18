@@ -155,13 +155,13 @@ workflow {
 
    if (params.predownloaded_fasta && params.predownloaded_gofiles) {
       channel.fromPath(params.predownloaded_fasta)
-         .mix(merge_ch)
+         .mix( merge_ch.map { meta, fasta -> fasta } )  // extract fasta only
          .collect()
          .set{ proteins_ch }
       
-      channel.fromPath(params.predownloaded_gofiles).collect().set{ go_file_ch }
+      //channel.fromPath(params.predownloaded_gofiles).collect().set{ go_file_ch }
 
-      ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] }, [[],[]] )
+      ORTHOFINDER_GO ( proteins_ch.map { files -> [ [id: "ortho_go"], files ] }, [[],[]] )
 
       //GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.gffread_fasta , GFFREAD.out.gene_to_isoforms.collect() )
       //ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
@@ -183,11 +183,11 @@ workflow {
       GET_DATA.out.gene_ontology_files.collect().set{ go_file_ch }
 
       GET_DATA.out.fasta_files
-         .mix(merge_ch)
+         .mix( merge_ch.map { meta, fasta -> fasta } )  // extract fasta only
          .collect()
          .set{ proteins_ch }
 
-      ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] }, [[],[]] )
+      ORTHOFINDER_GO ( proteins_ch.map { files -> [ [id: "ortho_go"], files ] }, [[],[]] )
    }
 
    //Run GO expansion analysis
@@ -197,7 +197,7 @@ workflow {
    }
 
    //Run chromosome GO analysis
-   if (params.chromo_go) {
+   if (params.chromo_go && params.run_eggnog) {
       CHROMO_GO ( GFFREAD.out.gffread_fasta.collect() , ch_go_files , ORTHOFINDER_GO.out.orthologues )
       ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
    }
@@ -205,7 +205,13 @@ workflow {
    
    if (params.skip_cafe == null) {
       //Run Orthofinder for CAFE using just input (focal) species.
-      ORTHOFINDER_CAFE ( merge_ch.map { [[id: "ortho_cafe"], it] } , [[],[]] )
+      ORTHOFINDER_CAFE ( 
+        merge_ch
+            .map { meta, fasta -> fasta }
+            .collect()
+            .map { files -> [ [id: "ortho_cafe"], files ] },
+        [[],[]] 
+      )
 
       //Rescale tree branch lengths to prevent numerical precision issues
       RESCALE_TREE ( ORTHOFINDER_CAFE.out.speciestree )
