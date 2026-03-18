@@ -1,70 +1,68 @@
 process ORTHOFINDER {
-    //tag "$meta.id"
+    tag "$meta.id"
     label 'process_high'
-    label 'process_long'
 
-    container = 'biocontainers/orthofinder:3.1.0--hdfd78af_0'
+    conda "${moduleDir}/environment.yml"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/orthofinder:3.1.3--hdfd78af_0':
+        'community.wave.seqera.io/library/famsa_orthofinder:9234f46bf08ab617' }"
 
     input:
     tuple val(meta), path(fastas, stageAs: 'input/')
+    tuple val(meta2), path(prior_run)
 
     output:
-    tuple val(meta), path("$meta")                                , emit: orthofinder
-    path("$meta/Orthogroups/Orthogroups.tsv")                     , emit: orthologues
-    path("$meta/Species_Tree/SpeciesTree_rooted_node_labels.txt") , emit: speciestree
-    path("$meta/Phylogenetic_Hierarchical_Orthogroups/N1.tsv")    , emit: no_ortho
-    path "versions.yml"                                           , emit: versions
+    tuple val(meta), path("$prefix")                     , emit: orthofinder
+    tuple val(meta), path("$prefix/WorkingDirectory")    , emit: working
+    tuple val("${task.process}"), val('orthofinder'), eval("NO_COLOR=1 orthofinder --version | cut -d 'v' -f2 | perl -pe 's/\\e\\[[0-9;]*m//g'"), emit: versions_orthofinder, topic: versions
+    path("$prefix/WorkingDirectory/Orthogroups/Orthogroups.tsv")                     , emit: orthologues
+    path("$prefix/WorkingDirectory/Species_Tree/SpeciesTree_rooted_node_labels.txt") , emit: speciestree
+    path("$prefix/WorkingDirectory/Phylogenetic_Hierarchical_Orthogroups/N0.tsv")    , emit: no_ortho
+
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args    = task.ext.args ?: ''
-    //prefix      = task.ext.prefix ?: "${meta.id}"
-    """
-    mkdir temp_pickle
+    def args   = task.ext.args   ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    def include_command = prior_run   ? "-b $prior_run" : ''
 
+    """
     orthofinder \\
-        $args \\
         -t $task.cpus \\
         -a $task.cpus \\
-        -p temp_pickle \\
         -f input \\
-        -n $meta
+        -n $prefix \\
+        $include_command \\
+        $args
 
-    mv \\
-        input/OrthoFinder/Results_$meta \\
-        $meta
+    if [ -e input/OrthoFinder/Results_$prefix ]; then
+        mv input/OrthoFinder/Results_$prefix $prefix
+    fi
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        orthofinder: \$(orthofinder -h | sed -n 's/.*version \\(.*\\) Copy.*/\\1/p')
-    END_VERSIONS
+    if [ -e ${prior_run}/OrthoFinder/Results_$prefix ]; then
+        mv ${prior_run}/OrthoFinder/Results_$prefix $prefix
+    fi
     """
 
     stub:
-    def args    = task.ext.args ?: ''
-    //prefix      = task.ext.prefix ?: "${meta.id}"
+    prefix = task.ext.prefix ?: "${meta.id}"
+
     """
-    mkdir -p    $meta/Comparative_Genomics_Statistics
-    mkdir       $meta/Gene_Duplication_Events
-    mkdir       $meta/Gene_Trees
-    mkdir       $meta/Orthogroup_Sequences
-    mkdir       $meta/Orthogroups
-    mkdir       $meta/Orthologues
-    mkdir       $meta/Phylogenetic_Hierarchical_Orthogroups
-    mkdir       $meta/Phylogenetically_Misplaced_Genes
-    mkdir       $meta/Putative_Xenologs
-    mkdir       $meta/Resolved_Gene_Trees
-    mkdir       $meta/Single_Copy_Orthologue_Sequences
-    mkdir       $meta/Species_Tree
-    mkdir       $meta/WorkingDirectory
-
-    touch       $meta/Log.txt
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        orthofinder: \$(orthofinder -h | sed -n 's/.*version \\(.*\\) Copy.*/\\1/p')
-    END_VERSIONS
+    mkdir -p    $prefix/Comparative_Genomics_Statistics
+    mkdir       $prefix/Gene_Duplication_Events
+    mkdir       $prefix/Gene_Trees
+    mkdir       $prefix/Orthogroup_Sequences
+    mkdir       $prefix/Orthogroups
+    mkdir       $prefix/Orthologues
+    mkdir       $prefix/Phylogenetic_Hierarchical_Orthogroups
+    mkdir       $prefix/Phylogenetically_Misplaced_Genes
+    mkdir       $prefix/Putative_Xenologs
+    mkdir       $prefix/Resolved_Gene_Trees
+    mkdir       $prefix/Single_Copy_Orthologue_Sequences
+    mkdir       $prefix/Species_Tree
+    mkdir       $prefix/WorkingDirectory
+    touch       $prefix/Log.txt
     """
 }

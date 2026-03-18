@@ -1,5 +1,5 @@
 process NCBIGENOMEDOWNLOAD {
-    //tag "$meta.id"
+    tag "$meta.id"
     label 'process_low'
 
     conda "${moduleDir}/environment.yml"
@@ -9,8 +9,7 @@ process NCBIGENOMEDOWNLOAD {
 
     input:
     val meta
-    //path accessions
-    val accessions
+    path accessions
     path taxids
     val groups
 
@@ -28,14 +27,13 @@ process NCBIGENOMEDOWNLOAD {
     tuple val(meta), path("*_rna_from_genomic.fna.gz"), emit: rna_fna , optional: true
     tuple val(meta), path("*_assembly_report.txt")    , emit: report  , optional: true
     tuple val(meta), path("*_assembly_stats.txt")     , emit: stats   , optional: true
-    path "versions.yml"                               , emit: versions
+    tuple val("${task.process}"), val('ncbigenomedownload'), eval('ncbi-genome-download --version'), topic: versions, emit: versions_ncbigenomedownload
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args           = task.ext.args ?: ''
-    //def prefix         = task.ext.prefix ?: "${meta.id}"
     def accessions_opt = accessions ? "-A ${accessions}" : ""
     def taxids_opt     = taxids ? "-t ${taxids}" : ""
     """
@@ -48,9 +46,5 @@ process NCBIGENOMEDOWNLOAD {
         --parallel $task.cpus \\
         $groups
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        ncbigenomedownload: \$( ncbi-genome-download --version )
-    END_VERSIONS
     """
 }
