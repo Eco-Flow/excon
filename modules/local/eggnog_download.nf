@@ -17,6 +17,12 @@ process EGGNOG_DOWNLOAD {
     download_eggnog_data.py \\
         --data_dir eggnog_data \\
         -y \\
-        -q
+        -q \\
+        -P
+
+    # Decompress all downloaded files
+    gunzip -f eggnog_data/*.gz
+    cd eggnog_data && tar -xzf eggnog.taxa.tar.gz 2>/dev/null || true
+    cd eggnog_data && tar -xzf pfam.tar.gz 2>/dev/null || true
     """
 }

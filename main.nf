@@ -27,6 +27,9 @@ include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_GO } from './modules/local/cafe_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
+include { FILTER_FASTA } from './modules/local/filter_fasta'
+include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
+include { EGGNOG_TO_GO } from './modules/local/eggnog_to_go.nf'
 
 include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
 include { GFFREAD } from './modules/nf-core/gffread/main.nf'
@@ -37,7 +40,6 @@ include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_GO} from './modules/nf-core/orthofinder/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
-include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
 include { EGGNOGMAPPER    } from './modules/nf-core/eggnogmapper/main.nf'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main.nf'
 
@@ -107,20 +109,121 @@ workflow {
    // If you wish to run GO, we use eggnogmapper:
    if (params.run_eggnog) {
 
+      FILTER_FASTA ( GFFREAD.out.gffread_fasta )
+
       if (params.eggnog_data_dir) {
          ch_eggnog_data = channel.fromPath(params.eggnog_data_dir).first()
       } else {
          EGGNOG_DOWNLOAD()
-         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir.first()  // put back
+         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir.first()
       }
 
       EGGNOGMAPPER (
-         GFFREAD.out.gffread_fasta,
+         FILTER_FASTA.out,
          channel.value([ 'diamond', [] ]),
          ch_eggnog_data
       )
       ch_versions = ch_versions.mix(EGGNOGMAPPER.out.versions_eggnogmapper.first())
+
+      EGGNOG_TO_GO ( EGGNOGMAPPER.out.annotations )
+
+      // Collect all per-species GO files for downstream use
+      ch_go_files = EGGNOG_TO_GO.out.go_file.collect()
    }
+
+   if (params.stats){
+      BUSCO_BUSCO (  GFFREAD.out.proteins_busco , 
+                     params.busco_mode,
+                     params.busco_lineage,
+                     params.busco_lineages_path ?: [],
+                     params.busco_config ?: [], 
+                  )
+      ch_versions = ch_versions.mix(BUSCO_BUSCO.out.versions.first())
+   
+      AGAT_SPSTATISTICS (  GFFREAD.out.gffs_agat  )
+      ch_versions = ch_versions.mix(AGAT_SPSTATISTICS.out.versions.first())
+
+      QUAST (  GFFREAD.out.fasta_quast,
+               //reference
+               GFFREAD.out.gffs_agat
+            )
+      ch_versions = ch_versions.mix(QUAST.out.versions.first())
+   }
+
+   // Keep as individual per-species emissions (no .collect() here)
+   merge_ch = GFFREAD.out.gffread_fasta
+
+   if (params.predownloaded_fasta && params.predownloaded_gofiles) {
+      channel.fromPath(params.predownloaded_fasta)
+         .mix(merge_ch)
+         .collect()
+         .set{ proteins_ch }
+      
+      channel.fromPath(params.predownloaded_gofiles).collect().set{ go_file_ch }
+
+      ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] }, [[],[]] )
+
+      //GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.gffread_fasta , GFFREAD.out.gene_to_isoforms.collect() )
+      //ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
+   }
+   else if ( params.ensembl_dataset && params.ensembl_biomart ){
+
+      input_biomart = channel
+         .value(params.ensembl_biomart)
+         .ifEmpty { error "Cannot find the host name: ${params.ensembl_biomart}" }
+
+      input_dataset = channel
+         .fromPath(params.ensembl_dataset)
+         .splitText().map{it -> it.trim()}
+         .ifEmpty { error "Cannot find the dataset file: ${params.ensembl_dataset}" }
+
+      GET_DATA ( input_biomart, input_dataset )
+      ch_versions = ch_versions.mix(GET_DATA.out.versions)
+
+      GET_DATA.out.gene_ontology_files.collect().set{ go_file_ch }
+
+      GET_DATA.out.fasta_files
+         .mix(merge_ch)
+         .collect()
+         .set{ proteins_ch }
+
+      ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] }, [[],[]] )
+   }
+
+   //Run GO expansion analysis
+   if (params.go_expansion) {
+      //GO_EXPANSION ( GO_ASSIGN.out.go_counts.collect() )
+      //ch_versions = ch_versions.mix(GO_EXPANSION.out.versions)
+   }
+
+   //Run chromosome GO analysis
+   if (params.chromo_go) {
+      CHROMO_GO ( GFFREAD.out.gffs.collect() , ch_go_files , ORTHOFINDER_GO.out.orthologues )
+      ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
+   }
+
+   
+   if (params.skip_cafe == null) {
+      //Run Orthofinder for CAFE using just input (focal) species.
+      ORTHOFINDER_CAFE ( merge_ch.map { [[id: "ortho_cafe"], it] } , [[],[]] )
+
+      //Rescale tree branch lengths to prevent numerical precision issues
+      RESCALE_TREE ( ORTHOFINDER_CAFE.out.speciestree )
+
+      //Run Cafe analysis of expanded and contracted gene families.
+      CAFE ( ORTHOFINDER_CAFE.out.no_ortho, RESCALE_TREE.out.rescaled_tree )
+      ch_versions = ch_versions.mix(CAFE.out.versions)
+
+      CAFE_PLOT ( CAFE.out.result )
+      ch_versions = ch_versions.mix(CAFE_PLOT.out.versions)
+
+      if (params.predownloaded_fasta || params.ensembl_dataset) {
+         //CAFE_GO ( CAFE.out.result, CAFE.out.N0_table, GO_ASSIGN.out.go_og )
+         //ch_versions = ch_versions.mix(CAFE_GO.out.versions.first())
+      }
+   }
+
+   CUSTOM_DUMPSOFTWAREVERSIONS ( ch_versions.collectFile(name: 'collated_versions.yml') )
 
 }
 
