@@ -5,7 +5,7 @@ process ORTHOFINDER {
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/orthofinder:3.1.3--hdfd78af_0':
-        'community.wave.seqera.io/library/famsa_orthofinder:9234f46bf08ab617' }"
+        'biocontainers/orthofinder:3.1.3--hdfd78af_0' }"
 
     input:
     tuple val(meta), path(fastas, stageAs: 'input/')
