@@ -4,8 +4,8 @@ use strict;
 
 print "Please be in folder with focal gff3 file and GO hashes\n\n";
 
-my @goes=`ls *Result_All_Combine_GO_format`;
-my @in_gfffile=`ls *.gff3`;
+my @goes=`ls *.go.txt`;
+my @in_gfffile=`ls *.longest.gff`;
 my $ortho="Orthogroups.tsv";
 
 
@@ -130,8 +130,7 @@ foreach my $species (@jobs){
                     }
                     my $fullgene=$temp_h{"Parent"};
                     my @fullsp=split("\:", $fullgene);
-                    my @fullminusdash=split("\-",$fullsp[-1]);
-                    $gene=$fullminusdash[-1];
+                    $gene=$fullsp[-1];
                     $tran=$temp_h{"transcript_id"};
                 }
 

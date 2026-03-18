@@ -130,8 +130,10 @@ workflow {
 
       EGGNOG_TO_GO ( EGGNOGMAPPER.out.annotations )
 
-      // Collect all per-species GO files for downstream use
-      ch_go_files = EGGNOG_TO_GO.out.go_file.collect()
+      // Strip meta and collect plain go files for downstream use
+      ch_go_files = EGGNOG_TO_GO.out.go_file
+         .map { meta, go -> go }
+         .collect()
    }
 
    if (params.stats){
@@ -147,7 +149,6 @@ workflow {
       ch_versions = ch_versions.mix(AGAT_SPSTATISTICS.out.versions.first())
 
       QUAST (  GFFREAD.out.fasta_quast,
-               //reference
                GFFREAD.out.gffs_agat
             )
       ch_versions = ch_versions.mix(QUAST.out.versions.first())
@@ -155,16 +156,11 @@ workflow {
 
    if (params.predownloaded_fasta && params.predownloaded_gofiles) {
       channel.fromPath(params.predownloaded_fasta)
-         .mix( merge_ch.map { meta, fasta -> fasta } )  // extract fasta only
+         .mix( merge_ch.map { meta, fasta -> fasta } )
          .collect()
          .set{ proteins_ch }
-      
-      //channel.fromPath(params.predownloaded_gofiles).collect().set{ go_file_ch }
 
       ORTHOFINDER_GO ( proteins_ch.map { files -> [ [id: "ortho_go"], files ] }, [[],[]] )
-
-      //GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.gffread_fasta , GFFREAD.out.gene_to_isoforms.collect() )
-      //ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
    }
    else if ( params.ensembl_dataset && params.ensembl_biomart ){
 
@@ -183,41 +179,38 @@ workflow {
       GET_DATA.out.gene_ontology_files.collect().set{ go_file_ch }
 
       GET_DATA.out.fasta_files
-         .mix( merge_ch.map { meta, fasta -> fasta } )  // extract fasta only
+         .mix( merge_ch.map { meta, fasta -> fasta } )
          .collect()
          .set{ proteins_ch }
 
       ORTHOFINDER_GO ( proteins_ch.map { files -> [ [id: "ortho_go"], files ] }, [[],[]] )
    }
 
-   //Run GO expansion analysis
    if (params.go_expansion) {
       //GO_EXPANSION ( GO_ASSIGN.out.go_counts.collect() )
       //ch_versions = ch_versions.mix(GO_EXPANSION.out.versions)
    }
 
-   //Run chromosome GO analysis
    if (params.chromo_go && params.run_eggnog) {
-      CHROMO_GO ( GFFREAD.out.gffread_fasta.map { meta, gff -> gff }.collect() , ch_go_files.map { meta, go -> go }.collect() , 
-ORTHOFINDER_GO.out.orthologues )
+      CHROMO_GO ( 
+         AGAT_SPKEEPLONGESTISOFORM.out.gff.map { meta, gff -> gff }.collect(),
+         ch_go_files,   // already stripped of meta and collected above
+         ORTHOFINDER_GO.out.orthologues 
+      )
       ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
    }
 
-   
    if (params.skip_cafe == null) {
-      //Run Orthofinder for CAFE using just input (focal) species.
       ORTHOFINDER_CAFE ( 
-        merge_ch
+         merge_ch
             .map { meta, fasta -> fasta }
             .collect()
             .map { files -> [ [id: "ortho_cafe"], files ] },
-        [[],[]] 
+         [[],[]] 
       )
 
-      //Rescale tree branch lengths to prevent numerical precision issues
       RESCALE_TREE ( ORTHOFINDER_CAFE.out.speciestree )
 
-      //Run Cafe analysis of expanded and contracted gene families.
       CAFE ( ORTHOFINDER_CAFE.out.orthologues, RESCALE_TREE.out.rescaled_tree )
       ch_versions = ch_versions.mix(CAFE.out.versions)
 
@@ -231,6 +224,7 @@ ORTHOFINDER_GO.out.orthologues )
    }
 
    CUSTOM_DUMPSOFTWAREVERSIONS ( ch_versions.collectFile(name: 'collated_versions.yml') )
+
 
 }
 

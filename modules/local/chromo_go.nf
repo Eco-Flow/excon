@@ -1,6 +1,6 @@
 process CHROMO_GO {
     label 'process_low'
-    tag "$sample_id"
+    tag "chromo_go"
     container = 'ecoflowucl/chopgo:r-4.3.2_python-3.10_perl-5.38'
 
     input:
@@ -15,6 +15,7 @@ process CHROMO_GO {
 
     script:
     """
+    export PATH=\$PATH:/usr/bin
     go_chromosome.pl
 
     cat <<-END_VERSIONS > versions.yml
