@@ -106,10 +106,13 @@ workflow {
       ch_fna_gff.map { meta, fna, gff -> fna }             // path fasta (no meta)
    )
 
+   FILTER_FASTA ( GFFREAD.out.gffread_fasta )
+
+   // Use filtered fasta as merge_ch for all downstream processes
+   merge_ch = FILTER_FASTA.out
+
    // If you wish to run GO, we use eggnogmapper:
    if (params.run_eggnog) {
-
-      FILTER_FASTA ( GFFREAD.out.gffread_fasta )
 
       if (params.eggnog_data_dir) {
          ch_eggnog_data = channel.fromPath(params.eggnog_data_dir).first()
