@@ -15,7 +15,10 @@ process CHROMO_GO {
 
     script:
     """
-    export PATH=\$PATH:/usr/bin
+    # Make R available to perl backtick calls
+    ln -s /usr/bin/R ./R
+    export PATH=\$PWD:\$PATH
+    
     go_chromosome.pl
 
     cat <<-END_VERSIONS > versions.yml
