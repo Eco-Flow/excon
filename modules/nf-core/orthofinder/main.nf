@@ -17,9 +17,8 @@ process ORTHOFINDER {
     tuple val(meta), path("$prefix")                     , emit: orthofinder
     tuple val(meta), path("$prefix/WorkingDirectory")    , emit: working
     tuple val("${task.process}"), val('orthofinder'), eval("NO_COLOR=1 orthofinder --version | cut -d 'v' -f2 | perl -pe 's/\\e\\[[0-9;]*m//g'"), emit: versions_orthofinder, topic: versions
-    path("$prefix/WorkingDirectory/Orthogroups/Orthogroups.tsv")                     , emit: orthologues
-    path("$prefix/WorkingDirectory/Species_Tree/SpeciesTree_rooted_node_labels.txt") , emit: speciestree
-    path("$prefix/WorkingDirectory/Phylogenetic_Hierarchical_Orthogroups/N0.tsv")    , emit: no_ortho
+    path("$prefix/Orthogroups/Orthogroups.tsv")                     , emit: orthologues
+    path("$prefix/Species_Tree/SpeciesTree_rooted_node_labels.txt") , emit: speciestree
 
 
     when:

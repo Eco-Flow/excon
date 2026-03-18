@@ -153,9 +153,6 @@ workflow {
       ch_versions = ch_versions.mix(QUAST.out.versions.first())
    }
 
-   // Keep as individual per-species emissions (no .collect() here)
-   merge_ch = GFFREAD.out.gffread_fasta
-
    if (params.predownloaded_fasta && params.predownloaded_gofiles) {
       channel.fromPath(params.predownloaded_fasta)
          .mix( merge_ch.map { meta, fasta -> fasta } )  // extract fasta only
@@ -201,7 +198,8 @@ workflow {
 
    //Run chromosome GO analysis
    if (params.chromo_go && params.run_eggnog) {
-      CHROMO_GO ( GFFREAD.out.gffread_fasta.collect() , ch_go_files , ORTHOFINDER_GO.out.orthologues )
+      CHROMO_GO ( GFFREAD.out.gffread_fasta.map { meta, gff -> gff }.collect() , ch_go_files.map { meta, go -> go }.collect() , 
+ORTHOFINDER_GO.out.orthologues )
       ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
    }
 
@@ -220,7 +218,7 @@ workflow {
       RESCALE_TREE ( ORTHOFINDER_CAFE.out.speciestree )
 
       //Run Cafe analysis of expanded and contracted gene families.
-      CAFE ( ORTHOFINDER_CAFE.out.no_ortho, RESCALE_TREE.out.rescaled_tree )
+      CAFE ( ORTHOFINDER_CAFE.out.orthologues, RESCALE_TREE.out.rescaled_tree )
       ch_versions = ch_versions.mix(CAFE.out.versions)
 
       CAFE_PLOT ( CAFE.out.result )
