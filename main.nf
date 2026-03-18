@@ -142,14 +142,18 @@ workflow {
       ch_versions = ch_versions.mix(QUAST.out.versions.first())
    }
 
-   merge_ch = GFFREAD.out.gffread_fasta.collect()
-   
-   // If you have precomiled GO data, or want to download from biomart else do not do GO enrichmetn analysis:
+   // Keep as individual per-species emissions (no .collect() here)
+   merge_ch = GFFREAD.out.gffread_fasta
+
    if (params.predownloaded_fasta && params.predownloaded_gofiles) {
-      channel.fromPath(params.predownloaded_fasta).mix(merge_ch).collect().set{ proteins_ch }
+      channel.fromPath(params.predownloaded_fasta)
+         .mix(merge_ch)
+         .collect()
+         .set{ proteins_ch }
+      
       channel.fromPath(params.predownloaded_gofiles).collect().set{ go_file_ch }
 
-      ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] } , [[],[]] )
+      ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] }, [[],[]] )
 
       //GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.gffread_fasta , GFFREAD.out.gene_to_isoforms.collect() )
       //ch_versions = ch_versions.mix(GO_ASSIGN.out.versions.first())
@@ -170,12 +174,14 @@ workflow {
 
       GET_DATA.out.gene_ontology_files.collect().set{ go_file_ch }
 
-      GET_DATA.out.fasta_files.mix(merge_ch).collect().set{ proteins_ch }
+      GET_DATA.out.fasta_files
+         .mix(merge_ch)
+         .collect()
+         .set{ proteins_ch }
 
-      ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] } , [[],[]] )
-
-      //GO_ASSIGN ( go_file_ch , ORTHOFINDER_GO.out.orthologues, GFFREAD.out.longest , GFFREAD.out.gene_to_isoforms.collect() )
+      ORTHOFINDER_GO ( proteins_ch.map { [[id: "ortho_go"], it] }, [[],[]] )
    }
+
    
 
    //Run GO expansion analysis
