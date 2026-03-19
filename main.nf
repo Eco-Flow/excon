@@ -30,6 +30,7 @@ include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
 include { FILTER_FASTA } from './modules/local/filter_fasta'
 include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
 include { EGGNOG_TO_GO } from './modules/local/eggnog_to_go.nf'
+include { EGGNOG_TO_OG_GO } from './modules/local/eggnog_to_og_go.nf'
 
 include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
 include { GFFREAD } from './modules/nf-core/gffread/main.nf'
@@ -222,10 +223,20 @@ workflow {
       CAFE_PLOT ( CAFE.out.result )
       ch_versions = ch_versions.mix(CAFE_PLOT.out.versions)
 
-      if (params.predownloaded_fasta || params.ensembl_dataset) {
-         //CAFE_GO ( CAFE.out.result, CAFE.out.N0_table, GO_ASSIGN.out.go_og )
-         //ch_versions = ch_versions.mix(CAFE_GO.out.versions.first())
+      if (params.run_eggnog) {
+        EGGNOG_TO_OG_GO (
+            ch_go_files,                              // per-species go.txt files
+            ORTHOFINDER_CAFE.out.orthologues          // Orthogroups.tsv
+        )
+
+        CAFE_GO (
+            CAFE.out.result,
+            CAFE.out.N0_table,
+            EGGNOG_TO_OG_GO.out.og_go
+        )
+        ch_versions = ch_versions.mix(CAFE_GO.out.versions.first())
       }
+
    }
 
    CUSTOM_DUMPSOFTWAREVERSIONS ( ch_versions.collectFile(name: 'collated_versions.yml') )
