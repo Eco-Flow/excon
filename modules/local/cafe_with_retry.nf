@@ -5,7 +5,7 @@
 process CAFE {
     label 'process_medium'
     label 'process_long'
-    container= 'ecoflowucl/cafe:r-4.3.1'
+    container 'ecoflowucl/cafe:r-4.3.1'
     
     errorStrategy { task.attempt <= 1 ? 'retry' : 'ignore' }
     maxRetries 1
@@ -43,13 +43,13 @@ process CAFE {
         echo "Threshold: ${max_differential}"
         echo "=================================================="
         
-        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential}
+        /usr/bin/Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential}
     else
         echo "=================================================="
         echo "CAFE: First attempt without filtering"
         echo "=================================================="
         
-        Rscript ${projectDir}/bin/cafe_prep.R
+        /usr/bin/Rscript ${projectDir}/bin/cafe_prep.R
     fi
 
     echo "Running CAFE5 analysis..."

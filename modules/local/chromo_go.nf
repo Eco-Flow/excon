@@ -1,7 +1,7 @@
 process CHROMO_GO {
     label 'process_low'
     tag "chromo_go"
-    container = 'ecoflowucl/chopgo:r-4.3.2_python-3.10_perl-5.38'
+    container 'ecoflowucl/chopgo:r-4.3.2_python-3.10_perl-5.38'
 
     input:
     path gffs
