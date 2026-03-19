@@ -26,6 +26,7 @@ process AGAT_SPKEEPLONGESTISOFORM {
     """
     agat_sp_keep_longest_isoform.pl \\
         --gff ${gxf} \\
+        --cpu ${task.cpus} \\
         ${config_param} \\
         --out ${output} \\
         ${args}
