@@ -1,24 +1,30 @@
+# EXCON (v2.0.0)
+
 A Nextflow pipeline to describe and compare genomes across species. It also performs gene expansion and contraction analysis using CAFE.
 
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
-(minimum of 5 species ideally up to around 15).
+(minimum of 5 species ideally up to around 30).
 
-You can also run GO annotation (with user-provided GO files, or with GO files semi-automatically downloaded from Ensembl biomart). This is then used to check what GO terms are associated with expanded or contracted gene sets (from CAFE).
+You can also run GO annotation and analysis using eggnogmapper. You must provide a database yourself with `--eggnog_data_dir`, else everytime you run the pipeline, it will download the DB for you. So be careful, it is ~7GB. Please run it once, and save the DB somewhere handy to point to. 
+This is then used to check what GO terms are associated with expanded or contracted gene sets (from CAFE).
 
+## Overview
 
 The general pipeline logic is as follows:
 
-* Downloads the genome and gene annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`.
-  - Or you provide your own genomes/annotations
-* Describes genome assembly and annotation (optional):
-  - `[BUSCO_BUSCO]`: Determines how complete is the gneome compared to expected.
-  - `[QUAST]`: Determines the N50, how contiguous the genome is.
-  - `[AGAT_SPSTATISTICS]`: Checks the length, number of genes, exons, introns, etc.
-* Extract longest protein fasta sequences `[GFFREAD]`.
-* Finds orthologous genes `[ORTHOFINDER_CAFE]`.
-* Runs cafe analysis on the output of orthofinder `[CAFE]`.
-* Runs gene to GO assignment (optional) `[ORTHOFINDER_GO], [GO_ASSIGN]`.
-* Plot GO enrichment for excon genes (optional) `[CAFE_GO]`.
+* Downloads genome and annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`, or you provide your own.
+* Standardises and filters GFF annotations `[AGAT_CONVERTSPGXF2GXF]` `[AGAT_SPKEEPLONGESTISOFORM]`.
+* Extracts longest protein fasta sequences `[GFFREAD]`.
+* Optionally describes genome assembly and annotation:
+  - `[BUSCO_BUSCO]`: Completeness of the genome compared to expected gene set.
+  - `[QUAST]`: Assembly contiguity statistics (N50 etc).
+  - `[AGAT_SPSTATISTICS]`: Gene, exon, and intron statistics.
+* Finds orthologous genes across species `[ORTHOFINDER_CAFE]`.
+* Rescales species tree branch lengths `[RESCALE_TREE]`.
+* Runs gene family evolution analysis `[CAFE]` and plots results `[CAFE_PLOT]`.
+* Optionally assigns GO terms to genes using `[EGGNOGMAPPER]`.
+* Optionally plots GO enrichment for expanded/contracted gene families `[CAFE_GO]`.
+* Optionally plots GO enrichment of genes by chromosome `[CHROMO_GO]`.
 
 ## Installation
 
@@ -28,8 +34,8 @@ Nextflow pipelines require a few prerequisites. There is further documentation o
 
 - [Docker](https://docs.docker.com/engine/install/) or [Singularity](https://docs.sylabs.io/guides/3.11/admin-guide/installation.html).
 - [Java](https://www.java.com/en/download/help/download_options.html) and [openJDK](https://openjdk.org/install/) >= 8 (**Please Note:** When installing Java versions are `1.VERSION` so `Java 8` is `Java 1.8`).
-- [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html) >= `v23.07.0`.
-- When running nextflow with this pipeline, ideally run `NXF_VER=24.10.1` beforehand, to ensure functionality on this version.
+- [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html) >= `v25.10.0`.
+- When running nextflow with this pipeline, ideally run `NXF_VER=25.10.0` beforehand, to ensure functionality on this version.
 
 ### Install
 
@@ -69,22 +75,86 @@ Drosophila_simulans,data/Drosophila_simulans/genome.fna.gz,data/Drosophila_simul
 Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santomea/genomic.gff.gz
 ```
 
-### Optional 
+> **Note:** Genomes should be chromosome-level, not contig-level. RefSeq IDs must be used (not GenBank IDs).
 
-* `--outdir /path/to/output/directory` - A path to the output directory where the results will be written to (**Default:** `Results`).
-* For GO assignment:
-  * `--predownloaded_fasta /path/to/predownloaded/fasta` - A path to a folder containing a singular or multiple file for each species you wish to use for GO assignment (**Default:** `null`) AND
-  * `--predownloaded_gofiles /path/to/predownloaded_gofiles` - A path to a folder containing a singular or multiple file for each species you wish to use for GO assignment. Matched to above flag. One GO file and one protein fasta for each species with matched names (**Default:** `null`) \
-  **OR**
-  * `--ensembl_dataset  /path/to/ensembl/dataset` - A path to a file containing a list of ensembl biomart dataset names you wish to use for GO assignment. Separated by newline i.e. `data/biomart.txt` (**Default:** `null`) AND
-  * `--ensembl_biomart /path/to/ensembl_biomart` - A name of an ensembl biomart that contains the species data you want to use for GO assignment (e.g. metazoa_mart for insects) (**Default:** `null`).
-* `--skip_cafe` - A flag to skip the cafe section. Used if you just wish to run go assignment for a species without runnig Cafe (**Default:** `null`).
-* `--go_expansion` - A flag optionally choose to run a basic expansion/contraction analysis (**Default:** `null`).
-* `--chromo_go` - A flag to optionally choose to run GO analysis on each chromosome (**Default:** `null`).
-* `--clean` - A true or false value assigned to this parameter will determine whether the work directory is automatically deleted or not if the pipeline is successful. Deleting the work directory saves space however it will not be possible to use this work directory in future for caching (**Default:** `false`).
-* `--help` - A true value assigned to this parameter will cause the help message to be displayed instead of pipeline running (**Default:** `false`).
-* `--custom_config` - A path or URL to a custom configuration file.
-* `--stats` - A flag to optionally choose to run statistics and other quality checks on the gnomes. Stats are provided by BUSCO, QUAST and AGAT spstatistics (**Default:** `null`).
+## Parameters
+
+### Core options
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--input` | Path to input CSV file | Required |
+| `--outdir` | Output directory | `results` |
+| `--groups` | NCBI taxonomy group for genome download (e.g. `insects`, `bacteria`) | `insects` |
+| `--help` | Display help message | `false` |
+| `--custom_config` | Path to a custom Nextflow config file | `null` |
+
+### Quality statistics (optional)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--stats` | Run BUSCO, QUAST and AGAT statistics on genomes | `null` |
+| `--busco_lineage` | BUSCO lineage database (e.g. `insecta_odb10`) | `null` |
+| `--busco_mode` | BUSCO mode (`genome`, `proteins`, `transcriptome`) | `null` |
+| `--busco_lineages_path` | Path to local BUSCO lineage databases | `null` |
+| `--busco_config` | Path to BUSCO config file | `null` |
+
+### CAFE gene family evolution
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--skip_cafe` | Skip CAFE analysis | `null` |
+| `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
+| `--tree_scale_factor` | Scale factor for rescaling species tree branch lengths | `1000` |
+
+### GO annotation with EggNOG-mapper (optional)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--run_eggnog` | Run EggNOG-mapper GO annotation | `false` |
+| `--eggnog_data_dir` | Path to pre-downloaded EggNOG database directory | `null` |
+
+> **Note:** The EggNOG database is ~7GB. If `--eggnog_data_dir` is not provided, the database will be downloaded automatically on each run. We strongly recommend downloading it once and reusing it:
+>
+> ```bash
+> mkdir eggnog_data
+> wget http://eggnog5.embl.de/download/emapperdb-5.0.2/eggnog.db.gz -O eggnog_data/eggnog.db.gz
+> wget http://eggnog5.embl.de/download/emapperdb-5.0.2/eggnog_proteins.dmnd.gz -O eggnog_data/eggnog_proteins.dmnd.gz
+> wget http://eggnog5.embl.de/download/emapperdb-5.0.2/eggnog.taxa.tar.gz -O eggnog_data/eggnog.taxa.tar.gz
+> gunzip eggnog_data/eggnog.db.gz
+> gunzip eggnog_data/eggnog_proteins.dmnd.gz
+> tar -xzf eggnog_data/eggnog.taxa.tar.gz -C eggnog_data/ && rm eggnog_data/eggnog.taxa.tar.gz
+> ```
+>
+> Then pass `--eggnog_data_dir /path/to/eggnog_data` to the pipeline.
+
+### GO enrichment analysis (optional, requires `--run_eggnog`)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--chromo_go` | Run GO enrichment analysis by chromosome | `null` |
+| `--go_cutoff` | P-value cutoff for GO enrichment | `0.05` |
+| `--go_type` | GO test type (e.g. `none`) | `none` |
+| `--go_max_plot` | Maximum number of GO terms to plot | `10` |
+
+### Resource limits
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--max_memory` | Maximum memory per job | `128.GB` |
+| `--max_cpus` | Maximum CPUs per job | `16` |
+| `--max_time` | Maximum runtime per job | `240.h` |
+
+## Profiles
+
+| Profile | Description |
+|---------|-------------|
+| `docker` | Run with Docker containers |
+| `singularity` | Run with Singularity containers |
+| `conda` | Run with Conda environments |
+| `test_bacteria` | Test run with small bacterial genomes |
+| `test_small` | Test run with small insect genomes |
+
 
 ## Profiles
 
