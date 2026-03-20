@@ -56,8 +56,6 @@ workflow {
    }
    .set { input_type }
 
-   ch_versions = Channel.empty()
-
    validateParameters()
    log.info paramsSummaryLog(workflow)
 
@@ -118,7 +116,6 @@ workflow {
          channel.value([ 'diamond', [] ]),
          ch_eggnog_data
       )
-      ch_versions = ch_versions.mix(EGGNOGMAPPER.out.versions_eggnogmapper.first())
 
       EGGNOG_TO_GO ( EGGNOGMAPPER.out.annotations )
 
@@ -137,13 +134,10 @@ workflow {
          params.busco_lineages_path ?: [],
          params.busco_config ?: []
       )
-      ch_versions = ch_versions.mix(BUSCO_BUSCO.out.versions.first())
 
       AGAT_SPSTATISTICS ( GFFREAD.out.gffs_agat )
-      ch_versions = ch_versions.mix(AGAT_SPSTATISTICS.out.versions.first())
 
       QUAST ( GFFREAD.out.fasta_quast, GFFREAD.out.gffs_agat )
-      ch_versions = ch_versions.mix(QUAST.out.versions.first())
    }
 
    // --- CAFE gene family evolution --- 
@@ -161,10 +155,8 @@ workflow {
       RESCALE_TREE ( ORTHOFINDER_CAFE.out.speciestree )
 
       CAFE ( ORTHOFINDER_CAFE.out.orthologues, RESCALE_TREE.out.rescaled_tree )
-      ch_versions = ch_versions.mix(CAFE.out.versions)
 
       CAFE_PLOT ( CAFE.out.result )
-      ch_versions = ch_versions.mix(CAFE_PLOT.out.versions)
 
       // -- CAFE GO enrichment (requires eggnog) ---
 
@@ -179,7 +171,6 @@ workflow {
             CAFE.out.N0_table,
             EGGNOG_TO_OG_GO.out.og_go
          )
-         ch_versions = ch_versions.mix(CAFE_GO.out.versions.first())
       }
 
       // --- Chromosome GO analysis (requires eggnog) ---
@@ -190,11 +181,15 @@ workflow {
             ch_go_files,
             ORTHOFINDER_CAFE.out.orthologues
          )
-         ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
       }
    }
 
-   CUSTOM_DUMPSOFTWAREVERSIONS ( ch_versions.collectFile(name: 'collated_versions.yml') )
+   CUSTOM_DUMPSOFTWAREVERSIONS (
+    Channel.topic('versions')
+        .collectFile(name: 'collated_versions.yml') { process, name, version ->
+            "\"${process}\":\n  ${name}: ${version}\n"
+        }
+   )
 }
 
 workflow.onComplete {
