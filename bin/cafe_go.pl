@@ -46,7 +46,7 @@ while (my $line = <$filein>){
     $line =~ s/\r//g;
     my @splitl=split("\t", $line);
     my $hog=$splitl[0];
-    my $og=$splitl[1];
+    my $og=$splitl[0];
     $HOG_TO_OG{$hog}=$og;
     my $n=0;
     #add hog to line:
