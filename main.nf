@@ -166,7 +166,7 @@ workflow {
          .collect()
          .set{ proteins_ch }
 
-      ORTHOFINDER_GO ( proteins_ch.map { files -> [ [id: "ortho_go"], files ] }, [[],[]] )
+      //ORTHOFINDER_GO ( proteins_ch.map { files -> [ [id: "ortho_go"], files ] }, [[],[]] )
    }
    else if ( params.ensembl_dataset && params.ensembl_biomart ){
 
@@ -189,7 +189,7 @@ workflow {
          .collect()
          .set{ proteins_ch }
 
-      ORTHOFINDER_GO ( proteins_ch.map { files -> [ [id: "ortho_go"], files ] }, [[],[]] )
+      //ORTHOFINDER_GO ( proteins_ch.map { files -> [ [id: "ortho_go"], files ] }, [[],[]] )
    }
 
    if (params.go_expansion) {
@@ -197,15 +197,6 @@ workflow {
       //ch_versions = ch_versions.mix(GO_EXPANSION.out.versions)
    }
 
-
-   if (params.chromo_go && params.run_eggnog) {
-    CHROMO_GO ( 
-        AGAT_SPKEEPLONGESTISOFORM.out.gff.map { meta, gff -> gff }.collect(),
-        ch_go_files,
-        ORTHOFINDER_CAFE.out.orthologues
-    )
-    ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
-   }
 
    if (params.skip_cafe == null) {
       ORTHOFINDER_CAFE ( 
@@ -239,6 +230,17 @@ workflow {
       }
 
    }
+
+
+   if (params.chromo_go && params.run_eggnog) {
+    CHROMO_GO (
+        AGAT_SPKEEPLONGESTISOFORM.out.gff.map { meta, gff -> gff }.collect(),
+        ch_go_files,
+        ORTHOFINDER_CAFE.out.orthologues
+    )
+    ch_versions = ch_versions.mix(CHROMO_GO.out.versions)
+   }
+
 
    CUSTOM_DUMPSOFTWAREVERSIONS ( ch_versions.collectFile(name: 'collated_versions.yml') )
 
