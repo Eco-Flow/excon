@@ -1,11 +1,14 @@
 process ORTHOFINDER {
     tag "$meta.id"
     label 'process_high'
+    label 'process_med_long'
 
     conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/orthofinder:3.1.3--hdfd78af_0':
-        'community.wave.seqera.io/library/famsa_orthofinder:9234f46bf08ab617' }"
+    container {
+        workflow.containerEngine == 'singularity' && !task.ext?.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/orthofinder:3.1.3--hdfd78af_0' :
+        'biocontainers/orthofinder:3.1.3--hdfd78af_0'
+    }
 
     input:
     tuple val(meta), path(fastas, stageAs: 'input/')
@@ -15,9 +18,8 @@ process ORTHOFINDER {
     tuple val(meta), path("$prefix")                     , emit: orthofinder
     tuple val(meta), path("$prefix/WorkingDirectory")    , emit: working
     tuple val("${task.process}"), val('orthofinder'), eval("NO_COLOR=1 orthofinder --version | cut -d 'v' -f2 | perl -pe 's/\\e\\[[0-9;]*m//g'"), emit: versions_orthofinder, topic: versions
-    path("$prefix/WorkingDirectory/Orthogroups/Orthogroups.tsv")                     , emit: orthologues
-    path("$prefix/WorkingDirectory/Species_Tree/SpeciesTree_rooted_node_labels.txt") , emit: speciestree
-    path("$prefix/WorkingDirectory/Phylogenetic_Hierarchical_Orthogroups/N0.tsv")    , emit: no_ortho
+    path("$prefix/Orthogroups/Orthogroups.tsv")                     , emit: orthologues
+    path("$prefix/Species_Tree/SpeciesTree_rooted_node_labels.txt") , emit: speciestree
 
 
     when:

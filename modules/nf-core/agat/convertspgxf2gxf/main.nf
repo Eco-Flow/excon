@@ -1,4 +1,4 @@
-process AGAT_SPKEEPLONGESTISOFORM {
+process AGAT_CONVERTSPGXF2GXF {
     tag "$meta.id"
     label 'process_medium'
 
@@ -9,33 +9,27 @@ process AGAT_SPKEEPLONGESTISOFORM {
 
     input:
     tuple val(meta), path(gxf)
-    path config
 
     output:
-    tuple val(meta), path("${output}"), emit: gff
+    tuple val(meta), path("*.agat.gff"), emit: output_gff
     tuple val("${task.process}"), val('agat'), eval("agat --version | sed 's/v//'"), topic: versions, emit: versions_agat
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args         = task.ext.args   ?: ''
-    def prefix       = task.ext.prefix ?: "${meta.id}"
-    def config_param = config ? "--config ${config}" : ""
-    output           = "${prefix}.longest.gff"
+    def args   = task.ext.args   ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    agat_sp_keep_longest_isoform.pl \\
-        --gff ${gxf} \\
-        --cpu ${task.cpus} \\
-        ${config_param} \\
-        --out ${output} \\
+    agat_convert_sp_gxf2gxf.pl \\
+        --gxf ${gxf} \\
+        --output ${prefix}.agat.gff \\
         ${args}
     """
 
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
-    output     = "${prefix}.longest.gff"
     """
-    touch ${output}
+    touch ${prefix}.agat.gff
     """
 }

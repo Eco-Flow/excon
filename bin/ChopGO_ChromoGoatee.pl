@@ -470,7 +470,7 @@ else {
     
     foreach my $results (@ALL_made_files){
 	chomp $results;
-	my $in_here="$binPath\/MakeHist_fromChartGO-jcvi.pl";
+	my $in_here="$binPath\/MakeHist_fromChartGO-10.pl";
 	if ($in_here=~ m/ /){
 	    $in_here=~ s/ /\\ /g;
 	}

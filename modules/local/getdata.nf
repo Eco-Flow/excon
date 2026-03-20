@@ -2,7 +2,7 @@ process GET_DATA {
 
     label 'process_low'
     tag "${ensembl_dataset}"
-    container = 'ecoflowucl/biomart_perl:r-4.3.1_perl-5.38.2'
+    container 'ecoflowucl/biomart_perl:r-4.3.1_perl-5.38.2'
     
     input:
     val(ensembl_biomart)

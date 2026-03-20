@@ -1,6 +1,6 @@
 process CAFE_PLOT {
     label 'process_single'
-    container = 'ecoflowucl/cafeplotter:latest'
+    container 'ecoflowucl/cafeplotter:latest'
 
     input:
     path Cafe_dir

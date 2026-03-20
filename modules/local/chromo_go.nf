@@ -1,7 +1,7 @@
 process CHROMO_GO {
     label 'process_low'
-    tag "$sample_id"
-    container = 'ecoflowucl/chopgo:r-4.3.2_python-3.10_perl-5.38'
+    tag "chromo_go"
+    container 'ecoflowucl/chopgo:r-4.3.2_python-3.10_perl-5.38'
 
     input:
     path gffs
@@ -15,6 +15,10 @@ process CHROMO_GO {
 
     script:
     """
+    # Make R available to perl backtick calls
+    ln -s /usr/bin/R ./R
+    export PATH=\$PWD:\$PATH
+    
     go_chromosome.pl
 
     cat <<-END_VERSIONS > versions.yml

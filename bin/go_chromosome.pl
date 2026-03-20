@@ -4,8 +4,8 @@ use strict;
 
 print "Please be in folder with focal gff3 file and GO hashes\n\n";
 
-my @goes=`ls *Result_All_Combine_GO_format`;
-my @in_gfffile=`ls *.gff3`;
+my @goes=`ls *.go.txt`;
+my @in_gfffile=`ls *.longest.gff`;
 my $ortho="Orthogroups.tsv";
 
 
@@ -22,8 +22,6 @@ while (my $lineOrtho=<$orthin>){
     my $OG= shift(@colsplit);
     foreach my $row (@colsplit){
         my @isoform_sp=split(", ", $row);
-
-        #print "HERE $OG : $n\n";
         my @big_name=split(/\./, $colHeadsplit[$n]);
         my $tidyname=$big_name[0];
         foreach my $iso (@isoform_sp){
@@ -40,15 +38,11 @@ my @jobs;   #To store pairs of gff and go files to run
 #Check we have the right files for each species:
 foreach my $gofile (@goes){
     chomp $gofile;
-    #print "$gofile\n";
     my @sp_gp =split(/\./, $gofile);
     my $match=0;
     foreach my $gfffile (@in_gfffile){
         chomp $gfffile;
         my @sp_gff=split(/\./, $gfffile);
-        #print "$gfffile cat $sp_gp[0]  and $sp_gff[0]\n";
-        
-
         if ($sp_gp[0] eq $sp_gff[0]){
             $match=1;
             push (@jobs, "$gofile $gfffile");
@@ -61,8 +55,6 @@ foreach my $gofile (@goes){
         print "ERROR: $sp_gp[0] does not have an equivalent gff file\n"
     }
 }
-
-
 
 
 #Now run through the jobs and prepare the input files.
@@ -87,22 +79,17 @@ foreach my $species (@jobs){
     while (my $line=<$filein>){
         chomp $line;
         my @split=split("\t", $line);
-        #if line is an mRNA line, then we can check the gene to isoform IDs.
         my $gene;
         my $tran;
         my $scaffold=$split[0];
 
-        #ignore blank lines, starting with #/
         if ($line =~ /^#/){
             #do nothing
         }
         else{
-            #print "$line\n";
             if ($split[2] eq "mRNA"){
            
-                #Do different split if AUGUSTUS or NCBI
                 if ($split[1] eq "AUGUSTUS"){
-                    #Its an AUGUSTUS GFF
                     my @lsplit=split("\;", $split[8]);
                     my @genesp=split("\=", $lsplit[1]);
                     my @transp=split("\=", $lsplit[0]);
@@ -110,7 +97,6 @@ foreach my $species (@jobs){
                     $tran=$transp[1];
                 }
                 elsif($split[1] eq "maker"){
-                    #Its probably a maker gff with ID and Parent for gene and transcript isoform names:
                     my @lsplit=split("\;", $split[8]);
                     my %temp_h;
                     foreach my $bits (@lsplit){
@@ -130,18 +116,32 @@ foreach my $species (@jobs){
                     }
                     my $fullgene=$temp_h{"Parent"};
                     my @fullsp=split("\:", $fullgene);
-                    my @fullminusdash=split("\-",$fullsp[-1]);
-                    $gene=$fullminusdash[-1];
-                    $tran=$temp_h{"transcript_id"};
+                    $gene=$fullsp[-1];
+                    # Keep full transcript ID (including rna- prefix) for orthogroup lookup
+                    $tran=$temp_h{"ID"};
                 }
 
-
-                print $fileout  "$gene\t$scaffold\n";
-                #if the species gene exists in the orthofinder table, then print it to the OG run:
-                if ($orthogroup_hash{$species_name}{$gene}){
-                    print $fileout2 "$orthogroup_hash{$species_name}{$gene}\t$scaffold\n";
+                # Try gene ID first in orthogroup hash, then full transcript ID as fallback
+                my $lookup_id = $gene;
+                if (!$orthogroup_hash{$species_name}{$gene} && $tran){
+                    $lookup_id = $tran;
                 }
-                
+
+                # Write to OG duplicates file if found in orthogroups
+                if ($orthogroup_hash{$species_name}{$lookup_id}){
+                    my $og_id = $orthogroup_hash{$species_name}{$lookup_id};
+                    # Sanitise OG ID for R
+                    $og_id =~ s/\-/\_/g;
+                    $og_id =~ s/\:/\_/g;
+                    print $fileout2 "$og_id\t$scaffold\n";
+                }
+
+                # Sanitise gene ID for R before writing to go_r_file.txt
+                my $gene_r = $gene;
+                $gene_r =~ s/\-/\_/g if $gene_r;
+                $gene_r =~ s/\:/\_/g if $gene_r;
+                print $fileout "$gene_r\t$scaffold\n";
+
                 if ($Gene_tran_hash{$gene}){
                     my $old=$Gene_tran_hash{$gene};
                     $Gene_tran_hash{$gene}="$old\,$tran";
@@ -154,7 +154,6 @@ foreach my $species (@jobs){
     }
 
     #Now make a Orthogroup background file:
-
     open(my $filego, "<", $go)   or die "Could not open $go\n";
 
     my $out3="$species_name\.go_r_file.noDuplicates_BK.txt";
@@ -164,26 +163,28 @@ foreach my $species (@jobs){
     while (my $linego=<$filego>){
         chomp $linego;
         my @splitgo=split("\t", $linego);
+        my $go_gene = $splitgo[0];
 
-        if ($orthogroup_hash{$species_name}{$splitgo[0]}){
-            if ($exist_hit{"$orthogroup_hash{$species_name}{$splitgo[0]}\t$splitgo[1]"}){
-                #do nothing; hit exists.
-            }
-            else{
-                print $fileout3 "$orthogroup_hash{$species_name}{$splitgo[0]}\t$splitgo[1]\n";
-                $exist_hit{"$orthogroup_hash{$species_name}{$splitgo[0]}\t$splitgo[1]"}="YES";
+        # Try direct lookup first, then with rna- prefix stripped
+        my $found_og = $orthogroup_hash{$species_name}{$go_gene};
+
+        if ($found_og){
+            # Sanitise OG ID for R
+            my $og_clean = $found_og;
+            $og_clean =~ s/\-/\_/g;
+            $og_clean =~ s/\:/\_/g;
+            my $hit_key = "$og_clean\t$splitgo[1]";
+            if (!$exist_hit{$hit_key}){
+                print $fileout3 "$og_clean\t$splitgo[1]\n";
+                $exist_hit{$hit_key}="YES";
             }
         }
     }
-
-
-    #close handles, sort duplicated go list, and run ChopGO.
 
     close $fileout;
     close $filein;
     print "Now running go chromosome analysis for $species_name\n";
 
-    #Sort the duplicate file:
     `sort $species_name\.go_r_file.noDuplicates.txt | uniq > $species_name\.go_r_file.noDuplicates.uniq.txt`;
 
     my $out4="$species_name\.go_r_file.noDuplicates.noSameScaffold.txt";
@@ -195,7 +196,6 @@ foreach my $species (@jobs){
         chomp $line4;
         my @split=split("\t", $line4);
         if ($hit{$split[0]}){
-            #delete $hit{$split[0]};
             $bad{$split[0]}="duplicate_scaffold";
         }
         $hit{$split[0]}=$split[1];
@@ -213,7 +213,6 @@ foreach my $species (@jobs){
     close $fileout4;
     close $filein4;
 
-    #Remove background duplicated orthogroups.
     my $out5="$species_name\.go_r_file.noDuplicates_BK.noDuplicates.txt";
     open(my $fileout5, ">", $out5)   or die "Could not open $out5\n";
     open(my $filein5, "<", "$species_name\.go_r_file.noDuplicates_BK.txt")   or die "Could not open $species_name\.go_r_file.noDuplicates_BK.txt\n";
