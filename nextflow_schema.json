@@ -177,9 +177,26 @@
           "type": "integer",
           "description": "Choose number of rows to plot in GO figure",
           "default": 10
+        },
+        "tree_scale_factor": {
+            "type": "integer",
+            "default": 1000,
+            "description": "Scale factor for rescaling species tree branch lengths to prevent numerical precision issues in CAFE."
+        },
+        "cafe_max_differential": {
+            "type": "integer", 
+            "default": 50,
+            "description": "Maximum gene count differential threshold for CAFE filtering on retry."
+        },
+        "run_eggnog": {
+            "type": "boolean",
+            "default": false,
+            "description": "Run EggNOG-mapper GO annotation pipeline."
+        },
+        "eggnog_data_dir": {
+            "type": "string",
+            "description": "Path to pre-downloaded EggNOG database directory. If null, database will be downloaded automatically."
         }
-
-
       }
     }
   },
