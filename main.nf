@@ -23,7 +23,7 @@ include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_GO } from './modules/local/cafe_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
-include { FILTER_FASTA } from './modules/local/filter_fasta'
+include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
 include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
 include { EGGNOG_TO_GO } from './modules/local/eggnog_to_go.nf'
 include { EGGNOG_TO_OG_GO } from './modules/local/eggnog_to_og_go.nf'
@@ -97,8 +97,17 @@ workflow {
    )
 
    // Remove stop codons from protein fasta
-   FILTER_FASTA ( GFFREAD.out.gffread_fasta )
-   merge_ch = FILTER_FASTA.out
+   ch_fasta_for_rename = GFFREAD.out.gffread_fasta.join(
+    AGAT_SPKEEPLONGESTISOFORM.out.gff
+   )
+
+   RENAME_FASTA (
+    ch_fasta_for_rename.map { meta, fasta, gff -> [ meta, fasta ] },
+    ch_fasta_for_rename.map { meta, fasta, gff -> [ meta, gff ] }
+   )
+
+   // Use renamed fasta for everything downstream
+   merge_ch = RENAME_FASTA.out.fasta
 
    // --- Eggnog GO annotation --- 
 
@@ -112,12 +121,19 @@ workflow {
       }
 
       EGGNOGMAPPER (
-         FILTER_FASTA.out,
+         RENAME_FASTA.out.fasta,
          channel.value([ 'diamond', [] ]),
          ch_eggnog_data
       )
 
-      EGGNOG_TO_GO ( EGGNOGMAPPER.out.annotations )
+      ch_annot_gff = EGGNOGMAPPER.out.annotations.join(
+         AGAT_SPKEEPLONGESTISOFORM.out.gff
+      )
+
+      EGGNOG_TO_GO (
+         ch_annot_gff.map { meta, annot, gff -> [ meta, annot ] },
+         ch_annot_gff.map { meta, annot, gff -> [ meta, gff ] }
+      )
 
       ch_go_files = EGGNOG_TO_GO.out.go_file
          .map { meta, go -> go }
