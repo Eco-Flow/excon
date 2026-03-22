@@ -1,8 +1,15 @@
 # Changelog
 
-# Changelog
+## [v2.0.1] - 2026-03-22
 
-## [v3.1.0] - 2026-03-20
+### New features
+- Added function to adapt names of samples from AUGUSTUS type GFFs.
+- Fixed missing GO plot errors.
+- Schema and config updates to new modules and usage
+- New gffmix input test to make sure it works with a variety of gff types.
+- Added missing containers for some modules, and with ps to work with nextflow
+
+## [v2.0.0] - 2026-03-20
 
 ### New features
 - Added EggNOG-mapper integration for GO annotation (`--run_eggnog`)
