@@ -1,9 +1,7 @@
 process RESCALE_TREE {
     label 'process_single'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/eggnog-mapper:2.1.13--pyhdfd78af_2' :
-        'biocontainers/eggnog-mapper:2.1.13--pyhdfd78af_2' }"
+    container 'ecoflowucl/chopgo:r-4.3.2_python-3.10_perl-5.38'
 
     input:
     path tree_newick
