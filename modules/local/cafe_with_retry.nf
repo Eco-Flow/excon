@@ -68,8 +68,7 @@ then
         exit 1
     fi
     
-    if ! cafe5 -i hog_gene_counts.tsv -t SpeciesTree_rooted_ultra.txt --cores ${task.cpus} -o Out_cafe_p_k3 -p -k 3 2>&1 | tee 
-cafe_p_k3.log; then
+    if ! cafe5 -i hog_gene_counts.tsv -t SpeciesTree_rooted_ultra.txt --cores ${task.cpus} -o Out_cafe_p_k3 -p -k 3 2>&1 | tee cafe_p_k3.log; then
         echo "ERROR: CAFE5 p k3 run failed"
         exit 1
     fi
