@@ -18,3 +18,5 @@ apptainer
 singularity
 input.csv
 *.config
+!nextflow.config
+!conf/*.config

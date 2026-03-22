@@ -82,7 +82,8 @@ foreach my $species (@jobs){
         my $gene;
         my $tran;
         my $scaffold=$split[0];
-
+        # Make scaffold name R-safe (R can't handle purely numeric names)
+        $scaffold =~ s/^(\d+)$/chr_$1/;
         if ($line =~ /^#/){
             #do nothing
         }
@@ -123,9 +124,15 @@ foreach my $species (@jobs){
 
                 # Try gene ID first in orthogroup hash, then full transcript ID as fallback
                 my $lookup_id = $gene;
-                if (!$orthogroup_hash{$species_name}{$gene} && $tran){
-                    $lookup_id = $tran;
-                }
+		my $gene_stripped = $gene;
+		$gene_stripped =~ s/^gene-//;
+
+		if (!$orthogroup_hash{$species_name}{$gene} && $orthogroup_hash{$species_name}{$gene_stripped}){
+                    $lookup_id = $gene_stripped;
+		}
+		elsif (!$orthogroup_hash{$species_name}{$gene} && $tran){
+		    $lookup_id = $tran;
+		}
 
                 # Write to OG duplicates file if found in orthogroups
                 if ($orthogroup_hash{$species_name}{$lookup_id}){
@@ -138,6 +145,7 @@ foreach my $species (@jobs){
 
                 # Sanitise gene ID for R before writing to go_r_file.txt
                 my $gene_r = $gene;
+                $gene_r =~ s/^gene-//;
                 $gene_r =~ s/\-/\_/g if $gene_r;
                 $gene_r =~ s/\:/\_/g if $gene_r;
                 print $fileout "$gene_r\t$scaffold\n";

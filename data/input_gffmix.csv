@@ -1,0 +1,3 @@
+Vespula_pensylvanica,GCF_014466175.1
+Bombus_impatiens,s3://excon/data/mixgff_input_data/B_impatiens_GenomeSoftmasked.fasta.gz,s3://excon/data/mixgff_input_data/B_impatiens.gff.gz
+Vespula_germanica,s3://excon/data/mixgff_input_data/Vespula_germanica-GCA_905340365.1-softmasked.fa.gz,s3://excon/data/mixgff_input_data/Vespula_germanica-GCA_905340365.1-2021_11-genes.gff3.gz
