@@ -1,7 +1,7 @@
 process RESCALE_TREE {
     label 'process_single'
 
-    container 'docker://python:3.11'
+    container 'docker://python:3.11-slim'
 
     input:
     path tree_newick
