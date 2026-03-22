@@ -11,7 +11,7 @@ process RENAME_FASTA {
     tuple val(meta2), path(gff)
 
     output:
-    tuple val(meta), path("${meta.id}.renamed.fasta"), emit: fasta
+    tuple val(meta), path("${meta.id}.clean.fasta"), emit: fasta
 
     script:
     """
@@ -51,7 +51,7 @@ process RENAME_FASTA {
                 tran_to_gene["transcript:" + tran_id] = gene_id
                 tran_to_gene[tran_id.replace("rna-", "")] = gene_id
 
-    with open("${fasta}") as fin, open("${meta.id}.renamed.fasta", "w") as fout:
+    with open("${fasta}") as fin, open("${meta.id}.clean.fasta", "w") as fout:
         for line in fin:
             if line.startswith(">"):
                 seq_id = line[1:].strip().split()[0]
