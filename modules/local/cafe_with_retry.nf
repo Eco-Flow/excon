@@ -54,7 +54,7 @@ process CAFE {
 
     echo "Running CAFE5 analysis..."
     
-    if ! cafe5 -i hog_gene_counts.tsv -t pruned_tree --cores ${task.cpus} -o Out_cafe 2>&1 | tee cafe_base.log; then
+    if ! cafe5 -i hog_gene_counts.tsv -t SpeciesTree_rooted_ultra.txt --cores ${task.cpus} -o Out_cafe 2>&1 | tee cafe_base.log; then
         echo "ERROR: CAFE5 base run failed"
         if grep -q "largest size differential" cafe_base.log; then
             echo "Detected size differential error - will retry with filtering"
