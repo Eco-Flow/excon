@@ -13,15 +13,19 @@ This is then used to check what GO terms are associated with expanded or contrac
 The general pipeline logic is as follows:
 
 * Downloads genome and annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`, or you provide your own.
-* Standardises and filters GFF annotations `[AGAT_CONVERTSPGXF2GXF]` `[AGAT_SPKEEPLONGESTISOFORM]`.
-* Extracts longest protein fasta sequences `[GFFREAD]`.
+* Unzips the files, if necessary `[GUNZIP]`
+* Standardises and filters GFF annotations `[AGAT_CONVERTSPGXF2GXF]`.
+* Extracts longest protein `[AGAT_SPKEEPLONGESTISOFORM]`.
+* Gets the protein sequences `[GFFREAD]`.
+* Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Optionally describes genome assembly and annotation:
   - `[BUSCO_BUSCO]`: Completeness of the genome compared to expected gene set.
   - `[QUAST]`: Assembly contiguity statistics (N50 etc).
   - `[AGAT_SPSTATISTICS]`: Gene, exon, and intron statistics.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`.
-* Rescales species tree branch lengths `[RESCALE_TREE]`.
+* Rescales species tree branch lengths for CAFE `[RESCALE_TREE]`.
 * Runs gene family evolution analysis `[CAFE]` and plots results `[CAFE_PLOT]`.
+* Optionally downloads the eggnogmapper database `[EGGNOG_DOWNLOAD]`.
 * Optionally assigns GO terms to genes using `[EGGNOGMAPPER]`.
 * Optionally plots GO enrichment for expanded/contracted gene families `[CAFE_GO]`.
 * Optionally plots GO enrichment of genes by chromosome `[CHROMO_GO]`.
