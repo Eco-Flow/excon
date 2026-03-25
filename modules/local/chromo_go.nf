@@ -1,5 +1,6 @@
 process CHROMO_GO {
     label 'process_low'
+    label 'process_high_memory'
     tag "chromo_go"
     container 'ecoflowucl/chopgo:r-4.3.2_python-3.10_perl-5.38'
 
