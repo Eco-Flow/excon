@@ -1,24 +1,19 @@
 process SUMMARIZE_CHROMO_GO {
-    tag "summarize_go"
+    tag "$meta.id"
 
-    label 'process_medium'
-    label 'process_single'
-
-    container 'ecoflowucl/chopgo:r-4.3.2_python-3.10_perl-5.38'
+    container "${ workflow.containerEngine == 'singularity' && !task.ext?.singularity_pull_docker_container ?
+        'docker://rocker/tidyverse:4.3.2' :
+        'rocker/tidyverse:4.3.2' }"
 
     input:
-    path res_tabs
+    tuple val(meta), path(res_dir)
 
     output:
-    path "*.pdf", emit: plots
-    path "*.csv", emit: tables
-    path "*.txt", emit: reports
+    tuple val(meta), path("*.pdf"), emit: plots
+    tuple val(meta), path("*.csv"), emit: tables
 
     script:
     """
-    # Copy all input files into working dir (think we can remove)
-    # cp ${res_tabs} .
-
-    summarize_chromosome_go.R
+    summarize_chromosome_go.R --input ${res_dir}
     """
 }

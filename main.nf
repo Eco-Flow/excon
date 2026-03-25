@@ -137,8 +137,8 @@ workflow {
       )
 
       ch_go_files = EGGNOG_TO_GO.out.go_file
-         .map { meta, go -> go }
-         .collect()
+    	.map { meta, go -> go }
+    	.collect()
    }
 
    // --- Quality stats --- 
@@ -196,16 +196,17 @@ workflow {
 
          ch_gff_go = AGAT_SPKEEPLONGESTISOFORM.out.gff
             .join(EGGNOG_TO_GO.out.go_file)
+            .map { meta, gff, go -> tuple(meta, gff, go) }
 
-         orthogroups_ch = ORTHOFINDER_CAFE.out.orthologues.first()
+         orthogroups_ch = ORTHOFINDER_CAFE.out.orthologues
 
          CHROMO_GO (
-            ch_gff_go.map { meta, gff, go -> [meta, gff, go] },
+            ch_gff_go,
             orthogroups_ch
          )
 
-         SUMMARISE_CHROMOSOME_GO (
-            CHROMO_GO.out.chromosome_go_filt
+         SUMMARIZE_CHROMO_GO (
+            CHROMO_GO.out.chromosome_go_filt.mix(CHROMO_GO.out.chromosome_go_unfilt)
          )
 
       }

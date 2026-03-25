@@ -1,79 +1,84 @@
-#!/usr/bin/Rscript
+#!/usr/bin/env Rscript
 
 # ============================================================================
-# GO ENRICHMENT SUMMARY (CLEAN VERSION)
+# GO ENRICHMENT SUMMARY
 # ============================================================================
 
 suppressPackageStartupMessages({
   library(dplyr)
   library(tidyr)
   library(ggplot2)
-  library(optparse)
 })
 
 # ============================================================================
-# ARGUMENT PARSING
+# ARGUMENT PARSING (base R — no optparse dependency)
 # ============================================================================
 
-option_list <- list(
-  make_option(c("--bonferroni"), type="double", default=0.01,
-              help="Bonferroni threshold [default %default]"),
-  make_option(c("--min_annotated"), type="integer", default=10,
-              help="Minimum annotated genes [default %default]"),
-  make_option(c("--top_n_hits"), type="integer", default=5,
-              help="Top hits per chromosome [default %default]")
-)
+args <- commandArgs(trailingOnly = TRUE)
 
-opt <- parse_args(OptionParser(option_list=option_list))
+parse_arg <- function(args, flag, default = NULL) {
+  idx <- which(args == flag)
+  if (length(idx) && idx < length(args)) args[idx + 1] else default
+}
 
-bonferroni_threshold <- opt$bonferroni
-min_annotated <- opt$min_annotated
-top_n_hits <- opt$top_n_hits
+go_results_dir       <- parse_arg(args, "--input")
+bonferroni_threshold <- as.double(parse_arg(args, "--bonferroni", 0.01))
+min_annotated        <- as.integer(parse_arg(args, "--min_annotated", 10))
+top_n_hits           <- as.integer(parse_arg(args, "--top_n_hits", 5))
+
+if (is.null(go_results_dir)) stop("--input is required")
+if (!dir.exists(go_results_dir)) stop(sprintf("Input directory not found: %s", go_results_dir))
+
+# Prefix all outputs with the input directory name so filtered/unfiltered
+# and per-species outputs never collide when collected downstream
+prefix <- basename(go_results_dir)
+
+cat(sprintf("Input directory : %s\n", go_results_dir))
+cat(sprintf("Output prefix   : %s\n", prefix))
 
 # ============================================================================
-# 2. LOAD DATA
+# LOAD DATA
 # ============================================================================
 
 go_files <- list.files(path = go_results_dir,
-                       pattern = file_pattern,
+                       pattern = "_res\\.tab$",
                        full.names = TRUE)
 
-cat(sprintf("Found %d GO files\n", length(go_files)))
+cat(sprintf("Found %d GO result files\n", length(go_files)))
 
 if (length(go_files) == 0) {
-  stop("No GO files found")
+  stop(sprintf("No *_res.tab files found in: %s", go_results_dir))
 }
 
 all_go_results <- lapply(go_files, function(f) {
-  chrom <- gsub(".*_([0-9]+)_res\\.tab", "\\1", basename(f))
+  chrom <- gsub(".*_([0-9]+)_res\\.tab$", "\\1", basename(f))
 
   df <- read.table(f, header = TRUE, sep = "\t",
                    quote = "", comment.char = "",
                    stringsAsFactors = FALSE)
 
-  df$Chromosome <- paste0("Scaffold_", chrom)
+  df$Chromosome     <- paste0("Scaffold_", chrom)
   df$Chromosome_Num <- as.numeric(chrom)
-
   df
 }) %>% bind_rows()
 
-cat(sprintf("Total GO terms: %d\n", nrow(all_go_results)))
+cat(sprintf("Total GO terms loaded: %d\n", nrow(all_go_results)))
 
 # ============================================================================
-# 3. FILTER (KEY FIX HERE)
+# FILTER
 # ============================================================================
 
 significant_go <- all_go_results %>%
   filter(
     bonferroni < bonferroni_threshold,
-    Annotated >= min_annotated
+    Annotated  >= min_annotated
   ) %>%
   arrange(Chromosome_Num, bonferroni)
 
-cat(sprintf("Significant terms (filtered): %d\n", nrow(significant_go)))
+cat(sprintf("Significant terms after filtering: %d\n", nrow(significant_go)))
 
 # ============================================================================
-# 4. SUMMARY PER CHROMOSOME
+# SUMMARY PER CHROMOSOME
 # ============================================================================
 
 sig_per_chrom <- significant_go %>%
@@ -83,7 +88,7 @@ sig_per_chrom <- significant_go %>%
 print(sig_per_chrom)
 
 # ============================================================================
-# 5. TOP HITS
+# TOP HITS
 # ============================================================================
 
 top_hits <- significant_go %>%
@@ -92,7 +97,7 @@ top_hits <- significant_go %>%
   ungroup()
 
 # ============================================================================
-# 6. PLOT 1 — SIGNIFICANT TERMS PER CHROMOSOME
+# PLOT 1 — SIGNIFICANT TERMS PER CHROMOSOME
 # ============================================================================
 
 p1 <- ggplot(sig_per_chrom,
@@ -102,29 +107,26 @@ p1 <- ggplot(sig_per_chrom,
   coord_flip() +
   theme_minimal() +
   labs(
-    title = "Significant GO Terms per Chromosome",
+    title    = "Significant GO Terms per Chromosome",
     subtitle = sprintf("Bonferroni < %.2f | Annotated >= %d",
                        bonferroni_threshold, min_annotated),
     x = "Chromosome",
     y = "Count"
   )
 
-ggsave("go_summary_per_chromosome.pdf", p1, width = 8, height = 6)
+ggsave(paste0(prefix, "_go_summary_per_chromosome.pdf"), p1,
+       width = 8, height = 6)
 
 # ============================================================================
-# 7. HEATMAP DATA
+# PLOT 2 — HEATMAP
 # ============================================================================
 
 heatmap_data <- top_hits %>%
   mutate(
-    Term_Label = paste0(substr(Term, 1, 40), " (", GO.ID, ")"),
-    Neg_log10_P = -log10(bonferroni),
-    Percent_Significant = 100 * Significant / Annotated
+    Term_Label           = paste0(substr(Term, 1, 40), " (", GO.ID, ")"),
+    Neg_log10_P          = -log10(bonferroni),
+    Percent_Significant  = 100 * Significant / Annotated
   )
-
-# ============================================================================
-# 8. HEATMAP
-# ============================================================================
 
 p2 <- ggplot(heatmap_data,
              aes(x = Chromosome,
@@ -137,19 +139,19 @@ p2 <- ggplot(heatmap_data,
   theme_minimal(base_size = 10) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(
-    title = "GO Enrichment Heatmap",
+    title    = "GO Enrichment Heatmap",
     subtitle = sprintf("Bonferroni < %.2e | Annotated >= %d",
                        bonferroni_threshold, min_annotated),
     x = "Chromosome",
     y = "GO Term"
   )
 
-ggsave("go_heatmap.pdf", p2,
-       width = 12,
+ggsave(paste0(prefix, "_go_heatmap.pdf"), p2,
+       width  = 12,
        height = max(6, nrow(heatmap_data) * 0.3))
 
 # ============================================================================
-# 9. ONTOLOGY SUMMARY
+# PLOT 3 — ONTOLOGY DISTRIBUTION
 # ============================================================================
 
 ontology_summary <- significant_go %>%
@@ -163,41 +165,39 @@ p3 <- ggplot(ontology_summary,
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(
-    title = "GO Ontology Distribution",
+    title    = "GO Ontology Distribution",
     subtitle = sprintf("Bonferroni < %.2f | Annotated >= %d",
                        bonferroni_threshold, min_annotated),
     x = "Chromosome",
     y = "Count"
   )
 
-ggsave("go_summary_ontology.pdf", p3, width = 10, height = 6)
+ggsave(paste0(prefix, "_go_summary_ontology.pdf"), p3,
+       width = 10, height = 6)
 
 # ============================================================================
-# 10. EXPORT TABLES
+# EXPORT TABLES
 # ============================================================================
 
-# Full filtered set
 write.csv(significant_go,
-          "go_significant_filtered.csv",
+          paste0(prefix, "_go_significant_filtered.csv"),
           row.names = FALSE)
 
-# Top hits
 write.csv(top_hits,
-          "go_top_hits.csv",
+          paste0(prefix, "_go_top_hits.csv"),
           row.names = FALSE)
 
-# Summary stats
 summary_stats <- all_go_results %>%
   group_by(Chromosome) %>%
   summarise(
-    Total = n(),
+    Total       = n(),
     Significant = sum(bonferroni < bonferroni_threshold &
-                      Annotated >= min_annotated),
+                      Annotated  >= min_annotated),
     .groups = "drop"
   )
 
 write.csv(summary_stats,
-          "go_summary_stats.csv",
+          paste0(prefix, "_go_summary_stats.csv"),
           row.names = FALSE)
 
 # ============================================================================
@@ -205,7 +205,7 @@ write.csv(summary_stats,
 # ============================================================================
 
 cat("\n=== DONE ===\n")
-cat("Applied filters:\n")
-cat(sprintf("  Bonferroni < %.2f\n", bonferroni_threshold))
-cat(sprintf("  Min annotated >= %d\n", min_annotated))
-cat(sprintf("  Top hits per chromosome = %d\n\n", top_n_hits))
+cat(sprintf("  Output prefix          : %s\n", prefix))
+cat(sprintf("  Bonferroni threshold   : %.2f\n", bonferroni_threshold))
+cat(sprintf("  Min annotated          : %d\n",   min_annotated))
+cat(sprintf("  Top hits per chromosome: %d\n\n", top_n_hits))
