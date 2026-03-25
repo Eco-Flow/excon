@@ -2,7 +2,7 @@ process EGGNOG_TO_OG_GO {
     tag "og_go"
     label 'process_single'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    container "${ workflow.containerEngine == 'singularity' && !(task.ext?.singularity_pull_docker_container) ?
         'https://depot.galaxyproject.org/singularity/eggnog-mapper:2.1.13--pyhdfd78af_2' :
         'biocontainers/eggnog-mapper:2.1.13--pyhdfd78af_2' }"
 

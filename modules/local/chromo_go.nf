@@ -1,17 +1,15 @@
 process CHROMO_GO {
-    label 'process_low'
-    tag "chromo_go"
+    label 'process_single'
+    tag "${meta.id}"
     container 'ecoflowucl/chopgo:r-4.3.2_python-3.10_perl-5.38'
 
     input:
-    path gffs
-    path goes
-    path "Orthogroups.tsv"
+    tuple val(meta), path(gff), path(go)
+    path Orthogroups
 
     output:
-    path( "Unfiltered_Go*" ), emit: chromosome_go_unfilt
-    path( "Filtered_dup_Go_*" ), emit: chromosome_go_filt
-    path "versions.yml", emit: versions
+    tuple val(meta), path("Filtered_dup_Go_*"), emit: chromosome_go_filt
+    tuple val(meta), path("Unfiltered_Go*"), emit: chromosome_go_unfilt
 
     script:
     """
@@ -21,9 +19,5 @@ process CHROMO_GO {
     
     go_chromosome.pl
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        Perl version: \$(perl --version | grep "version" | sed 's/.*(//g' | sed 's/[)].*//')
-    END_VERSIONS
     """
 }
