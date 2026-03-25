@@ -27,6 +27,7 @@ include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
 include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
 include { EGGNOG_TO_GO } from './modules/local/eggnog_to_go.nf'
 include { EGGNOG_TO_OG_GO } from './modules/local/eggnog_to_og_go.nf'
+include { SUMMARIZE_CHROMOSOME_GO } from './modules/local/sumarize_chromosome_go.nf'
 
 include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
 include { GFFREAD } from './modules/nf-core/gffread/main.nf'
@@ -192,11 +193,21 @@ workflow {
       // --- Chromosome GO analysis (requires eggnog) ---
 
       if (params.chromo_go && params.run_eggnog) {
+
+         ch_gff_go = AGAT_SPKEEPLONGESTISOFORM.out.gff
+            .join(EGGNOG_TO_GO.out.go_file)
+
+         orthogroups_ch = ORTHOFINDER_CAFE.out.orthologues.first()
+
          CHROMO_GO (
-            AGAT_SPKEEPLONGESTISOFORM.out.gff.map { meta, gff -> gff }.collect(),
-            ch_go_files,
-            ORTHOFINDER_CAFE.out.orthologues
+            ch_gff_go.map { meta, gff, go -> [meta, gff, go] },
+            orthogroups_ch
          )
+
+         SUMMARISE_CHROMOSOME_GO (
+            CHROMO_GO.out.chromosome_go_filt
+         )
+
       }
    }
 
