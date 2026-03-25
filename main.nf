@@ -27,7 +27,7 @@ include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
 include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
 include { EGGNOG_TO_GO } from './modules/local/eggnog_to_go.nf'
 include { EGGNOG_TO_OG_GO } from './modules/local/eggnog_to_og_go.nf'
-include { SUMMARIZE_CHROMOSOME_GO } from './modules/local/sumarize_chromosome_go.nf'
+include { SUMMARIZE_CHROMO_GO } from './modules/local/sumarize_chromosome_go.nf'
 
 include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.nf'
 include { GFFREAD } from './modules/nf-core/gffread/main.nf'
