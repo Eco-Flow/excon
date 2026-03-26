@@ -117,6 +117,13 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 |-----------|-------------|---------|
 | `--run_eggnog` | Run EggNOG-mapper GO annotation | `false` |
 | `--eggnog_data_dir` | Path to pre-downloaded EggNOG database directory | `null` |
+| `--go_target_taxa` | Restrict annotations to orthologs from this taxon and its descendants (NCBI taxon ID) | `null` |
+| `--go_tax_scope` | Taxonomic scope for orthologous group assignment (e.g. `50557` for Insecta) | `null` |
+| `--go_evalue` | Maximum e-value threshold for sequence matches | `null` |
+| `--go_score` | Minimum bitscore threshold for matches | `null` |
+| `--go_pident` | Minimum percent identity (%) | `null` |
+| `--go_query_cover` | Minimum query coverage (%) | `null` |
+| `--go_subject_cover` | Minimum subject coverage (%) | `null` |
 
 > **Note:** The EggNOG database is ~7GB. If `--eggnog_data_dir` is not provided, the database will be downloaded automatically on each run. We strongly recommend downloading it once and reusing it:
 >
