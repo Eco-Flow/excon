@@ -196,7 +196,42 @@
         "eggnog_data_dir": {
             "type": "string",
             "description": "Path to pre-downloaded EggNOG database directory. If null, database will be downloaded automatically."
-        }
+        },
+        "go_target_taxa": {
+    "type": "string",
+    "description": "Restrict eggNOG-mapper annotation to orthologs from this taxon and descendants",
+    "default": null
+},
+"go_tax_scope": {
+    "type": "string",
+    "description": "Taxonomic scope for eggNOG OG level selection (e.g. 50557 for Insecta)",
+    "default": null
+},
+"go_evalue": {
+    "type": "number",
+    "description": "eggNOG-mapper e-value threshold",
+    "default": null
+},
+"go_score": {
+    "type": "number",
+    "description": "eggNOG-mapper minimum bitscore",
+    "default": null
+},
+"go_pident": {
+    "type": "number",
+    "description": "eggNOG-mapper minimum percent identity",
+    "default": null
+},
+"go_query_cover": {
+    "type": "number",
+    "description": "eggNOG-mapper minimum query coverage percent",
+    "default": null
+},
+"go_subject_cover": {
+    "type": "number",
+    "description": "eggNOG-mapper minimum subject coverage percent",
+    "default": null
+}
       }
     }
   },
