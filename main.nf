@@ -145,16 +145,16 @@ workflow {
 
    if (params.stats) {
       BUSCO_BUSCO (
-         GFFREAD.out.proteins_busco,
+         GFFREAD.out.gffread_fasta,
          params.busco_mode,
          params.busco_lineage,
          params.busco_lineages_path ?: [],
          params.busco_config ?: []
       )
 
-      AGAT_SPSTATISTICS ( GFFREAD.out.gffs_agat )
+      AGAT_SPSTATISTICS ( GFFREAD.out.gffread_gff )
 
-      QUAST ( GFFREAD.out.fasta_quast, GFFREAD.out.gffs_agat )
+      QUAST ( GFFREAD.out.gffread_fasta, [], GFFREAD.out.gffread_gff )
    }
 
    // --- CAFE gene family evolution --- 

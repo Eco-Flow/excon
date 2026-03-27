@@ -57,7 +57,7 @@
           },
           "quast": {
             "branch": "master",
-            "git_sha": "682f789f93070bd047868300dd018faf3d434e7c",
+            "git_sha": "c3ef6747c66c2d6217d067fd2dfb3412ff46bc3e",
             "installed_by": ["modules"]
           }
         }
