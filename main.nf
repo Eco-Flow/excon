@@ -39,7 +39,6 @@ include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
-include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main.nf'
 
 workflow {
 
@@ -213,12 +212,19 @@ workflow {
       }
    }
 
-   CUSTOM_DUMPSOFTWAREVERSIONS (
-    Channel.topic('versions')
-        .collectFile(name: 'collated_versions.yml') { process, name, version ->
-            "\"${process}\":\n  ${name}: ${version}\n"
-        }
-   )
+   Channel.topic('versions')
+    .collect()
+    .map { entries ->
+        def grouped = entries.groupBy { it[0] }
+        def yaml = grouped.collect { proc, vals ->
+            "\"${proc}\":\n" + vals.collect { v ->
+                "  ${v[1]}: ${v[2]}"
+            }.join('\n')
+        }.join('\n')
+        return yaml + '\n'
+    }
+    .collectFile(name: "${params.outdir}/pipeline_info/software_versions.yml")
+
 }
 
 workflow.onComplete {
