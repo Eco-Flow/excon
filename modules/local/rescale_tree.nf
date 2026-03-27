@@ -10,6 +10,7 @@ process RESCALE_TREE {
 
     output:
     path 'SpeciesTree_rescaled.nwk', emit: rescaled_tree
+    tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), emit: versions, topic: versions
 
     script:
     def scale_factor = params.tree_scale_factor ?: 1000

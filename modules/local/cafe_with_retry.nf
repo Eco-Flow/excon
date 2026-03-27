@@ -81,11 +81,6 @@ then
     grep "*" Out_cafe_k3/Gamma_asr.tre >> Significant_trees.tre || echo "No significant trees found"
     echo "end;" >> Significant_trees.tre
 
-\t    R version: \$(R --version 2>&1 | grep "R version" | sed 's/R version \\([0-9.]*\\).*/\\1/')
-\t    attempt: ${task.attempt}
-\t    filtering_applied: \$([ ${task.attempt} -eq 2 ] && echo "true" || echo "false")
-\tEND_VERSIONS
-    
     if [ "${use_filtering}" = "true" ]; then
         echo "CAFE completed successfully on retry with differential filtering (threshold: ${max_differential})"
     else
