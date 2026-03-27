@@ -127,7 +127,7 @@ workflow {
       )
 
       ch_annot_gff = EGGNOGMAPPER.out.annotations.join(
-         AGAT_SPKEEPLONGESTISOFORM.out.gff
+         AGAT_CONVERTSPGXF2GXF.out.output_gff    // all isoforms, not longest only
       )
 
       EGGNOG_TO_GO (
