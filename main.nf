@@ -152,9 +152,16 @@ workflow {
          []
       )
 
-      AGAT_SPSTATISTICS ( GFFREAD.out.gffread_gff )
+      AGAT_SPSTATISTICS ( AGAT_SPKEEPLONGESTISOFORM.out.gff )
 
-      QUAST ( GFFREAD.out.gffread_fasta, [], GFFREAD.out.gffread_gff )
+      ch_quast_input = ch_fna
+         .join(AGAT_SPKEEPLONGESTISOFORM.out.gff)
+
+      QUAST(
+         ch_quast_input.map { meta, fasta, gff -> [ meta, fasta ] },
+         ch_quast_input.map { meta, fasta, gff -> [ [], [] ] },   // no reads
+         ch_quast_input.map { meta, fasta, gff -> [ meta, gff ] }
+      )
    }
 
    // --- CAFE gene family evolution --- 
@@ -213,17 +220,14 @@ workflow {
    }
 
    Channel.topic('versions')
-    .collect()
-    .map { entries ->
-        def grouped = entries.groupBy { it[0] }
-        def yaml = grouped.collect { proc, vals ->
-            "\"${proc}\":\n" + vals.collect { v ->
-                "  ${v[1]}: ${v[2]}"
-            }.join('\n')
-        }.join('\n')
-        return yaml + '\n'
-    }
-    .collectFile(name: "${params.outdir}/pipeline_info/software_versions.yml")
+    .unique()
+    .map { process, tool, version -> "${process}:\n    ${tool}: ${version}" }
+    .collectFile(
+        name:      'software_versions.yml',
+        storeDir:  "${params.outdir}/pipeline_info",
+        sort:      true,
+        newLine:   true
+    )
 
 }
 
