@@ -11,8 +11,8 @@ process CAFE_GO {
     output:
     path("*.pdf") , emit: cafe_go_pdfs
     path("CAFE_summary.txt"), emit: cafe_summary
-    tuple val("${task.process}"), val('perl'), eval("perl --version 2>&1 | grep 'version' | sed 's/.*(//; s/[)].*//'"), emit: versions_cafe_go, topic: versions
-    tuple val("${task.process}"), val('R'), eval("R --version 2>&1 | grep 'R version' | sed 's/.*R version //; s/ .*//'"), emit: versions_cafe_go, topic: versions
+    tuple val("${task.process}"), val('perl'), eval("perl --version 2>&1 | grep 'version' | sed 's/.*(//; s/[)].*//'"), emit: versions_cafe_perl, topic: versions
+    tuple val("${task.process}"), val('R'), eval("R --version 2>&1 | grep 'R version' | sed 's/.*R version //; s/ .*//'"), emit: versions_cafe_R, topic: versions
 
     script:
     """
