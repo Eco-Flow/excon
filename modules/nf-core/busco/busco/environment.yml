@@ -4,4 +4,5 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - bioconda::multiqc=1.27
+  - conda-forge::numpy=2.3.5
+  - bioconda::busco=6.0.0

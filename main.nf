@@ -149,7 +149,8 @@ workflow {
          params.busco_mode,
          params.busco_lineage,
          params.busco_lineages_path ?: [],
-         params.busco_config ?: []
+         params.busco_config ?: [],
+         []
       )
 
       AGAT_SPSTATISTICS ( GFFREAD.out.gffread_gff )
