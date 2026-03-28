@@ -6,7 +6,7 @@ It works with any set of species that have a genome (fasta) and annotation (gff)
 (minimum of 5 species ideally up to around 30). Maximum 100 species (normally)
 
 You can also run GO annotation and analysis using eggnogmapper. You must provide a database yourself with `--eggnog_data_dir`, else everytime you run the pipeline, it will download the DB 
-for you. So be careful, it is ~7GB. Please run it once, and save the DB somewhere handy to point to. 
+for you. So be careful, it is ~45GB. Please run it once, and save the DB somewhere handy to point to. 
 This is then used to check what GO terms are associated with expanded or contracted gene sets (from CAFE).
 
 ## Overview
