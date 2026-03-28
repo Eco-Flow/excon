@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.0.3] - 2026-03-28
+
+### Added
+- Software versions now collected via `topic: versions` and written to `pipeline_info/software_versions.yml`
+- `EGGNOG_TO_GO` now outputs isoform-level GO annotations (`*.isoform_go.txt`) in addition to gene-level
+- `versions` topic emit added to `RENAME_FASTA`, `EGGNOG_TO_GO`, `EGGNOG_TO_OG_GO`, `RESCALE_TREE`, `SUMMARIZE_CHROMO_GO`, `CAFE`, and `CAFE_PLOT` modules
+
+### Fixed
+- QUAST now receives genome assembly FASTA instead of protein FASTA
+- Removed orphaned heredoc version blocks from `CAFE` script
+
+### Changed
+- `EGGNOG_TO_GO` now receives pre-filtered GFF (`AGAT_CONVERTSPGXF2GXF.out.output_gff`) to capture all isoforms
+- Replaced deprecated `CUSTOM_DUMPSOFTWAREVERSIONS` module with native `topic: versions` approach
+- Legacy unused modules moved to `modules/local/legacy_modules/`
+
+### Removed
+- Legacy modules and removed old input config input types
+
+## [v2.0.2] - 2026-03-26
+
+### Added
+- Added a summarisation R script for chromoGO to capture the general patterns of GO enrichment across chromosomes.
+
+### Fixed
+- Added parrelelisation to CHROMO_GO. 
+
 ## [v2.0.1] - 2026-03-22
 
 ### New features
