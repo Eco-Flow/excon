@@ -1,11 +1,12 @@
-# EXCON (v2.0.0)
+# EXCON (v2.0.3)
 
-A Nextflow pipeline to describe and compare genomes across species. It also performs gene expansion and contraction analysis using CAFE.
+A Nextflow pipeline to perform gene expansion and contraction analysis using CAFE.
 
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
-(minimum of 5 species ideally up to around 30).
+(minimum of 5 species ideally up to around 30). Maximum 100 species (normally)
 
-You can also run GO annotation and analysis using eggnogmapper. You must provide a database yourself with `--eggnog_data_dir`, else everytime you run the pipeline, it will download the DB for you. So be careful, it is ~7GB. Please run it once, and save the DB somewhere handy to point to. 
+You can also run GO annotation and analysis using eggnogmapper. You must provide a database yourself with `--eggnog_data_dir`, else everytime you run the pipeline, it will download the DB 
+for you. So be careful, it is ~7GB. Please run it once, and save the DB somewhere handy to point to. 
 This is then used to check what GO terms are associated with expanded or contracted gene sets (from CAFE).
 
 ## Overview
@@ -117,27 +118,16 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 |-----------|-------------|---------|
 | `--run_eggnog` | Run EggNOG-mapper GO annotation | `false` |
 | `--eggnog_data_dir` | Path to pre-downloaded EggNOG database directory | `null` |
-| `--go_target_taxa` | Restrict annotations to orthologs from this taxon and its descendants (NCBI taxon ID) | `null` |
-| `--go_tax_scope` | Taxonomic scope for orthologous group assignment (e.g. `50557` for Insecta) | `null` |
-| `--go_evalue` | Maximum e-value threshold for sequence matches | `null` |
-| `--go_score` | Minimum bitscore threshold for matches | `null` |
-| `--go_pident` | Minimum percent identity (%) | `null` |
-| `--go_query_cover` | Minimum query coverage (%) | `null` |
-| `--go_subject_cover` | Minimum subject coverage (%) | `null` |
+| `--eggnog_target_taxa` | Restrict annotations to orthologs from this taxon and its descendants (NCBI taxon ID) | `null` |
+| `--eggnog_tax_scope` | Taxonomic scope for orthologous group assignment (e.g. `50557` for Insecta) | `null` |
+| `--eggnog_evalue` | Maximum e-value threshold for sequence matches | `null` |
+| `--eggnog_score` | Minimum bitscore threshold for matches | `null` |
+| `--eggnog_pident` | Minimum percent identity (%) | `null` |
+| `--eggnog_query_cover` | Minimum query coverage (%) | `null` |
+| `--eggnog_subject_cover` | Minimum subject coverage (%) | `null` |
 
-> **Note:** The EggNOG database is ~7GB. If `--eggnog_data_dir` is not provided, the database will be downloaded automatically on each run. We strongly recommend downloading it once and reusing it:
->
-> ```bash
-> mkdir eggnog_data
-> wget http://eggnog5.embl.de/download/emapperdb-5.0.2/eggnog.db.gz -O eggnog_data/eggnog.db.gz
-> wget http://eggnog5.embl.de/download/emapperdb-5.0.2/eggnog_proteins.dmnd.gz -O eggnog_data/eggnog_proteins.dmnd.gz
-> wget http://eggnog5.embl.de/download/emapperdb-5.0.2/eggnog.taxa.tar.gz -O eggnog_data/eggnog.taxa.tar.gz
-> gunzip eggnog_data/eggnog.db.gz
-> gunzip eggnog_data/eggnog_proteins.dmnd.gz
-> tar -xzf eggnog_data/eggnog.taxa.tar.gz -C eggnog_data/ && rm eggnog_data/eggnog.taxa.tar.gz
-> ```
->
-> Then pass `--eggnog_data_dir /path/to/eggnog_data` to the pipeline.
+**Note:** The EggNOG database is ~45GB. If `--eggnog_data_dir` is not provided, the database will be downloaded automatically on each run. We strongly recommend downloading it once and reusing it:
+Then pass `--eggnog_data_dir /path/to/eggnog_data` to the pipeline.
 
 ### GO enrichment analysis (optional, requires `--run_eggnog`)
 
@@ -197,86 +187,59 @@ If you want to run this pipeline on your institute's on-premise HPC or specific 
 1. Example run the full test example data:
 
 ```
-NXF_VER=24.10.1
+NXF_VER=25.04.8 # Is latest it is tested on
 nextflow run main.nf -resume -profile docker,test_small
 ```
 
 *Settings in test_small:*
 input = "input_small-s3.csv"
-predownloaded_fasta = "s3://excon/data/Insect_data/fasta/*"
-predownloaded_gofiles = "s3://excon/data/Insect_data/gofiles/*"
 
 For the fastest run use: `nextflow run main.nf -resume -profile docker,test_bacteria`
 
 2. To run on your own data (minimal run), cafe only. 
 
 ```
-# NXF_VER=25.04.8   - Is latest it is tested on  
+# NXF_VER=25.04.8  
 nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv
 ```
 
-3. To run on your own data with GO enrichment analysis (using predownloaded fasta/go files for GO assignment)
+3. To run with cafe and GO analysis
 
 ```
-# NXF_VER=25.04.8   - Is latest it is tested on  
-nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv \|
---predownloaded_fasta 's3://excon/data/Insect_data/fasta/*' --predownloaded_gofiles 's3://excon/data/Insect_data/gofiles/*' 
-```
-
-4. To run on your own data with GO enrichment analysis + retrieval of GO assignment species
-
-If you do not have GO files to run GO enrichment, you can run the following code to semi-auto download them from NCBI biomart.
-
-You first need to go to Ensembl Biomart to find the species IDs you want to use to assign GO terms to your species. Ideally you should choose one or more species that are closely related and have good GO annotations.
-
-i) To check what species are present and their species name codes you need to download the biomaRt library in R (for metazoa):
-
-```
-library(biomaRt)
-ensembl <- useEnsembl(biomart = "metazoa_mart", host="https://metazoa.ensembl.org")
-datasets <- listDatasets(ensembl)
-datasets
-```
-
-You will see something like:
-
-```
-                       dataset
-1     aagca019059575v1_eg_gene
-2       aagca914969975_eg_gene
-3     aagca933228735v1_eg_gene
-4           aalbimanus_eg_gene
-5          aalbopictus_eg_gene
-6            aalvpagwg_eg_gene
-```
-
-The dataset IDs are what you need to enter into the Nextflow script.
-
-For mammals:
-```
-ensembl <- useEnsembl(biomart = "genes", host="https://ensembl.org")
-```
-
-Then you can run the excon script as follows:
-
-```
-# NXF_VER=25.04.8   - Is latest it is tested on  
-nextflow run main.nf -resume -profile <apptainer/docker/singularity> --input data/input_small-s3.csv --ensembl_biomart "metazoa_mart" --ensembl_dataset "example.txt"
-```
-
-where `example.txt` is a file of dataset IDs from ensembl biomart (as shown above), separated by newline characters.
-
-e.g.:
-
-```
-aagca019059575v1_eg_gene
-aagca914969975_eg_gene
-aagca933228735v1_eg_gene
+# NXF_VER=25.04.8
+nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv --chromo_go --go_type bonferoni --stats --run_eggnog --eggnog_data_dir /path/to/eggnogdb 
 ```
 
 ## Citation
 
-This pipeline is not yet published. Please contact us if you wish to use our pipeline, we are happy to help you run the pipeline.
+This pipeline is published on Workflowhub using the nf-core template. If you use this pipeline in you work, the following citations are essential:
+
+excon:
+Christopher Wyatt, Gene EXpansion and CONtraction analysis pipeline (2026) https:/doi.org/10.48546/WORKFLOWHUB.WORKFLOW.2141.1.
+
+nf-core:
+Philip Ewels, Alexander Peltzer, Sven Fillinger, Harshil Patel, Johannes Alneberg, Andreas Wilm, Maxime Ulysse Garcia, Paolo Di Tommaso & Sven Nahnsen.
+Nat Biotechnol. 2020 Feb 13. doi: 10.1038/s41587-020-0439-x.
+
+If you used any of these tools within the pipeline, you must also cite:
+
+CAFE:
+Fábio K Mendes, Dan Vanderpool, Ben Fulton, Matthew W Hahn, CAFE 5 models variation in evolutionary rates among gene families, 
+Bioinformatics, 2020; btaa1022, https://doi.org/10.1093/bioinformatics/btaa1022
+
+Orthofinder:
+Emms, D.M. and Kelly, S. (2019) OrthoFinder: phylogenetic orthology inference for comparative genomics. 
+Genome Biology 20:238
+
+AGAT:
+Dainat J. 2022. Another Gtf/Gff Analysis Toolkit (AGAT): Resolve interoperability issues and accomplish more with your annotations. Plant and Animal Genome XXIX Conference. https://github.com/NBISweden/AGAT.
+
+eggNOG-mapper (if used):
+Carlos P Cantalapiedra, Ana Hernández-Plaza, Ivica Letunic, Peer Bork, Jaime Huerta-Cepas, eggNOG-mapper v2: Functional Annotation, Orthology Assignments, and Domain Prediction at the Metagenomic Scale, Molecular Biology and Evolution, Volume 38, Issue 12, December 2021, Pages 5825–5829, https://doi.org/10.1093/molbev/msab293
+
+A full list of tools and their versions are found in the `software_versions.yml` in the `results/pipeline_info`. So ensure to look here for any additional tools you need to cite.
+
+For the --stats module, you would need to cite BUSCO, Quast, AGAT
 
 ## Contact Us
 
