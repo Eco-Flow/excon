@@ -12,6 +12,7 @@ process EGGNOG_TO_OG_GO {
 
     output:
     path "OG_GO_format.tsv", emit: og_go
+    tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), emit: versions, topic: versions
 
     script:
     """

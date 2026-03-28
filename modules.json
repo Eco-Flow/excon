@@ -12,22 +12,22 @@
           },
           "agat/spkeeplongestisoform": {
             "branch": "master",
-            "git_sha": "d32242b309862f5ac37022bf30d9b907e0ee4751",
+            "git_sha": "da620ca273b5e1e53713c30755551211c3e7dd36",
             "installed_by": ["modules"]
           },
           "agat/spstatistics": {
             "branch": "master",
-            "git_sha": "0a0b723d114e502207072603479b635dfbc2bf59",
+            "git_sha": "d32242b309862f5ac37022bf30d9b907e0ee4751",
             "installed_by": ["modules"]
           },
           "busco/busco": {
             "branch": "master",
-            "git_sha": "6258d8bfef0787df4a10ac84e58f52b6f3deb847",
+            "git_sha": "3984c94cb6783f36e97df11b1b4ed0d32bfe0de7",
             "installed_by": ["modules"]
           },
           "custom/dumpsoftwareversions": {
             "branch": "master",
-            "git_sha": "de45447d060b8c8b98575bc637a4a575fd0638e1",
+            "git_sha": "ad65d06c959cff1da9e94c4a972deaf7430931fa",
             "installed_by": ["modules"]
           },
           "eggnogmapper": {
@@ -57,7 +57,7 @@
           },
           "quast": {
             "branch": "master",
-            "git_sha": "682f789f93070bd047868300dd018faf3d434e7c",
+            "git_sha": "c3ef6747c66c2d6217d067fd2dfb3412ff46bc3e",
             "installed_by": ["modules"]
           }
         }

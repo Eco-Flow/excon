@@ -5,7 +5,7 @@
 process CAFE {
     label 'process_medium'
     label 'process_long'
-    container 'ecoflowucl/cafe:r-4.3.1'
+    container 'ecoflowucl/cafe:r-4.3.1' //R version 4.3.1 , but cafe version 4.2.1 (confusing)
     
     errorStrategy { task.attempt <= 1 ? 'retry' : 'ignore' }
     maxRetries 1
@@ -22,7 +22,8 @@ process CAFE {
     path("N0.tsv") , emit: N0_table
     path("Out_cafe/Base_count.tab") , emit: result_nftest
     path("hog_filtering_report.tsv"), emit: filtering_report, optional: true
-    path "versions.yml", emit: versions
+    tuple val("${task.process}"), val('R'), eval ("R --version 2>&1 | grep 'R version' | sed 's/R version \\([0-9.]*\\).*/\\1/'"), emit: versions_R, topic: versions
+    tuple val("${task.process}"), val('cafe'), val('4.2.1'), emit: versions_cafe, topic: versions
 
     script:
     def max_differential = params.cafe_max_differential ?: 50
@@ -80,14 +81,6 @@ then
     grep "*" Out_cafe_k3/Gamma_asr.tre >> Significant_trees.tre || echo "No significant trees found"
     echo "end;" >> Significant_trees.tre
 
-    cat <<-END_VERSIONS > versions.yml
-\t"CAFE":
-\t    cafe5: \$(cafe5 --version 2>&1 | grep -oP 'CAFE5 v\\K[0-9.]+' || echo "unknown")
-\t    R version: \$(R --version 2>&1 | grep "R version" | sed 's/R version \\([0-9.]*\\).*/\\1/')
-\t    attempt: ${task.attempt}
-\t    filtering_applied: \$([ ${task.attempt} -eq 2 ] && echo "true" || echo "false")
-\tEND_VERSIONS
-    
     if [ "${use_filtering}" = "true" ]; then
         echo "CAFE completed successfully on retry with differential filtering (threshold: ${max_differential})"
     else

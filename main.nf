@@ -39,7 +39,6 @@ include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
-include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main.nf'
 
 workflow {
 
@@ -128,7 +127,7 @@ workflow {
       )
 
       ch_annot_gff = EGGNOGMAPPER.out.annotations.join(
-         AGAT_SPKEEPLONGESTISOFORM.out.gff
+         AGAT_CONVERTSPGXF2GXF.out.output_gff    // all isoforms, not longest only
       )
 
       EGGNOG_TO_GO (
@@ -145,16 +144,24 @@ workflow {
 
    if (params.stats) {
       BUSCO_BUSCO (
-         GFFREAD.out.proteins_busco,
+         GFFREAD.out.gffread_fasta,
          params.busco_mode,
          params.busco_lineage,
          params.busco_lineages_path ?: [],
-         params.busco_config ?: []
+         params.busco_config ?: [],
+         []
       )
 
-      AGAT_SPSTATISTICS ( GFFREAD.out.gffs_agat )
+      AGAT_SPSTATISTICS ( AGAT_SPKEEPLONGESTISOFORM.out.gff )
 
-      QUAST ( GFFREAD.out.fasta_quast, GFFREAD.out.gffs_agat )
+      ch_quast_input = ch_fna
+         .join(AGAT_SPKEEPLONGESTISOFORM.out.gff)
+
+      QUAST(
+         ch_quast_input.map { meta, fasta, gff -> [ meta, fasta ] },
+         ch_quast_input.map { meta, fasta, gff -> [ [], [] ] },   // no reads
+         ch_quast_input.map { meta, fasta, gff -> [ meta, gff ] }
+      )
    }
 
    // --- CAFE gene family evolution --- 
@@ -212,12 +219,16 @@ workflow {
       }
    }
 
-   CUSTOM_DUMPSOFTWAREVERSIONS (
-    Channel.topic('versions')
-        .collectFile(name: 'collated_versions.yml') { process, name, version ->
-            "\"${process}\":\n  ${name}: ${version}\n"
-        }
-   )
+   Channel.topic('versions')
+    .unique()
+    .map { process, tool, version -> "${process}:\n    ${tool}: ${version}" }
+    .collectFile(
+        name:      'software_versions.yml',
+        storeDir:  "${params.outdir}/pipeline_info",
+        sort:      true,
+        newLine:   true
+    )
+
 }
 
 workflow.onComplete {

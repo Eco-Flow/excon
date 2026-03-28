@@ -12,6 +12,7 @@ process RENAME_FASTA {
 
     output:
     tuple val(meta), path("${meta.id}.clean.fasta"), emit: fasta
+    tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), emit: versions, topic: versions
 
     script:
     """
