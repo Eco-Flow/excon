@@ -1,11 +1,13 @@
-# EXCON (v2.0.3)
+# EXCON (v2.0.4)
 
 A Nextflow pipeline to perform gene expansion and contraction analysis using CAFE.
+It runs orthofinder to build input for CAFE (expansion and contraction analysis), then runs eggnogmapper to get GO terms, and run GO analysis.
+Optionally, it also runs GO analysis on chromosomes, to search for enriched terms by chromosome.
 
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
-(minimum of 5 species ideally up to around 30). Maximum 100 species (normally)
+(minimum of 5 species ideally up to around 30). Maximum 100 species (normally). 
 
-You can also run GO annotation and analysis using eggnogmapper. You must provide a database yourself with `--eggnog_data_dir`, else everytime you run the pipeline, it will download the DB 
+To run the GO annotation. You must provide a database yourself with `--eggnog_data_dir`, else everytime you run the pipeline, it will download the DB 
 for you. So be careful, it is ~45GB. Please run it once, and save the DB somewhere handy to point to. 
 This is then used to check what GO terms are associated with expanded or contracted gene sets (from CAFE).
 
@@ -30,6 +32,7 @@ The general pipeline logic is as follows:
 * Optionally assigns GO terms to genes using `[EGGNOGMAPPER]`.
 * Optionally plots GO enrichment for expanded/contracted gene families `[CAFE_GO]`.
 * Optionally plots GO enrichment of genes by chromosome `[CHROMO_GO]`.
+* Optionally summarizes GO enrichment by chromosome`[SUMMARIZE_CHROMO_GO]`.
 
 ## Installation
 
