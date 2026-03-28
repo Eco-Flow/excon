@@ -1,6 +1,10 @@
 # Changelog
 
-## [2.0.3] - 2026-03-28
+## [v2.0.3] - 2026-03-28 (2)
+
+- minor bug fix in config. Updated readme.
+
+## [v2.0.3] - 2026-03-28
 
 ### Added
 - Software versions now collected via `topic: versions` and written to `pipeline_info/software_versions.yml`
