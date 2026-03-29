@@ -1,4 +1,4 @@
-# EXCON (v2.0.4)
+# EXCON (v2.1.0)
 
 A Nextflow pipeline to perform gene expansion and contraction analysis using CAFE.
 It runs orthofinder to build input for CAFE (expansion and contraction analysis), then runs eggnogmapper to get GO terms, and run GO analysis.
