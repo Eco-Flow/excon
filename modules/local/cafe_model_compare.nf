@@ -12,9 +12,7 @@ process CAFE_MODEL_COMPARE {
     path("cafe_model_comparison.tsv"),  emit: comparison_table
     path("Significant_trees.tre"),      emit: significant_trees, optional: true
     path("best_model.txt"),             emit: best_model
-    tuple val("${task.process}"), val('R'),
-        eval("R --version 2>&1 | grep 'R version' | sed 's/R version \\([0-9.]*\\).*/\\1/'"),
-        emit: versions_R, topic: versions
+    tuple val("${task.process}"), val('R'), eval("R --version 2>&1 | grep 'R version' | sed 's/R version \\([0-9.]*\\).*/\\1/'"), emit: versions_R, topic: versions
 
     script:
     """
