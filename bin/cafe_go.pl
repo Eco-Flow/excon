@@ -3,6 +3,8 @@ use warnings;
 use strict;
 use Scalar::Util qw(looks_like_number);
 
+#Code written by Chris Wyatt (UCL) on 22 March 2024
+
 print "Please be in folder with N0.tsv, Base/Gamma_change.tab, Base/Gamma_branch_probabilities.tab  and the Go folder\n";
 
 my $pval = $ARGV[0];
@@ -88,10 +90,26 @@ while (my $line = <$filein>){
 #Read in Pvalue and count file
 my %PVALUE_DATA;
 my %COUNT_DATA;
-my $file2=`ls Out_cafe/Base_branch_probabilities.tab`;
-my $file3=`ls Out_cafe/Base_change.tab`;
-chomp $file2;
-chomp $file3;
+
+# --- Auto-detect Out_* directory (e.g. Out_cafe, Out_gamma, Out_gamma_per_family) ---
+my @out_dirs = glob("Out_*");
+
+die "ERROR: No Out_* directory found\n" unless @out_dirs;
+
+# If multiple (shouldn't happen now), just take first
+my $out_dir = $out_dirs[0];
+
+print "Using CAFE output directory: $out_dir\n";
+
+# --- Find required files dynamically ---
+my ($file2) = glob("$out_dir/*_branch_probabilities.tab");
+my ($file3) = glob("$out_dir/*_change.tab");
+
+die "ERROR: Could not find branch probabilities file in $out_dir\n" unless $file2;
+die "ERROR: Could not find change file in $out_dir\n" unless $file3;
+
+print "Using:\n$file2\n$file3\n";
+
 open(my $filein2, "<", $file2)   or die "Could not open $file2\n";
 open(my $filein3, "<", $file3)   or die "Could not open $file3\n";
 my $header2=<$filein2>;
@@ -115,7 +133,7 @@ foreach my $colh (@head_pval){
     }
 }
 
-print "Reading in Out_cafe/Base_branch_probabilities.tab\n";
+print "Reading in $file2\n";
 while (my $line2 = <$filein2>){
     chomp $line2;
     my @splitl=split("\t", $line2);
@@ -129,7 +147,7 @@ while (my $line2 = <$filein2>){
     }
 }
 
-print "Reading in Out_cafe/Base_change.tab\n";
+print "Reading in $file3\n";
 while (my $line_count = <$filein3>){
     chomp $line_count;
     my @splitc=split("\t", $line_count);
