@@ -18,7 +18,9 @@ log.info """\
 
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-validation'
 
-include { CAFE } from './modules/local/cafe_with_retry.nf'
+include { CAFE_PREP } from './modules/local/cafe_prep.nf'
+include { CAFE_RUN } from './modules/local/cafe_run.nf'
+include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_GO } from './modules/local/cafe_go.nf'
@@ -178,24 +180,55 @@ workflow {
 
       RESCALE_TREE ( ORTHOFINDER_CAFE.out.speciestree )
 
-      CAFE ( ORTHOFINDER_CAFE.out.orthologues, RESCALE_TREE.out.rescaled_tree )
+      // Prep + base run
+      CAFE_PREP ( ORTHOFINDER_CAFE.out.orthologues, RESCALE_TREE.out.rescaled_tree )
 
-      CAFE_PLOT ( CAFE.out.result )
+    // Gamma and gamma_per_family reuse the same prepared inputs,
+    // called via the same module with different args coming from module.config
+    CAFE_RUN(
+    Channel.of( [id: 'gamma'], [id: 'gamma_per_family'] )
+        .combine( CAFE_PREP.out.prepared_counts )
+        .combine( CAFE_PREP.out.prepared_tree )
+        .map { meta, counts, tree -> [ meta, counts, tree ] }
+    )
 
-      // -- CAFE GO enrichment (requires eggnog) ---
+CAFE_MODEL_COMPARE (
+    CAFE_PREP.out.results,
+    CAFE_RUN.out.results.filter { meta, res -> meta.id == 'gamma' },
+    CAFE_RUN.out.results.filter { meta, res -> meta.id == 'gamma_per_family' }
+)
 
-      if (params.run_eggnog) {
-         EGGNOG_TO_OG_GO (
-            ch_go_files,
-            ORTHOFINDER_CAFE.out.orthologues
-         )
+// Label all three result dirs by model name
+ch_all_results = CAFE_PREP.out.results
+    .map { res -> [ 'base', res ] }
+    .mix(
+        CAFE_RUN.out.results
+            .map { meta, res -> [ meta.id, res ] }
+    )
 
-         CAFE_GO (
-            CAFE.out.result,
-            CAFE.out.N0_table,
-            EGGNOG_TO_OG_GO.out.og_go
-         )
-      }
+// Read best_model.txt, select the matching result dir
+ch_best_results = CAFE_MODEL_COMPARE.out.best_model
+    .map  { f   -> f.text.trim() }
+    .combine( ch_all_results )
+    .filter { best, model, res -> best == model }
+    .map    { best, model, res -> res }
+
+CAFE_PLOT ( ch_best_results )
+
+// -- CAFE GO enrichment (requires eggnog) ---
+
+if (params.run_eggnog) {
+    EGGNOG_TO_OG_GO (
+        ch_go_files,
+        ORTHOFINDER_CAFE.out.orthologues
+    )
+
+    CAFE_GO (
+        ch_best_results,
+        CAFE_PREP.out.N0_table,
+        EGGNOG_TO_OG_GO.out.og_go
+    )
+}
 
       // --- Chromosome GO analysis (requires eggnog) ---
 
