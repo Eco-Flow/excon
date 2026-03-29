@@ -23,7 +23,7 @@ process CAFE_PREP {
     path("Out_cafe"),                    emit: results
     path("Out_cafe/Base_count.tab"),     emit: result_nftest
     path("hog_filtering_report.tsv"),    emit: filtering_report, optional: true
-    tuple val("${task.process}"), val('R'), eval("R --version 2>&1 | grep 'R version' | sed 's/R version \\([0-9.]*\\).*/\\1/'"), emit: versions_R, topic: versions
+    tuple val("${task.process}"), val('R'), val('4.3.1'), emit: versions_R, topic: versions
     tuple val("${task.process}"), val('cafe'), val('4.2.1'), emit: versions_cafe, topic: versions
 
     script:

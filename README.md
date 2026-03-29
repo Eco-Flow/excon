@@ -1,15 +1,22 @@
 # EXCON (v2.1.0)
 
-A Nextflow pipeline to perform gene expansion and contraction analysis using CAFE.
-It runs orthofinder to build input for CAFE (expansion and contraction analysis), then runs eggnogmapper to get GO terms, and run GO analysis.
-Optionally, it also runs GO analysis on chromosomes, to search for enriched terms by chromosome.
+A Nextflow pipeline for gene family **EX**pansion and **CON**traction analysis 
+across multiple species using CAFE5.
+
+Given a set of genome assemblies and annotations, EXCON builds orthogroups with 
+OrthoFinder, fits and compares multiple CAFE models to identify gene families 
+evolving at significantly different rates, and automatically selects the 
+best-fitting model for downstream analysis. Optionally, GO enrichment analysis 
+can be run on expanded and contracted gene families, and on genes grouped by 
+chromosome.
 
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
 (minimum of 5 species ideally up to around 30). Maximum 100 species (normally). 
 
-To run the GO annotation. You must provide a database yourself with `--eggnog_data_dir`, else everytime you run the pipeline, it will download the DB 
-for you. So be careful, it is ~45GB. Please run it once, and save the DB somewhere handy to point to. 
-This is then used to check what GO terms are associated with expanded or contracted gene sets (from CAFE).
+To run the GO annotation. You must provide a database yourself with `--eggnog_data_dir`, 
+else everytime you run the pipeline, it will download the DB for you. 
+So be careful, it is ~45GB. Please run it once, and save the DB somewhere handy to point to. 
+This is then used to check what GO terms are associated with expanded or contracted gene sets.
 
 ## Overview
 
@@ -21,18 +28,35 @@ The general pipeline logic is as follows:
 * Extracts longest protein `[AGAT_SPKEEPLONGESTISOFORM]`.
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
+* Finds orthologous genes across species [ORTHOFINDER_CAFE].
+* Rescales species tree branch lengths for CAFE `[RESCALE_TREE]`.
+* Prepares gene count input and runs the base CAFE model `[CAFE_PREP]`.
+* Runs two additional CAFE models in parallel for model comparison `[CAFE_RUN]`:
+  - Gamma model with k=3 rate categories (`-k 3`)
+  - Gamma model with per-family rates (`-p -k 3`)
+* Compares all three CAFE models using AIC and likelihood ratio tests, 
+  selects the best fitting model `[CAFE_MODEL_COMPARE]`.
+* Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
+
+### Optional — GO enrichment (`--run_eggnog`)
+
+* Optionally downloads the eggnogmapper database `[EGGNOG_DOWNLOAD]`.
+* Optionally assigns GO terms to genes using `[EGGNOGMAPPER]`.
+* Optionally prepares GO gene lists from the best CAFE model results `[CAFE_GO_PREP]`.
+* Optionally runs GO enrichment in parallel, one job per species/node 
+  and direction (expansion/contraction) `[CAFE_GO_RUN]`.
+
+### Optional — chromosome GO enrichment (`--chromo_go --run_eggnog`)
+
+* Optionally plots GO enrichment of genes by chromosome `[CHROMO_GO]`.
+* Optionally summarizes GO enrichment by chromosome `[SUMMARIZE_CHROMO_GO]`.
+
+### Optional — genome quality statistics (`--stats`)
+
 * Optionally describes genome assembly and annotation:
   - `[BUSCO_BUSCO]`: Completeness of the genome compared to expected gene set.
   - `[QUAST]`: Assembly contiguity statistics (N50 etc).
   - `[AGAT_SPSTATISTICS]`: Gene, exon, and intron statistics.
-* Finds orthologous genes across species `[ORTHOFINDER_CAFE]`.
-* Rescales species tree branch lengths for CAFE `[RESCALE_TREE]`.
-* Runs gene family evolution analysis `[CAFE]` and plots results `[CAFE_PLOT]`.
-* Optionally downloads the eggnogmapper database `[EGGNOG_DOWNLOAD]`.
-* Optionally assigns GO terms to genes using `[EGGNOGMAPPER]`.
-* Optionally plots GO enrichment for expanded/contracted gene families `[CAFE_GO]`.
-* Optionally plots GO enrichment of genes by chromosome `[CHROMO_GO]`.
-* Optionally summarizes GO enrichment by chromosome`[SUMMARIZE_CHROMO_GO]`.
 
 ## Installation
 
@@ -114,6 +138,15 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
 | `--tree_scale_factor` | Scale factor for rescaling species tree branch lengths | `1000` |
+
+> **Note on CAFE model selection:** The pipeline runs three CAFE models — a 
+> base single-λ model, a Gamma model with k=3 rate categories, and a Gamma 
+> model with per-family rate estimation. These run in parallel and are compared 
+> using AIC. The best-fitting model is automatically selected and used for all 
+> downstream GO enrichment and plotting. Model comparison results are written to 
+> `results/cafe/model_comparison/cafe_model_comparison.tsv`. If model scores 
+> cannot be parsed (e.g. on very small datasets), the pipeline defaults to the 
+> base model.
 
 ### GO annotation with EggNOG-mapper (optional)
 
@@ -212,6 +245,57 @@ nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv
 # NXF_VER=25.04.8
 nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv --chromo_go --go_type bonferoni --stats --run_eggnog --eggnog_data_dir /path/to/eggnogdb 
 ```
+
+## Output Structure
+```
+results/
+├── cafe/
+│   ├── base/                        # Base single-λ CAFE model outputs
+│   │   ├── Out_cafe/                # CAFE5 output files (trees, counts, probabilities)
+│   │   ├── hog_gene_counts.tsv      # Filtered gene count input to CAFE
+│   │   └── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
+│   ├── gamma/                       # Gamma k=3 model outputs
+│   │   └── Out_gamma/               # CAFE5 output files
+│   ├── gamma_per_family/            # Gamma per-family rate model outputs
+│   │   └── Out_gamma_per_family/    # CAFE5 output files
+│   └── model_comparison/
+│       ├── cafe_model_comparison.tsv # AIC, delta-AIC, AIC weights, LRT results
+│       ├── best_model.txt            # Name of the winning model
+│       └── Significant_trees.tre    # Nexus trees with significant branches (from best model)
+├── cafe_plot/
+│   └── cafe_plotter/                # Expansion/contraction plots for best model
+├── cafe_go/                         # GO enrichment (one job per species/node x direction)
+│   ├── CAFE_summary.txt             # Summary of expansions/contractions per branch
+│   ├── *_TopGo_results_ALL.tab      # TopGO results per target
+│   ├── TopGO_Pval_barplot_*.pdf     # Barplots per target
+│   ├── Go_summary_pos.pdf           # Summary plot across all expansions
+│   ├── Go_summary_neg.pdf           # Summary plot across all contractions
+│   ├── Go_summary_pos_noNode.pdf    # As above, terminal branches only
+│   └── Go_summary_neg_noNode.pdf
+├── chromo_go/                       # [optional] GO enrichment by chromosome
+│   ├── *.pdf                        # Per-chromosome GO plots
+│   └── summary/                     # Summarized results across chromosomes
+├── eggnogmapper/
+│   └── go_files/                    # Per-species GO annotation files
+├── gffread/
+│   └── *.fasta                      # Protein sequences per species
+├── ncbigenomedownload/
+│   ├── *.fna.gz                     # Downloaded genome assemblies
+│   └── *.gff.gz                     # Downloaded annotations
+├── orthofinder_cafe/
+│   └── ortho_cafe/                  # OrthoFinder results including species tree
+├── busco/                           # [optional, --stats] BUSCO completeness results
+├── agat/                            # [optional, --stats] AGAT annotation statistics
+├── quast/                           # [optional, --stats] Assembly contiguity statistics
+└── pipeline_info/
+    ├── execution_report_*.html      # Nextflow execution report
+    ├── execution_timeline_*.html    # Per-process timeline
+    ├── execution_trace_*.txt        # Per-task resource usage
+    ├── pipeline_dag_*.html          # Pipeline DAG diagram
+    └── software_versions.yml        # Versions of all tools used
+```
+
+
 
 ## Citation
 
