@@ -302,7 +302,7 @@ results/
 This pipeline is published on Workflowhub using the nf-core template. If you use this pipeline in you work, the following citations are essential:
 
 excon:
-Christopher Wyatt, Gene EXpansion and CONtraction analysis pipeline (2026) https:/doi.org/10.48546/WORKFLOWHUB.WORKFLOW.2141.1.
+Wyatt, C. (2026). Gene EXpansion and CONtraction analysis pipeline. WorkflowHub. https://doi.org/10.48546/WORKFLOWHUB.WORKFLOW.2141.4
 
 nf-core:
 Philip Ewels, Alexander Peltzer, Sven Fillinger, Harshil Patel, Johannes Alneberg, Andreas Wilm, Maxime Ulysse Garcia, Paolo Di Tommaso & Sven Nahnsen.
