@@ -200,37 +200,32 @@
   "eggnog_target_taxa": {
     "type": "string",
     "description": "Restrict eggNOG-mapper annotation to orthologs from this taxon and descendants",
-    "default": null
+    "pattern": "^[0-9]+(,[0-9]+)*$"
   },
   "eggnog_tax_scope": {
     "type": "string",
-    "description": "Taxonomic scope for eggNOG OG level selection (e.g. 50557 for Insecta)",
-    "default": null
+    "pattern": "^[0-9]+(,[0-9]+)*$",
+    "description": "Taxonomic scope for eggNOG OG level selection (e.g. 50557 for Insecta)"
   },
   "eggnog_evalue": {
     "type": "number",
-    "description": "eggNOG-mapper e-value threshold",
-    "default": null
+    "description": "eggNOG-mapper e-value threshold"
   },
   "eggnog_score": {
     "type": "number",
-    "description": "eggNOG-mapper minimum bitscore",
-    "default": null
+    "description": "eggNOG-mapper minimum bitscore"
   },
   "eggnog_pident": {
     "type": "number",
-    "description": "eggNOG-mapper minimum percent identity",
-    "default": null
+    "description": "eggNOG-mapper minimum percent identity"
   },
   "eggnog_query_cover": {
     "type": "number",
-    "description": "eggNOG-mapper minimum query coverage percent",
-    "default": null
+    "description": "eggNOG-mapper minimum query coverage percent"
   },
   "eggnog_subject_cover": {
     "type": "number",
-    "description": "eggNOG-mapper minimum subject coverage percent",
-    "default": null
+    "description": "eggNOG-mapper minimum subject coverage percent"
   }
 
 
