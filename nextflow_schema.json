@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/./master/nextflow_schema.json",
   "title": ". pipeline parameters",
   "description": "Creating a GO database for a model organism",
@@ -197,16 +197,20 @@
             "type": "string",
             "description": "Path to pre-downloaded EggNOG database directory. If null, database will be downloaded automatically."
         },
-  "eggnog_target_taxa": {
-    "type": "string",
-    "description": "Restrict eggNOG-mapper annotation to orthologs from this taxon and descendants",
-    "pattern": "^[0-9]+(,[0-9]+)*$"
-  },
-  "eggnog_tax_scope": {
-    "type": "string",
-    "pattern": "^[0-9]+(,[0-9]+)*$",
-    "description": "Taxonomic scope for eggNOG OG level selection (e.g. 50557 for Insecta)"
-  },
+"eggnog_tax_scope": {
+    "anyOf": [
+        {"type": "string", "pattern": "^[0-9]+(,[0-9]+)*$"},
+        {"type": "integer"}
+    ],
+    "description": "Taxonomic scope for eggNOG OG level selection (e.g. 50557 for Insecta, or comma-separated list '50557,7399')"
+},
+"eggnog_target_taxa": {
+    "anyOf": [
+        {"type": "string", "pattern": "^[0-9]+(,[0-9]+)*$"},
+        {"type": "integer"}
+    ],
+    "description": "Restrict eggNOG-mapper to orthologs from this taxon and descendants (NCBI taxon ID)"
+},
   "eggnog_evalue": {
     "type": "number",
     "description": "eggNOG-mapper e-value threshold"
