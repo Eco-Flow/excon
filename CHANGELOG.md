@@ -11,6 +11,9 @@
 ### Changed
 - New readme output file format added. 
 
+### Fixed
+- Fixed issue with flag names for eggnog parameters.
+
 ## [v2.0.4] - 2026-03-28 (2)
 
 ### Fixed
