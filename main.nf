@@ -16,7 +16,7 @@ log.info """\
 
  =========================================""".stripIndent()
 
-include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-validation'
+include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
 
 include { CAFE_PREP } from './modules/local/cafe_prep.nf'
 include { CAFE_RUN } from './modules/local/cafe_run.nf'
