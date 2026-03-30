@@ -1,7 +1,22 @@
 # Changelog
 
-## [v2.0.3] - 2026-03-28 (2)
+## [v2.1.0] - 2026-03-30
 
+### New features
+- CAFE runs in three separate jobs
+- CAFE tests which run was the most likely. []. GO running on that.
+- CAFE GO run in parrelel.
+- Nextlfow schema added (replacing nf-validation)
+
+### Changed
+- New readme output file format added. 
+
+### Fixed
+- Fixed issue with flag names for eggnog parameters.
+
+## [v2.0.4] - 2026-03-28 (2)
+
+### Fixed
 - minor bug fix in config. Updated readme.
 
 ## [v2.0.3] - 2026-03-28

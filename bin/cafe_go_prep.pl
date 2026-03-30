@@ -3,11 +3,10 @@ use warnings;
 use strict;
 use Scalar::Util qw(looks_like_number);
 
-print "Please be in folder with N0.tsv, Base/Gamma_change.tab, Base/Gamma_branch_probabilities.tab  and the Go folder\n";
-
-my $pval = $ARGV[0];
-my $type = $ARGV[1];
+my $pval        = $ARGV[0];
+my $type        = $ARGV[1];
 my $go_max_plot = $ARGV[2];
+
 
 #Set up output name
 my $outname1="CAFE_summary.txt";
@@ -88,10 +87,26 @@ while (my $line = <$filein>){
 #Read in Pvalue and count file
 my %PVALUE_DATA;
 my %COUNT_DATA;
-my $file2=`ls Out_cafe/Base_branch_probabilities.tab`;
-my $file3=`ls Out_cafe/Base_change.tab`;
-chomp $file2;
-chomp $file3;
+
+# --- Auto-detect Out_* directory (e.g. Out_cafe, Out_gamma, Out_gamma_per_family) ---
+my @out_dirs = glob("Out_*");
+
+die "ERROR: No Out_* directory found\n" unless @out_dirs;
+
+# If multiple (shouldn't happen now), just take first
+my $out_dir = $out_dirs[0];
+
+print "Using CAFE output directory: $out_dir\n";
+
+# --- Find required files dynamically ---
+my ($file2) = glob("$out_dir/*_branch_probabilities.tab");
+my ($file3) = glob("$out_dir/*_change.tab");
+
+die "ERROR: Could not find branch probabilities file in $out_dir\n" unless $file2;
+die "ERROR: Could not find change file in $out_dir\n" unless $file3;
+
+print "Using:\n$file2\n$file3\n";
+
 open(my $filein2, "<", $file2)   or die "Could not open $file2\n";
 open(my $filein3, "<", $file3)   or die "Could not open $file3\n";
 my $header2=<$filein2>;
@@ -115,7 +130,7 @@ foreach my $colh (@head_pval){
     }
 }
 
-print "Reading in Out_cafe/Base_branch_probabilities.tab\n";
+print "Reading in $file2\n";
 while (my $line2 = <$filein2>){
     chomp $line2;
     my @splitl=split("\t", $line2);
@@ -129,7 +144,7 @@ while (my $line2 = <$filein2>){
     }
 }
 
-print "Reading in Out_cafe/Base_change.tab\n";
+print "Reading in $file3\n";
 while (my $line_count = <$filein3>){
     chomp $line_count;
     my @splitc=split("\t", $line_count);
@@ -346,7 +361,8 @@ foreach my $species6 (keys %Background_OGs){
 
 print "Print a summary table:\n";
 
-print $out1 "Total_HOGs_significant\tExpansion_HOGs_significant\tContraction_HOGs_significant\tExpansion_genes_significant\tContraction_genes_significant\tExpansion_HOGs_total\tContraction_HOGs_total\n";
+print $out1 
+"Total_HOGs_significant\tExpansion_HOGs_significant\tContraction_HOGs_significant\tExpansion_genes_significant\tContraction_genes_significant\tExpansion_HOGs_total\tContraction_HOGs_total\n";
 
 foreach my $species2 (sort keys %SPECIES_TOTAL){
     print $out1 "$species2\t$SPECIES_TOTAL{$species2}";
@@ -395,65 +411,41 @@ foreach my $species2 (sort keys %SPECIES_TOTAL){
 
 
 
-#Now run Chopgo
 
-foreach my $species5 (keys %SPECIES_TOTAL){
-    print "Running GO on $species5\n";
-    if (looks_like_number($species5)){
-    	#`mv $species5\.pos.txt Node_$species5\.pos.txt`;
-    	#`mv $species5\.neg.txt Node_$species5\.neg.txt`;
 
-        if ( -e "$species5\.pos.txt" ){
+# After the BK files are written, output a manifest of jobs
+# instead of running ChopGO directly
+open(my $manifest, ">", "chopgo_jobs.tsv") or die "Could not open manifest\n";
+
+foreach my $species5 (keys %SPECIES_TOTAL) {
+    if (looks_like_number($species5)) {
+        # Node — background is the OG GO file
+        if ( -e "$species5\.pos.txt" ) {
             `cut -f 1 $species5\.pos.txt > Node_$species5\.pos.txt`;
-            my $line_count = `wc -l Node_$species5\.pos.txt | awk '{print \$1}'`;
-            if ( $line_count >= 10){ 
-                print "ChopGO_VTS2.pl -i Node_$species5\.pos.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot\n";
-                `ChopGO_VTS2.pl -i Node_$species5\.pos.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot`;
-            }
-            if ( $line_count <= 100){ 
-                print "WARNING, GO likely to fail on $line_count genes (Run $species5)\n";
-            }
-
+            my $lc = `wc -l Node_$species5\.pos.txt | awk '{print \$1}'`;
+            chomp $lc;
+            print $manifest "Node_$species5\.pos.txt\tOG_GO_format.tsv\t$lc\n" if $lc >= 10;
         }
-    	if ( -e "$species5\.neg.txt" ){
+        if ( -e "$species5\.neg.txt" ) {
             `cut -f 1 $species5\.neg.txt > Node_$species5\.neg.txt`;
-            my $line_count = `wc -l Node_$species5\.neg.txt | awk '{print \$1}'`;
-            if ( $line_count >= 10){ 
-                print "ChopGO_VTS2.pl -i Node_$species5\.neg.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot\n";
-                `ChopGO_VTS2.pl -i Node_$species5\.neg.txt --GO_file $go -bg OG_GO_format.tsv -pval $pval -pval_type $type -max_plot $go_max_plot`;
-            }
-            if ( $line_count <= 100){ 
-                print "WARNING, GO likely to fail on $line_count genes (Run $species5)\n";
-            }
+            my $lc = `wc -l Node_$species5\.neg.txt | awk '{print \$1}'`;
+            chomp $lc;
+            print $manifest "Node_$species5\.neg.txt\tOG_GO_format.tsv\t$lc\n" if $lc >= 10;
         }
-
-    }
-    else{
-        if ( -e "$species5\.pos.txt" ){
-            my $line_count = `wc -l $species5\.pos.txt | awk '{print \$1}'`;
-            if ( $line_count <= 100){ 
-                print "WARNING, GO likely to fail on $line_count genes (Run $species5)\n";
-            }
-            if ( $line_count >= 10){ 
-                `ChopGO_VTS2.pl -i      $species5\.pos.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
-            }
+    } else {
+        # Species — background is species-specific BK file
+        if ( -e "$species5\.pos.txt" ) {
+            my $lc = `wc -l $species5\.pos.txt | awk '{print \$1}'`;
+            chomp $lc;
+            print $manifest "$species5\.pos.txt\t$species5\.BK.txt.uniq\t$lc\n" if $lc >= 10;
         }
-        if( -e "$species5\.neg.txt" ){
-            my $line_count = `wc -l $species5\.neg.txt | awk '{print \$1}'`;
-            if ( $line_count <= 100){ 
-                print "WARNING, GO likely to fail on $line_count genes (Run $species5)\n";
-            }
-            if ( $line_count >= 10){ 
-            `ChopGO_VTS2.pl -i      $species5\.neg.txt --GO_file $go -bg $species5\.BK.txt.uniq  -pval $pval -pval_type $type -max_plot $go_max_plot`;
-            }
+        if ( -e "$species5\.neg.txt" ) {
+            my $lc = `wc -l $species5\.neg.txt | awk '{print \$1}'`;
+            chomp $lc;
+            print $manifest "$species5\.neg.txt\t$species5\.BK.txt.uniq\t$lc\n" if $lc >= 10;
         }
     }
 }
+close $manifest;
 
-
-close $out1;
-
-print "\nFinished Running\n\n";
-
-
-
+print "\nPrep finished\n";

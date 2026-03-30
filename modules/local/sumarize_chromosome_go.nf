@@ -1,6 +1,6 @@
 process SUMMARIZE_CHROMO_GO {
     tag "$meta.id"
-
+    label 'process_single'
     container "${ workflow.containerEngine == 'singularity' && !task.ext?.singularity_pull_docker_container ?
         'docker://rocker/tidyverse:4.3.2' :
         'rocker/tidyverse:4.3.2' }"

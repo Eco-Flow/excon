@@ -9,9 +9,9 @@ library(data.table)
 # Get threshold from command line or environment variable
 args <- commandArgs(trailingOnly = TRUE)
 max_differential <- if (length(args) >= 1) {
-    as.numeric(args[1])
+  as.numeric(args[1])
 } else {
-    as.numeric(Sys.getenv("CAFE_MAX_DIFF", "50"))
+  as.numeric(Sys.getenv("CAFE_MAX_DIFF", "50"))
 }
 
 cat("================================================\n")
@@ -23,10 +23,10 @@ tre <- read.tree('pruned_tree')
 stopifnot(is.binary(tre))
 stopifnot(is.rooted(tre))
 
-if(is.ultrametric(tre)) {
-    utre <- tre
-} else{
-    utre <- chronos(tre)
+if (is.ultrametric(tre)) {
+  utre <- tre
+} else {
+  utre <- chronos(tre)
 }
 write.tree(utre, 'SpeciesTree_rooted_ultra.txt')
 
@@ -57,10 +57,10 @@ cat("After single-species filter:", length(unique(hog[[id_col]])), "\n")
 
 # Calculate size differential (max - min) and filter
 size_stats <- hog[, list(
-    n_max = max(n),
-    n_min = min(n),
-    n_mean = mean(n),
-    differential = max(n) - min(n)
+  n_max = max(n),
+  n_min = min(n),
+  n_mean = mean(n),
+  differential = max(n) - min(n)
 ), by = id_col]
 
 # Report statistics before filtering
@@ -85,9 +85,7 @@ hog_filtered <- hog[get(id_col) %in% keep_diff]
 
 cat("After differential filter:", length(unique(hog_filtered[[id_col]])), "\n")
 cat("Families removed:", length(unique(hog[[id_col]])) - length(unique(hog_filtered[[id_col]])), "\n")
-cat("Retention rate:", 
-    round(100 * length(unique(hog_filtered[[id_col]])) / length(unique(hog[[id_col]])), 2), 
-    "%\n\n")
+cat("Retention rate:", round(100 * length(unique(hog_filtered[[id_col]])) / length(unique(hog[[id_col]])), 2), "%\n\n")
 
 # Write detailed filtering report
 filtering_report <- size_stats[order(-differential)]
