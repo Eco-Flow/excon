@@ -115,7 +115,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--input` | Path to input CSV file | Required |
+| `--input` | Path to input CSV file | Required unless using `--input_tree` + `--input_orthogroups` without `--run_eggnog` or `--stats` |
 | `--outdir` | Output directory | `results` |
 | `--groups` | NCBI taxonomy group for genome download (e.g. `insects`, `bacteria`) | `insects` |
 | `--help` | Display help message | `false` |
