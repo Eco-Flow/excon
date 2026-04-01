@@ -59,6 +59,10 @@ workflow {
    def use_precomputed = params.input_tree && params.input_orthogroups
    def needs_genomes   = !use_precomputed || params.run_eggnog || params.stats
 
+   if (needs_genomes && !params.input) {
+      error "ERROR: --input (samplesheet CSV) is required when not using pre-computed OrthoFinder results, or when --run_eggnog / --stats is set."
+   }
+
    if (needs_genomes) {
 
       Channel
