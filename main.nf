@@ -50,69 +50,80 @@ workflow {
       exit 0
    }
 
-   Channel
-   .fromPath(params.input)
-   .splitCsv()
-   .branch {
-      ncbi: it.size() == 2
-      local: it.size() == 3
-   }
-   .set { input_type }
-
    validateParameters()
    log.info paramsSummaryLog(workflow)
 
-   // Write each accession string to its own file, named by sample id
-   ch_ncbi = input_type.ncbi
-      .collectFile { row -> [ "${row[0]}.txt", row[1] + '\n' ] }
-      .map { f -> [ [id: f.baseName], f ] }
+   // Whether to skip genome processing (download → AGAT → GFFREAD → RENAME_FASTA → OrthoFinder)
+   // Only possible when a pre-computed tree and orthogroups are supplied, AND the user
+   // is not requesting EggNOG annotation or genome quality stats (which need the proteins/assemblies).
+   def use_precomputed = params.input_tree && params.input_orthogroups
+   def needs_genomes   = !use_precomputed || params.run_eggnog || params.stats
 
-   NCBIGENOMEDOWNLOAD (
-      ch_ncbi.map { meta, f -> meta },   // val meta
-      ch_ncbi.map { meta, f -> f },      // path accessions (now an actual file)
-      [],                                // path taxids
-      params.groups
-   )
+   if (needs_genomes) {
 
-   ch_gff = NCBIGENOMEDOWNLOAD.out.gff
-      .mix( input_type.local.map { [ [id: it[0]], file(it[2]) ] } )
+      Channel
+      .fromPath(params.input)
+      .splitCsv()
+      .branch {
+         ncbi: it.size() == 2
+         local: it.size() == 3
+      }
+      .set { input_type }
 
-   ch_fna_raw = NCBIGENOMEDOWNLOAD.out.fna
-      .mix( input_type.local.map { [ [id: it[0]], file(it[1]) ] } )
+      // Write each accession string to its own file, named by sample id
+      ch_ncbi = input_type.ncbi
+         .collectFile { row -> [ "${row[0]}.txt", row[1] + '\n' ] }
+         .map { f -> [ [id: f.baseName], f ] }
 
-   // Split on .gz, decompress only what needs it
-   ch_fna_gz    = ch_fna_raw.filter { meta, fna -> fna.name.endsWith('.gz') }
-   ch_fna_plain = ch_fna_raw.filter { meta, fna -> !fna.name.endsWith('.gz') }
+      NCBIGENOMEDOWNLOAD (
+         ch_ncbi.map { meta, f -> meta },   // val meta
+         ch_ncbi.map { meta, f -> f },      // path accessions (now an actual file)
+         [],                                // path taxids
+         params.groups
+      )
 
-   GUNZIP ( ch_fna_gz )
-   ch_fna = GUNZIP.out.gunzip.mix( ch_fna_plain )
+      ch_gff = NCBIGENOMEDOWNLOAD.out.gff
+         .mix( input_type.local.map { [ [id: it[0]], file(it[2]) ] } )
 
-   // Convert GFF to standard AGAT format then keep longest isoform
-   AGAT_CONVERTSPGXF2GXF ( ch_gff )
-   AGAT_SPKEEPLONGESTISOFORM ( AGAT_CONVERTSPGXF2GXF.out.output_gff, [] )
+      ch_fna_raw = NCBIGENOMEDOWNLOAD.out.fna
+         .mix( input_type.local.map { [ [id: it[0]], file(it[1]) ] } )
 
-   // Join fna + agat gff by meta, then split for GFFREAD's two inputs
-   ch_fna_gff = ch_fna.join( AGAT_SPKEEPLONGESTISOFORM.out.gff )
+      // Split on .gz, decompress only what needs it
+      ch_fna_gz    = ch_fna_raw.filter { meta, fna -> fna.name.endsWith('.gz') }
+      ch_fna_plain = ch_fna_raw.filter { meta, fna -> !fna.name.endsWith('.gz') }
 
-   GFFREAD (
-      ch_fna_gff.map { meta, fna, gff -> [ meta, gff ] },
-      ch_fna_gff.map { meta, fna, gff -> fna }
-   )
+      GUNZIP ( ch_fna_gz )
+      ch_fna = GUNZIP.out.gunzip.mix( ch_fna_plain )
 
-   // Remove stop codons from protein fasta
-   ch_fasta_for_rename = GFFREAD.out.gffread_fasta.join(
-    AGAT_SPKEEPLONGESTISOFORM.out.gff
-   )
+      // Convert GFF to standard AGAT format then keep longest isoform
+      AGAT_CONVERTSPGXF2GXF ( ch_gff )
+      AGAT_SPKEEPLONGESTISOFORM ( AGAT_CONVERTSPGXF2GXF.out.output_gff, [] )
 
-   RENAME_FASTA (
-    ch_fasta_for_rename.map { meta, fasta, gff -> [ meta, fasta ] },
-    ch_fasta_for_rename.map { meta, fasta, gff -> [ meta, gff ] }
-   )
+      // Join fna + agat gff by meta, then split for GFFREAD's two inputs
+      ch_fna_gff = ch_fna.join( AGAT_SPKEEPLONGESTISOFORM.out.gff )
 
-   // Use renamed fasta for everything downstream
-   merge_ch = RENAME_FASTA.out.fasta
+      GFFREAD (
+         ch_fna_gff.map { meta, fna, gff -> [ meta, gff ] },
+         ch_fna_gff.map { meta, fna, gff -> fna }
+      )
 
-   // --- Eggnog GO annotation --- 
+      // Remove stop codons from protein fasta
+      ch_fasta_for_rename = GFFREAD.out.gffread_fasta.join(
+       AGAT_SPKEEPLONGESTISOFORM.out.gff
+      )
+
+      RENAME_FASTA (
+       ch_fasta_for_rename.map { meta, fasta, gff -> [ meta, fasta ] },
+       ch_fasta_for_rename.map { meta, fasta, gff -> [ meta, gff ] }
+      )
+
+      // Use renamed fasta for everything downstream
+      merge_ch = RENAME_FASTA.out.fasta
+
+   } // end if needs_genomes
+
+
+   // --- Eggnog GO annotation ---
 
    if (params.run_eggnog) {
 
@@ -172,18 +183,25 @@ workflow {
 
     if (!params.skip_cafe) {
 
-        ORTHOFINDER_CAFE (
-            merge_ch
-                .map { meta, fasta -> fasta }
-                .collect()
-                .map { files -> [ [id: "ortho_cafe"], files ] },
-            [[],[]]
-        )
+        if (params.input_tree && params.input_orthogroups) {
+            ch_speciestree = Channel.fromPath(params.input_tree, checkIfExists: true)
+            ch_orthologues = Channel.fromPath(params.input_orthogroups, checkIfExists: true)
+        } else {
+            ORTHOFINDER_CAFE (
+                merge_ch
+                    .map { meta, fasta -> fasta }
+                    .collect()
+                    .map { files -> [ [id: "ortho_cafe"], files ] },
+                [[],[]]
+            )
+            ch_speciestree = ORTHOFINDER_CAFE.out.speciestree
+            ch_orthologues = ORTHOFINDER_CAFE.out.orthologues
+        }
 
-        RESCALE_TREE ( ORTHOFINDER_CAFE.out.speciestree )
+        RESCALE_TREE ( ch_speciestree )
 
         CAFE_PREP (
-            ORTHOFINDER_CAFE.out.orthologues,
+            ch_orthologues,
             RESCALE_TREE.out.rescaled_tree
         )
 
@@ -221,7 +239,7 @@ workflow {
 
             EGGNOG_TO_OG_GO (
                 ch_go_files,
-                ORTHOFINDER_CAFE.out.orthologues
+                ch_orthologues
             )
 
             CAFE_GO_PREP (
@@ -281,7 +299,7 @@ workflow {
         .join( EGGNOG_TO_GO.out.go_file )
         .map { meta, gff, go -> tuple(meta, gff, go) }
 
-        CHROMO_GO ( ch_gff_go, ORTHOFINDER_CAFE.out.orthologues)
+        CHROMO_GO ( ch_gff_go, ch_orthologues)
 
         SUMMARIZE_CHROMO_GO ( CHROMO_GO.out.chromosome_go_filt.mix( CHROMO_GO.out.chromosome_go_unfilt ))
 

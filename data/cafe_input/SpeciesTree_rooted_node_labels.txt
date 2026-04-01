@@ -1,1 +1,1 @@
-(Mycoplasmoides_fastidiosum.prot.fa.largestIsoform:0.36193,(Mycoplasmoides_gallisepticum.prot.fa.largestIsoform:0.427782,(Mycoplasmoides_pneumoniae.prot.fa.largestIsoform:0.16093,Mycoplasmoides_genitalium.prot.fa.largestIsoform:0.162629)N2:0.335384)N1:0.36193)N0;
+(Mycoplasmoides_fastidiosum.clean:0.398108,(Mycoplasmoides_gallisepticum.clean:0.452495,(Mycoplasmoides_genitalium.clean:0.184743,Mycoplasmoides_pneumoniae.clean:0.176833)N2:0.415201)N1:0.398108)N0;

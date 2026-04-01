@@ -28,7 +28,7 @@ The general pipeline logic is as follows:
 * Extracts longest protein `[AGAT_SPKEEPLONGESTISOFORM]`.
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
-* Finds orthologous genes across species [ORTHOFINDER_CAFE].
+* Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
 * Rescales species tree branch lengths for CAFE `[RESCALE_TREE]`.
 * Prepares gene count input and runs the base CAFE model `[CAFE_PREP]`.
 * Runs two additional CAFE models in parallel for model comparison `[CAFE_RUN]`:
@@ -138,6 +138,16 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
 | `--tree_scale_factor` | Scale factor for rescaling species tree branch lengths | `1000` |
+| `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
+| `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
+
+> **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it 
+> (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs:
+> ```
+> --input_tree results/orthofinder_cafe/ortho_cafe/Species_Tree/SpeciesTree_rooted_node_labels.txt \
+> --input_orthogroups results/orthofinder_cafe/ortho_cafe/Orthogroups/Orthogroups.tsv
+> ```
+> Both parameters must be supplied together. If either is omitted, OrthoFinder runs normally.
 
 > **Note on CAFE model selection:** The pipeline runs three CAFE models — a 
 > base single-λ model, a Gamma model with k=3 rate categories, and a Gamma 
@@ -244,6 +254,16 @@ nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv
 ```
 # NXF_VER=25.04.8
 nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv --chromo_go --go_type bonferoni --stats --run_eggnog --eggnog_data_dir /path/to/eggnogdb 
+```
+
+4. To reuse a previous OrthoFinder run (skips the slow OrthoFinder step). Or to use tree/table from another source use:
+
+```
+# NXF_VER=25.04.8
+nextflow run main.nf -resume -profile docker \
+  --input data/input_small-s3.csv \
+  --input_tree results/orthofinder_cafe/ortho_cafe/Species_Tree/SpeciesTree_rooted_node_labels.txt \
+  --input_orthogroups results/orthofinder_cafe/ortho_cafe/Orthogroups/Orthogroups.tsv
 ```
 
 ## Output Structure

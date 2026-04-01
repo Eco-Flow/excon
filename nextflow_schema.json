@@ -136,6 +136,18 @@
           "type": "boolean",
           "description": "A flag to skip the cafe section. Used if you just wish to run go assignment for a species without runnig Cafe"
         },
+        "input_tree": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "description": "Path to a pre-computed rooted species tree in Newick format (e.g. SpeciesTree_rooted_node_labels.txt from a previous OrthoFinder run). Providing this together with --input_orthogroups skips the slow OrthoFinder step."
+        },
+        "input_orthogroups": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "description": "Path to a pre-computed Orthogroups.tsv from a previous OrthoFinder run. Must be provided together with --input_tree to skip OrthoFinder."
+        },
         "groups": {
           "type": "string",
           "default": "all",
