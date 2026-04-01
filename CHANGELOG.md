@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.1.1] - 2026-04-01
+
+### Fixed
+- Allow Augustus transcript IDs to output to GO hash 
+- Force eggnogmapper to process_high only, High memory causes stalling issues
+
 ## [v2.1.0] - 2026-03-30
 
 ### New features
