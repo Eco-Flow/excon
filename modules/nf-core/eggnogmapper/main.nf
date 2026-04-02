@@ -1,7 +1,6 @@
 process EGGNOGMAPPER {
     tag "$meta.id"
-    label 'process_medium'
-    label 'process_high_memory'
+    label 'process_high'
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -17,7 +16,8 @@ process EGGNOGMAPPER {
     tuple val(meta), path("*.emapper.annotations")   , emit: annotations
     tuple val(meta), path("*.emapper.seed_orthologs"), emit: orthologs, optional: true
     tuple val(meta), path("*.emapper.hits")          , emit: hits     , optional: true
-    tuple val("${task.process}"), val('eggnog-mapper'), eval("emapper.py --version 2>&1 | grep -o 'emapper-[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+' | sed 's/emapper-//'"), topic: versions, emit: versions_eggnogmapper
+    tuple val("${task.process}"), val('eggnog-mapper'), eval("emapper.py --version 2>&1 | grep -o 'emapper-[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+' | sed 's/emapper-//'"), topic: versions, emit: 
+versions_eggnogmapper
 
     when:
     task.ext.when == null || task.ext.when
