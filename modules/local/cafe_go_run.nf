@@ -20,6 +20,7 @@ process CAFE_GO_RUN {
         OG_GO_format.tsv \\
         ${params.go_cutoff} \\
         ${params.go_type} \\
-        ${params.go_max_plot}
+        ${params.go_max_plot} \\
+        ${params.go_algo}
     """
 }

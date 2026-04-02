@@ -19,7 +19,7 @@ process CHROMO_GO {
     ln -s /usr/bin/R ./R
     export PATH=\$PWD:\$PATH
     
-    go_chromosome.pl
+    go_chromosome.pl ${params.go_algo}
 
     """
 }
