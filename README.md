@@ -13,10 +13,11 @@ chromosome.
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
 (minimum of 5 species ideally up to around 30). Maximum 100 species (normally). 
 
-To run the GO annotation. You must provide a database yourself with `--eggnog_data_dir`, 
-else everytime you run the pipeline, it will download the DB for you. 
-So be careful, it is ~45GB. Please run it once, and save the DB somewhere handy to point to. 
-This is then used to check what GO terms are associated with expanded or contracted gene sets.
+GO annotation can be run in two ways:
+- **Run EggNOG-mapper** (`--run_eggnog`): assigns GO terms from scratch using the EggNOG database (~45 GB). 
+  Provide `--eggnog_data_dir` to reuse a pre-downloaded copy and avoid re-downloading on every run.
+- **Supply your own GO files** (`--predownloaded_gofiles`): if you already have gene-to-GO mappings, 
+  point to a directory of `{species_id}.go.txt` files and skip EggNOG entirely (see [Parameters](#go-annotation-optional) below).
 
 ## Overview
 
@@ -38,15 +39,15 @@ The general pipeline logic is as follows:
   selects the best fitting model `[CAFE_MODEL_COMPARE]`.
 * Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
 
-### Optional — GO enrichment (`--run_eggnog`)
+### Optional — GO enrichment (`--run_eggnog` or `--predownloaded_gofiles`)
 
-* Optionally downloads the eggnogmapper database `[EGGNOG_DOWNLOAD]`.
-* Optionally assigns GO terms to genes using `[EGGNOGMAPPER]`.
+* Optionally downloads the EggNOG-mapper database `[EGGNOG_DOWNLOAD]`.
+* Optionally assigns GO terms to genes using EggNOG-mapper `[EGGNOGMAPPER]`, or reads GO terms from user-supplied files.
 * Optionally prepares GO gene lists from the best CAFE model results `[CAFE_GO_PREP]`.
 * Optionally runs GO enrichment in parallel, one job per species/node 
   and direction (expansion/contraction) `[CAFE_GO_RUN]`.
 
-### Optional — chromosome GO enrichment (`--chromo_go --run_eggnog`)
+### Optional — chromosome GO enrichment (`--chromo_go`, requires GO annotation)
 
 * Optionally plots GO enrichment of genes by chromosome `[CHROMO_GO]`.
 * Optionally summarizes GO enrichment by chromosome `[SUMMARIZE_CHROMO_GO]`.
@@ -158,12 +159,16 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 > cannot be parsed (e.g. on very small datasets), the pipeline defaults to the 
 > base model.
 
-### GO annotation with EggNOG-mapper (optional)
+### GO annotation (optional)
+
+GO enrichment requires gene-to-GO mappings. Choose one of the two approaches below — they are mutually exclusive, and `--run_eggnog` takes priority if both are set.
+
+#### Option A — Run EggNOG-mapper
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--run_eggnog` | Run EggNOG-mapper GO annotation | `false` |
-| `--eggnog_data_dir` | Path to pre-downloaded EggNOG database directory | `null` |
+| `--run_eggnog` | Run EggNOG-mapper to assign GO terms | `false` |
+| `--eggnog_data_dir` | Path to pre-downloaded EggNOG database directory | `null` (downloads ~45 GB automatically) |
 | `--eggnog_target_taxa` | Restrict annotations to orthologs from this taxon and its descendants (NCBI taxon ID) | `null` |
 | `--eggnog_tax_scope` | Taxonomic scope for orthologous group assignment (e.g. `50557` for Insecta) | `null` |
 | `--eggnog_evalue` | Maximum e-value threshold for sequence matches | `null` |
@@ -172,10 +177,25 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--eggnog_query_cover` | Minimum query coverage (%) | `null` |
 | `--eggnog_subject_cover` | Minimum subject coverage (%) | `null` |
 
-**Note:** The EggNOG database is ~45GB. If `--eggnog_data_dir` is not provided, the database will be downloaded automatically on each run. We strongly recommend downloading it once and reusing it:
-Then pass `--eggnog_data_dir /path/to/eggnog_data` to the pipeline.
+> **Note:** The EggNOG database is ~45 GB. We strongly recommend downloading it once and passing `--eggnog_data_dir /path/to/eggnog_data` to avoid re-downloading on every run.
 
-### GO enrichment analysis (optional, requires `--run_eggnog`)
+#### Option B — Supply your own GO files
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--predownloaded_gofiles` | Path to a directory of pre-computed gene-to-GO mapping files | `null` |
+
+The directory must contain one file per species, named `{species_id}.go.txt` where `species_id` matches the species names in your input CSV. Each file is a two-column, tab-separated file with one gene–GO pair per line:
+
+```
+geneA    GO:0006412
+geneA    GO:0008150
+geneB    GO:0003674
+```
+
+This lets you skip EggNOG entirely if you already have GO annotations (e.g. from a previous run, a public database, or another annotation tool).
+
+### GO enrichment analysis (optional, requires GO annotation)
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
@@ -256,7 +276,16 @@ nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv
 nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv --chromo_go --go_type bonferoni --stats --run_eggnog --eggnog_data_dir /path/to/eggnogdb 
 ```
 
-4. To reuse a previous OrthoFinder run (skips the slow OrthoFinder step). Or to use tree/table from another source use:
+4. To run with CAFE and GO analysis using your own pre-computed GO files (skips EggNOG):
+
+```
+# NXF_VER=25.04.8
+nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv --predownloaded_gofiles /path/to/go_files/
+```
+
+The `go_files/` directory should contain one `{species_id}.go.txt` per species (tab-separated `gene_id<TAB>GO:term`, one pair per line).
+
+5. To reuse a previous OrthoFinder run (skips the slow OrthoFinder step). Or to use tree/table from another source use:
 
 ```
 # NXF_VER=25.04.8

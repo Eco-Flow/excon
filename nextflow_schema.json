@@ -122,7 +122,7 @@
         },
         "predownloaded_gofiles": {
           "type": "string",
-          "description": "A path to a folder containing a singular or multiple go files for each species you wish to use for GO assignment."
+          "description": "Path to a folder containing pre-computed gene-to-GO mapping files (one per species), as an alternative to running EggNOG-mapper. Each file must be named {species_id}.go.txt and contain two tab-separated columns: gene_id and GO term (one pair per line, e.g. 'geneA\\tGO:0006412'). Multiple GO terms for the same gene are given on separate lines."
         },
         "chromo_go": {
           "type": "boolean",
