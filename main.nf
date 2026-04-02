@@ -18,7 +18,6 @@ log.info """\
 
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
 
-include { CAFE_PREP } from './modules/local/cafe_prep.nf'
 include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
@@ -42,6 +41,11 @@ include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
+
+include { CAFE_PREP } from './modules/local/cafe_prep.nf'
+include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
+include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
+include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
 
 workflow {
 
@@ -209,33 +213,55 @@ workflow {
             RESCALE_TREE.out.rescaled_tree
         )
 
-        CAFE_RUN (
-            Channel.of( [id: 'gamma'], [id: 'gamma_per_family'] )
-                .combine( CAFE_PREP.out.prepared_counts )
-                .combine( CAFE_PREP.out.prepared_tree )
-                .map { meta, counts, tree -> [ meta, counts, tree ] }
+
+        k_values = Channel.of( 1..params.cafe_max_k )
+
+        CAFE_RUN_K (
+        CAFE_PREP.out.prepared_counts,   // hog_gene_counts.tsv — possibly filtered
+        CAFE_PREP.out.prepared_tree,     // SpeciesTree_rooted_ultra.txt — from R script
+        CAFE_PREP.out.error_model,       // Base_error_model.txt — empty file if estimation failed
+        k_values                         // each fans out: 1, 2, 3 ... cafe_max_k
         )
 
+        CAFE_SELECT_K(
+            CAFE_RUN_K.out.results.map { k, d -> d }.collect()
+        )
+
+        // Read the integer out of best_k.txt for passing to CAFE_RUN_BEST
+        best_k_ch = CAFE_SELECT_K.out.best_k
+           .map { f -> f.text.trim().toInteger() }
+
+        ch_best_uniform = CAFE_RUN_K.out.results
+            .combine( best_k_ch )
+            .filter { k, dir, best_k -> k == best_k }
+            .map    { k, dir, best_k -> dir }
+
+        CAFE_RUN_BEST(
+           CAFE_PREP.out.prepared_counts,
+           CAFE_PREP.out.prepared_tree,
+           CAFE_PREP.out.error_model,
+           best_k_ch,
+           Channel.of( true )  //Only run poisson here, as we ran without -p earlier
+        )
+
+        // Compare uniform vs Poisson at best k, emit the winning directory
         CAFE_MODEL_COMPARE (
-            CAFE_PREP.out.results,
-            CAFE_RUN.out.results.filter { meta, res -> meta.id == 'gamma' },
-            CAFE_RUN.out.results.filter { meta, res -> meta.id == 'gamma_per_family' }
+            ch_best_uniform,
+            CAFE_RUN_BEST.out.results
         )
-
-        // --- Select best model ---
-        ch_all_results = CAFE_PREP.out.results
-            .map { res -> [ 'base', res ] }
-            .mix(
-                CAFE_RUN.out.results.map { meta, res -> [ meta.id, res ] }
-            )
 
         ch_best_results = CAFE_MODEL_COMPARE.out.best_model
-            .map  { f -> f.text.trim() }
-            .combine( ch_all_results )
-            .filter { best, model, res -> best == model }
-            .map    { best, model, res -> res }
+            .map { f -> f.text.trim() }
+            .combine(
+                ch_best_uniform.map       { dir -> [ 'uniform', dir ] }
+                .mix( CAFE_RUN_BEST.out.results.map { dir -> [ 'poisson', dir ] } )
+            )
+            .filter { best, model, dir -> best == model }
+            .map    { best, model, dir -> dir }
+
 
         CAFE_PLOT ( ch_best_results )
+
 
         // --- CAFE GO enrichment (requires eggnog) ---
 
@@ -291,6 +317,7 @@ workflow {
             CAFE_GO_RUN ( ch_go_run_input )
 
         } // end if run_eggnog (CAFE GO)
+	
 
     } // end if !skip_cafe
 
