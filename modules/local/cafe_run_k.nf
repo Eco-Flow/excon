@@ -8,7 +8,7 @@ process CAFE_RUN_K {
     path hog_counts
     path species_tree
     path error_model
-    each k   // <-- this fans out automatically in DSL2
+    each k
 
     output:
     tuple val(k), path("Out_cafe_k${k}/"), emit: results

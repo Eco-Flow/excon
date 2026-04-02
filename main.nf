@@ -18,8 +18,6 @@ log.info """\
 
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
 
-include { CAFE_PREP } from './modules/local/cafe_prep.nf'
-include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
@@ -43,6 +41,11 @@ include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
+
+include { CAFE_PREP } from './modules/local/cafe_prep.nf'
+include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
+include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
+include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
 
 workflow {
 
@@ -197,6 +200,102 @@ workflow {
         CAFE_PREP.out.error_model,       // Base_error_model.txt — empty file if estimation failed
         k_values                         // each fans out: 1, 2, 3 ... cafe_max_k
         )
+
+        CAFE_SELECT_K(
+            CAFE_RUN_K.out.results.map { k, d -> d }.collect()
+        )
+
+        // Read the integer out of best_k.txt for passing to CAFE_RUN_BEST
+        best_k_ch = CAFE_SELECT_K.out.best_k
+           .map { f -> f.text.trim().toInteger() }
+
+        ch_best_uniform = CAFE_RUN_K.out.results
+            .combine( best_k_ch )
+            .filter { k, dir, best_k -> k == best_k }
+            .map    { k, dir, best_k -> dir }
+
+        CAFE_RUN_BEST(
+           CAFE_PREP.out.prepared_counts,
+           CAFE_PREP.out.prepared_tree,
+           CAFE_PREP.out.error_model,
+           best_k_ch,
+           Channel.of( true )  //Only run poisson here, as we ran without -p earlier
+        )
+
+        // Compare uniform vs Poisson at best k, emit the winning directory
+        CAFE_MODEL_COMPARE (
+            ch_best_uniform,
+            CAFE_RUN_BEST.out.results
+        )
+
+        ch_best_results = CAFE_MODEL_COMPARE.out.best_model
+            .map { f -> f.text.trim() }
+            .combine(
+                ch_best_uniform.map       { dir -> [ 'uniform', dir ] }
+                .mix( CAFE_RUN_BEST.out.results.map { dir -> [ 'poisson', dir ] } )
+            )
+            .filter { best, model, dir -> best == model }
+            .map    { best, model, dir -> dir }
+
+
+        CAFE_PLOT ( ch_best_results )
+
+
+        // --- CAFE GO enrichment (requires eggnog) ---
+
+        if (params.run_eggnog) {
+
+            EGGNOG_TO_OG_GO (
+                ch_go_files,
+                ORTHOFINDER_CAFE.out.orthologues
+            )
+
+            CAFE_GO_PREP (
+                ch_best_results,
+                CAFE_PREP.out.N0_table,
+                EGGNOG_TO_OG_GO.out.og_go
+            )
+
+            // Flatten pos and neg file lists into individual items
+            ch_target_files = CAFE_GO_PREP.out.pos_files
+                .mix( CAFE_GO_PREP.out.neg_files )
+                .flatten()
+
+            // Flatten background file list into individual items
+            ch_bk_files = CAFE_GO_PREP.out.bk_files
+                .flatten()
+
+            // Parse manifest - one row per ChopGO job
+            ch_manifest = CAFE_GO_PREP.out.manifest
+                .splitCsv( sep: '\t', header: false )
+                .map { row ->
+                    def name = row[0].replaceAll(/\.txt$/, '')
+                    tuple( [id: name], row[0], row[1] )
+                }
+
+            // Match each manifest row to its target file by filename
+            ch_with_target = ch_manifest
+                .combine( ch_target_files )
+                .filter { meta, target_name, bg_name, file -> file.name == target_name }
+                .map    { meta, target_name, bg_name, file -> tuple( meta, file, bg_name ) }
+
+            // Match each row to its background file by filename
+            ch_with_bg = ch_with_target
+                .combine( ch_bk_files )
+                .filter { meta, target_file, bg_name, file -> file.name == bg_name }
+                .map    { meta, target_file, bg_name, file -> tuple( meta, target_file, file ) }
+
+            // Add the shared OG_GO file to every job
+            ch_go_run_input = ch_with_bg
+                .combine( CAFE_GO_PREP.out.og_go.first() )
+                .map { meta, target_file, bg_file, og_go ->
+                    tuple( meta, target_file, bg_file, og_go )
+                }
+
+            CAFE_GO_RUN ( ch_go_run_input )
+
+        } // end if run_eggnog (CAFE GO)
+	
 
     } // end if !skip_cafe
 
