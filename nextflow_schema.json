@@ -10,7 +10,7 @@
       "type": "object",
       "fa_icon": "fas fa-terminal",
       "description": "Define where the pipeline should find input data and save output data.",
-      "required": ["input", "outdir"],
+      "required": ["outdir"],
       "properties": {
         "input": {
           "type": "string",
@@ -18,7 +18,7 @@
           "exists": true,
           "mimetype": "text/csv",
           "pattern": "^\\S+\\.csv$",
-          "description": "Path to comma-separated file containing information about the samples in the experiment.",
+          "description": "Path to comma-separated file containing information about the samples in the experiment. Required unless --input_tree and --input_orthogroups are both provided and neither --run_eggnog nor --stats is set.",
           "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row.",
           "fa_icon": "fas fa-file-csv"
         },
@@ -135,6 +135,18 @@
         "skip_cafe": {
           "type": "boolean",
           "description": "A flag to skip the cafe section. Used if you just wish to run go assignment for a species without runnig Cafe"
+        },
+        "input_tree": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "description": "Path to a pre-computed rooted species tree in Newick format (e.g. SpeciesTree_rooted_node_labels.txt from a previous OrthoFinder run). Providing this together with --input_orthogroups skips the slow OrthoFinder step."
+        },
+        "input_orthogroups": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "description": "Path to a pre-computed Orthogroups.tsv from a previous OrthoFinder run. Must be provided together with --input_tree to skip OrthoFinder."
         },
         "groups": {
           "type": "string",

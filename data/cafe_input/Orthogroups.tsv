@@ -1,0 +1,584 @@
+Orthogroup	Mycoplasmoides_fastidiosum.clean	Mycoplasmoides_gallisepticum.clean	Mycoplasmoides_genitalium.clean	Mycoplasmoides_pneumoniae.clean
+OG0000000	agat-119, agat-120, agat-121, agat-122, agat-123, agat-124, agat-125, agat-126, agat-127, agat-128, agat-129, agat-130, agat-131, agat-132, agat-626, agat-627, agat-629, agat-630, agat-631, agat-632, agat-633, agat-634, agat-635, agat-636, agat-637, agat-638, agat-640, agat-641, agat-642, agat-643, agat-644, agat-645, agat-649, agat-650, agat-656, agat-657, agat-658, agat-659, agat-660, agat-661, agat-662, agat-663, agat-664, agat-665, agat-666, agat-667, agat-668, agat-669, agat-670, agat-672, agat-673, agat-674, agat-727, agat-728, agat-729, agat-731, agat-732, agat-733, agat-734, agat-735, agat-736, agat-737, agat-786			
+OG0000001		agat-157, agat-158, agat-159, agat-160, agat-161, agat-280, agat-281, agat-282, agat-283, agat-284, agat-285, agat-286, agat-288, agat-290, agat-292, agat-293, agat-362, agat-363, agat-364, agat-365, agat-366, agat-367, agat-368, agat-369, agat-370, agat-371, agat-372, agat-373, agat-374, agat-375, agat-376, agat-377, agat-379, agat-380, agat-381, agat-409, agat-410, agat-544, agat-545, agat-546, agat-547, agat-548, agat-736, agat-737, agat-pseudo10, agat-pseudo11, agat-pseudo13, agat-pseudo14, agat-pseudo15, agat-pseudo16, agat-pseudo17, agat-pseudo18, agat-pseudo19, agat-pseudo20, agat-pseudo21, agat-pseudo23, agat-pseudo24, agat-pseudo4, agat-pseudo41, agat-pseudo5		
+OG0000002		agat-142, agat-144, agat-217	agat-145, agat-146, agat-199, agat-356, agat-500, agat-501, agat-502, agat-pseudo10, agat-pseudo11, agat-pseudo12, agat-pseudo13, agat-pseudo19, agat-pseudo3, agat-pseudo4, agat-pseudo5	agat-450, agat-688, agat-710, agat-713, agat-pseudo11, agat-pseudo13, agat-pseudo17, agat-pseudo19, agat-pseudo20, agat-pseudo21, agat-pseudo22, agat-pseudo27, agat-pseudo29, agat-pseudo3, agat-pseudo42, agat-pseudo43, agat-pseudo44, agat-pseudo46, agat-pseudo5, agat-pseudo6, agat-pseudo7, agat-pseudo8, agat-pseudo9
+OG0000003			agat-454, agat-455	agat-124, agat-125, agat-211, agat-23, agat-24, agat-25, agat-26, agat-27, agat-28, agat-29, agat-30, agat-32, agat-329, agat-33, agat-413, agat-453, agat-529, agat-656, agat-657, agat-658, agat-659, agat-660, agat-661, agat-662, agat-663, agat-665, agat-666, agat-692, agat-704, agat-83, agat-pseudo39
+OG0000004				agat-108, agat-163, agat-166, agat-168, agat-195, agat-198, agat-204, agat-205, agat-206, agat-210, agat-213, agat-264, agat-339, agat-342, agat-38, agat-412, agat-452, agat-494, agat-512, agat-527, agat-528, agat-549, agat-60, agat-709, agat-82, agat-84, agat-pseudo25, agat-pseudo28, agat-pseudo45
+OG0000005	agat-423, agat-763	agat-241, agat-493, agat-608, agat-638, agat-648, agat-732, agat-733	agat-415, agat-68, agat-69	agat-154, agat-155, agat-602, agat-604, agat-605, agat-606, agat-607, agat-608, agat-609, agat-610, agat-611, agat-671, agat-672, agat-689, agat-690, agat-pseudo24
+OG0000006	agat-249, agat-251, agat-252, agat-253, agat-254, agat-255, agat-256, agat-257, agat-258, agat-259, agat-261, agat-263, agat-265, agat-266, agat-267, agat-269, agat-271, agat-272, agat-274, agat-275, agat-276, agat-277, agat-278, agat-280, agat-507			
+OG0000007		agat-143, agat-145	agat-200, agat-493, agat-499, agat-503, agat-504, agat-pseudo14, agat-pseudo15, agat-pseudo16, agat-pseudo17, agat-pseudo18, agat-pseudo2, agat-pseudo6, agat-pseudo7	agat-208, agat-695, agat-699, agat-702, agat-707, agat-708, agat-pseudo31, agat-pseudo35
+OG0000008	agat-293, agat-294	agat-512, agat-513, agat-517	agat-320, agat-322, agat-354	agat-475, agat-476, agat-477, agat-479, agat-513, agat-516, agat-685, agat-pseudo38
+OG0000009	agat-380, agat-465, agat-466, agat-467, agat-468, agat-469, agat-470, agat-471, agat-472, agat-478, agat-479, agat-481, agat-710		agat-317	agat-472
+OG0000010	agat-817, agat-818	agat-1	agat-193, agat-270	agat-214, agat-261, agat-262, agat-341, agat-343, agat-449, agat-531, agat-pseudo16, agat-pseudo32, agat-pseudo4
+OG0000011	agat-242	agat-116, agat-226, agat-228, agat-278, agat-44, agat-700, agat-701, agat-703, agat-704	agat-17, agat-497	agat-187, agat-92
+OG0000012		agat-390, agat-400, agat-601, agat-621, agat-pseudo1, agat-pseudo27, agat-pseudo30, agat-pseudo31, agat-pseudo32, agat-pseudo33, agat-pseudo34, agat-pseudo6, agat-pseudo8		
+OG0000013	agat-227, agat-228, agat-229, agat-230, agat-231, agat-232, agat-233, agat-234, agat-235, agat-236, agat-237			
+OG0000014				agat-161, agat-263, agat-344, agat-345, agat-395, agat-411, agat-532, agat-633, agat-674, agat-pseudo12, agat-pseudo26
+OG0000015	agat-250, agat-260, agat-262, agat-264, agat-268, agat-270, agat-273, agat-279, agat-282, agat-506			
+OG0000016		agat-128, agat-187, agat-64, agat-65, agat-706, agat-707, agat-76, agat-77, agat-78, agat-pseudo3		
+OG0000017	agat-110, agat-598, agat-599, agat-600, agat-601, agat-602, agat-603, agat-604, agat-605			
+OG0000018	agat-689, agat-690	agat-687	agat-482, agat-484, agat-66	agat-152, agat-67, agat-69
+OG0000019	agat-80, agat-81	agat-120, agat-186, agat-pseudo38, agat-pseudo39	agat-462	agat-45
+OG0000020	agat-445, agat-85	agat-575	agat-448, agat-458	agat-15, agat-41, agat-648
+OG0000021	agat-335, agat-336	agat-305, agat-378, agat-709, agat-710	agat-206	agat-186
+OG0000022	agat-337, agat-338, agat-343, agat-345, agat-346, agat-347, agat-348, agat-pseudo2			
+OG0000023	agat-508	agat-509, agat-510, agat-511	agat-138, agat-466	agat-332, agat-50
+OG0000024		agat-637, agat-645, agat-646, agat-649, agat-650, agat-651, agat-738, agat-pseudo28		
+OG0000025				agat-116, agat-117, agat-292, agat-533, agat-534, agat-535, agat-715, agat-716
+OG0000026	agat-40	agat-455	agat-321, agat-442	agat-478, agat-641, agat-8
+OG0000027	agat-171, agat-172, agat-174, agat-176, agat-216, agat-223, agat-225			
+OG0000028	agat-494	agat-184, agat-253	agat-340, agat-464	agat-48, agat-499
+OG0000029	agat-497	agat-309, agat-721	agat-222, agat-238	agat-355, agat-373
+OG0000030	agat-544, agat-545, agat-546, agat-547, agat-548, agat-549, agat-550			
+OG0000031		agat-287, agat-289, agat-291, agat-382, agat-549, agat-726, agat-727		
+OG0000032	agat-37	agat-514, agat-518, agat-713	agat-326	agat-483
+OG0000033	agat-106	agat-626, agat-718, agat-719	agat-262	agat-403
+OG0000034	agat-170, agat-173, agat-175, agat-215, agat-224, agat-226			
+OG0000035	agat-299, agat-300, agat-358, agat-402, agat-725	agat-389		
+OG0000036	agat-308	agat-118, agat-122, agat-pseudo2	agat-19	agat-94
+OG0000037	agat-518	agat-686	agat-483, agat-65	agat-151, agat-68
+OG0000038	agat-625	agat-126, agat-168	agat-27	agat-103, agat-349
+OG0000039	agat-726	agat-350		agat-35, agat-668, agat-691, agat-703
+OG0000040		agat-117, agat-119, agat-121, agat-702, agat-722, agat-723		
+OG0000041		agat-454, agat-506	agat-325, agat-406	agat-482, agat-592
+OG0000042	agat-698	agat-347, agat-672	agat-15	agat-90
+OG0000043	agat-3	agat-256, agat-498		agat-360, agat-678
+OG0000044	agat-8, agat-9	agat-7	agat-198	agat-207
+OG0000045	agat-73, agat-782	agat-106	agat-417	agat-614
+OG0000046	agat-77	agat-50	agat-441	agat-640, agat-7
+OG0000047	agat-133, agat-712, agat-713, agat-764, agat-82			
+OG0000048	agat-107	agat-48	agat-445	agat-12, agat-645
+OG0000049	agat-143	agat-53, agat-584	agat-129	agat-321
+OG0000050	agat-206, agat-718	agat-140	agat-374	agat-557
+OG0000051	agat-246	agat-274, agat-415	agat-106	agat-298
+OG0000052	agat-248, agat-784	agat-100	agat-73	agat-265
+OG0000053	agat-318	agat-553	agat-437	agat-3, agat-636
+OG0000054	agat-319	agat-55	agat-438	agat-4, agat-637
+OG0000055	agat-333, agat-685	agat-696	agat-67	agat-153
+OG0000056	agat-387, agat-722	agat-163, agat-202, agat-83		
+OG0000057	agat-388	agat-483	agat-492	agat-642, agat-9
+OG0000058	agat-414, agat-415	agat-328	agat-252	agat-390
+OG0000059	agat-428, agat-533	agat-416	agat-105	agat-297
+OG0000060	agat-439	agat-59	agat-452	agat-20, agat-653
+OG0000061	agat-440	agat-58	agat-451	agat-19, agat-652
+OG0000062	agat-441	agat-57	agat-450	agat-17, agat-650
+OG0000063	agat-442	agat-56	agat-449	agat-16, agat-649
+OG0000064	agat-451	agat-593	agat-61	agat-147, agat-148
+OG0000065	agat-511	agat-332	agat-254	agat-392, agat-393
+OG0000066	agat-620	agat-534	agat-446	agat-13, agat-646
+OG0000067	agat-621	agat-535	agat-447	agat-14, agat-647
+OG0000068	agat-686	agat-104, agat-105	agat-269	agat-410
+OG0000069	agat-694	agat-51	agat-440	agat-6, agat-639
+OG0000070	agat-704	agat-237	agat-436	agat-2, agat-635
+OG0000071	agat-705	agat-238	agat-435	agat-1, agat-634
+OG0000072	agat-721, agat-746	agat-434	agat-285	agat-433
+OG0000073	agat-799, agat-821	agat-5	agat-197	agat-203
+OG0000074	agat-800, agat-820	agat-4	agat-196	agat-202
+OG0000075		agat-155	agat-235, agat-236	agat-370, agat-371
+OG0000076			agat-30	agat-106, agat-107, agat-109, agat-pseudo2
+OG0000077				agat-169, agat-212, agat-340, agat-39, agat-530
+OG0000078				agat-694, agat-698, agat-700, agat-701, agat-pseudo37
+OG0000079				agat-415, agat-416, agat-417, agat-418, agat-683
+OG0000080	agat-456	agat-316	agat-410	agat-596
+OG0000081	agat-97	agat-666	agat-2	agat-74
+OG0000082	agat-313	agat-533	agat-187	agat-255
+OG0000083	agat-697	agat-348	agat-14	agat-89
+OG0000084	agat-32	agat-277	agat-341	agat-500
+OG0000085	agat-432, agat-804		agat-361	agat-544
+OG0000086	agat-812	agat-216	agat-275	agat-423
+OG0000087	agat-5	agat-665	agat-3	agat-75
+OG0000088	agat-403	agat-296	agat-209	agat-190
+OG0000089	agat-6	agat-664	agat-4	agat-76
+OG0000090	agat-404	agat-297	agat-210	agat-191
+OG0000091	agat-810	agat-166	agat-215	agat-347
+OG0000092	agat-307	agat-448	agat-389	agat-574
+OG0000093	agat-341	agat-465	agat-83	agat-275
+OG0000094	agat-342	agat-464	agat-84	agat-276
+OG0000095	agat-26	agat-504	agat-130	agat-322
+OG0000096	agat-1	agat-670	agat-485	agat-70
+OG0000097	agat-13	agat-692	agat-472	agat-56
+OG0000098	agat-14	agat-663	agat-5	agat-77
+OG0000099	agat-17	agat-385	agat-336	agat-493
+OG0000100	agat-18	agat-439	agat-335	agat-492
+OG0000101	agat-24	agat-212	agat-359	agat-541
+OG0000102	agat-28	agat-537	agat-51	agat-137
+OG0000103	agat-29	agat-538	agat-50	agat-136
+OG0000104	agat-30	agat-539	agat-49	agat-135
+OG0000105	agat-33	agat-521	agat-329	agat-486
+OG0000106	agat-41	agat-243	agat-426	agat-623
+OG0000107	agat-42	agat-244	agat-425	agat-622
+OG0000108	agat-43	agat-245	agat-424	agat-621
+OG0000109	agat-44	agat-246	agat-423	agat-620
+OG0000110	agat-45	agat-247	agat-422	agat-619
+OG0000111	agat-46	agat-248	agat-421	agat-618
+OG0000112	agat-47	agat-249	agat-420	agat-617
+OG0000113	agat-48	agat-250	agat-419	agat-616
+OG0000114	agat-49	agat-17	agat-140	agat-334
+OG0000115	agat-51	agat-411	agat-110	agat-302
+OG0000116	agat-53	agat-197	agat-119	agat-311
+OG0000117	agat-55	agat-12	agat-241	agat-376
+OG0000118	agat-56	agat-13	agat-240	agat-375
+OG0000119	agat-57	agat-14	agat-239	agat-374
+OG0000120	agat-61	agat-114	agat-491	agat-566
+OG0000121	agat-65	agat-615	agat-87	agat-279
+OG0000122	agat-66	agat-476	agat-74	agat-266
+OG0000123	agat-74	agat-196	agat-118	agat-310
+OG0000124	agat-75	agat-137	agat-394	agat-579
+OG0000125	agat-78	agat-691	agat-473	agat-57
+OG0000126	agat-79	agat-695	agat-39	agat-122
+OG0000127	agat-83	agat-240	agat-28	agat-104
+OG0000128	agat-89	agat-574	agat-457	agat-40
+OG0000129	agat-92	agat-234	agat-414	agat-601
+OG0000130	agat-96	agat-438	agat-375	agat-558
+OG0000131	agat-98	agat-326	agat-257	agat-398
+OG0000132	agat-100	agat-129	agat-365	agat-548
+OG0000133	agat-104	agat-641	agat-264	agat-405
+OG0000134	agat-105	agat-627	agat-263	agat-404
+OG0000135	agat-109	agat-151	agat-289	agat-437
+OG0000136	agat-111	agat-443	agat-373	agat-556
+OG0000137	agat-113	agat-611	agat-22	agat-97
+OG0000138	agat-114	agat-612	agat-32	agat-112
+OG0000139	agat-115	agat-500	agat-133	agat-325
+OG0000140	agat-116	agat-499	agat-134	agat-326
+OG0000141	agat-117	agat-508	agat-143	agat-337
+OG0000142	agat-135	agat-154	agat-295	agat-443
+OG0000143	agat-140	agat-219	agat-369	agat-553
+OG0000144	agat-141	agat-167	agat-216	agat-348
+OG0000145	agat-142	agat-560	agat-102	agat-294
+OG0000146	agat-145	agat-340	agat-248	agat-383
+OG0000147	agat-146	agat-258	agat-218	agat-351
+OG0000148	agat-147	agat-93	agat-383	agat-567
+OG0000149	agat-148	agat-94	agat-384	agat-568
+OG0000150	agat-149	agat-108	agat-370	agat-pseudo23
+OG0000151	agat-151	agat-81	agat-150	agat-217
+OG0000152	agat-152	agat-82	agat-151	agat-218
+OG0000153	agat-155	agat-88	agat-305	agat-458
+OG0000154	agat-156	agat-86	agat-308	agat-461
+OG0000155	agat-161	agat-587	agat-116	agat-308
+OG0000156	agat-162	agat-428	agat-412	agat-598
+OG0000157	agat-163	agat-655	agat-13	agat-88
+OG0000158	agat-179	agat-18	agat-159	agat-226
+OG0000159	agat-180	agat-19	agat-160	agat-227
+OG0000160	agat-pseudo1	agat-20	agat-161	agat-228
+OG0000161	agat-181	agat-21	agat-162	agat-229
+OG0000162	agat-182	agat-22	agat-163	agat-230
+OG0000163	agat-183	agat-23	agat-164	agat-231
+OG0000164	agat-184	agat-24	agat-165	agat-232
+OG0000165	agat-185	agat-25	agat-166	agat-233
+OG0000166	agat-186	agat-26	agat-167	agat-234
+OG0000167	agat-187	agat-27	agat-168	agat-235
+OG0000168	agat-188	agat-28	agat-169	agat-236
+OG0000169	agat-189	agat-29	agat-170	agat-237
+OG0000170	agat-190	agat-30	agat-171	agat-238
+OG0000171	agat-191	agat-31	agat-172	agat-239
+OG0000172	agat-192	agat-32	agat-173	agat-240
+OG0000173	agat-193	agat-33	agat-174	agat-241
+OG0000174	agat-194	agat-34	agat-175	agat-242
+OG0000175	agat-195	agat-35	agat-176	agat-243
+OG0000176	agat-829	agat-36	agat-177	agat-244
+OG0000177	agat-196	agat-37	agat-178	agat-245
+OG0000178	agat-197	agat-38	agat-179	agat-246
+OG0000179	agat-198	agat-39	agat-180	agat-247
+OG0000180	agat-199	agat-40	agat-181	agat-248
+OG0000181	agat-200	agat-583	agat-182	agat-249
+OG0000182	agat-201	agat-582	agat-489	agat-250
+OG0000183	agat-202	agat-581	agat-183	agat-251
+OG0000184	agat-203	agat-580	agat-184	agat-252
+OG0000185	agat-204	agat-579	agat-185	agat-253
+OG0000186	agat-205	agat-pseudo25	agat-186	agat-254
+OG0000187	agat-207	agat-339	agat-249	agat-384
+OG0000188	agat-209	agat-494	agat-318	agat-473
+OG0000189	agat-220	agat-96	agat-386	agat-570
+OG0000190	agat-221	agat-95	agat-385	agat-569
+OG0000191	agat-238	agat-609	agat-20	agat-95
+OG0000192	agat-239	agat-653	agat-476	agat-61
+OG0000193	agat-240	agat-654	agat-477	agat-62
+OG0000194	agat-243	agat-279	agat-207	agat-188
+OG0000195	agat-244	agat-657	agat-89	agat-281
+OG0000196	agat-245	agat-656	agat-90	agat-282
+OG0000197	agat-283	agat-681	agat-36	agat-119
+OG0000198	agat-284	agat-680	agat-31	agat-111
+OG0000199	agat-286	agat-146	agat-33	agat-113
+OG0000200	agat-287	agat-147	agat-34	agat-114
+OG0000201	agat-827	agat-386	agat-278	agat-426
+OG0000202	agat-288	agat-452	agat-392	agat-577
+OG0000203	agat-289	agat-450	agat-390	agat-575
+OG0000204	agat-291	agat-527	agat-380	agat-563
+OG0000205	agat-295	agat-458	agat-137	agat-331
+OG0000206	agat-296	agat-413	agat-108	agat-300
+OG0000207	agat-297	agat-412	agat-109	agat-301
+OG0000208	agat-298	agat-396	agat-59	agat-693
+OG0000209	agat-301	agat-398	agat-338	agat-497
+OG0000210	agat-302	agat-223	agat-352	agat-514
+OG0000211	agat-303	agat-183	agat-465	agat-49
+OG0000212	agat-304	agat-437	agat-288	agat-436
+OG0000213	agat-309	agat-440	agat-154	agat-221
+OG0000214	agat-310	agat-530	agat-190	agat-258
+OG0000215	agat-311	agat-531	agat-189	agat-257
+OG0000216	agat-312	agat-532	agat-188	agat-256
+OG0000217	agat-315	agat-43	agat-141	agat-335
+OG0000218	agat-317	agat-552	agat-139	agat-333
+OG0000219	agat-324	agat-541	agat-126	agat-318
+OG0000220	agat-325	agat-542	agat-125	agat-317
+OG0000221	agat-326	agat-543	agat-124	agat-316
+OG0000222	agat-330	agat-103	agat-268	agat-409
+OG0000223	agat-331	agat-102	agat-267	agat-408
+OG0000224	agat-339	agat-467	agat-81	agat-273
+OG0000225	agat-340	agat-466	agat-82	agat-274
+OG0000226	agat-365	agat-591	agat-112	agat-304
+OG0000227	agat-366	agat-590	agat-113	agat-305
+OG0000228	agat-367	agat-589	agat-114	agat-306
+OG0000229	agat-368	agat-311	agat-231	agat-366
+OG0000230	agat-369	agat-312	agat-232	agat-367
+OG0000231	agat-371	agat-314	agat-234	agat-369
+OG0000232	agat-374	agat-343	agat-245	agat-380
+OG0000233	agat-375	agat-342	agat-246	agat-381
+OG0000234	agat-389	agat-682	agat-37	agat-120
+OG0000235	agat-394, agat-395, agat-396, agat-398			
+OG0000236	agat-399	agat-261	agat-363	agat-546
+OG0000237	agat-407	agat-299	agat-250	agat-388
+OG0000238	agat-408	agat-524	agat-350	agat-509
+OG0000239	agat-409	agat-523	agat-349	agat-508
+OG0000240	agat-410	agat-522	agat-348	agat-507
+OG0000241	agat-413	agat-678	agat-397	agat-582
+OG0000242	agat-416	agat-561	agat-101	agat-293
+OG0000243	agat-418	agat-563	agat-98	agat-290
+OG0000244	agat-419	agat-564	agat-97	agat-289
+OG0000245	agat-420	agat-565	agat-96	agat-288
+OG0000246	agat-422	agat-567	agat-94	agat-286
+OG0000247	agat-424	agat-399	agat-339	agat-498
+OG0000248	agat-425	agat-617	agat-62	agat-149
+OG0000249	agat-426	agat-262	agat-362	agat-545
+OG0000250	agat-429	agat-610	agat-21	agat-96
+OG0000251	agat-431	agat-358	agat-212	agat-193
+OG0000252	agat-434	agat-191	agat-274	agat-422
+OG0000253	agat-435	agat-190	agat-273	agat-421
+OG0000254	agat-436	agat-189	agat-272	agat-420
+OG0000255	agat-438	agat-62	agat-29	agat-105
+OG0000256	agat-443	agat-578	agat-461	agat-44
+OG0000257	agat-444	agat-576	agat-459	agat-42
+OG0000258	agat-446	agat-577	agat-460	agat-43
+OG0000259	agat-449	agat-324	agat-258	agat-399
+OG0000260	agat-450	agat-489	agat-324	agat-481
+OG0000261	agat-452	agat-425	agat-135	agat-327
+OG0000262	agat-453	agat-359	agat-211	agat-192
+OG0000263	agat-458	agat-318	agat-408	agat-594
+OG0000264	agat-460	agat-319	agat-407	agat-593
+OG0000265	agat-463	agat-321	agat-261	agat-402
+OG0000266	agat-464	agat-322	agat-260	agat-401
+OG0000267	agat-476	agat-556	agat-378	agat-561
+OG0000268	agat-477	agat-555	agat-379	agat-562
+OG0000269	agat-484	agat-148	agat-291	agat-439
+OG0000270	agat-485	agat-529	agat-58	agat-145
+OG0000271	agat-486	agat-528	agat-57	agat-144
+OG0000272	agat-487	agat-480	agat-56	agat-143
+OG0000273	agat-490	agat-233	agat-469	agat-53
+OG0000274	agat-491	agat-232	agat-47	agat-133
+OG0000275	agat-496	agat-310	agat-223	agat-356
+OG0000276	agat-498	agat-15	agat-237	agat-372
+OG0000277	agat-499	agat-308	agat-221	agat-354
+OG0000278	agat-500	agat-462	agat-24	agat-100
+OG0000279	agat-503	agat-354	agat-205	agat-185
+OG0000280	agat-504	agat-355	agat-204	agat-184
+OG0000281	agat-505	agat-356	agat-203	agat-183
+OG0000282	agat-512	agat-334	agat-256	agat-397
+OG0000283	agat-514	agat-192	agat-276	agat-424
+OG0000284	agat-519	agat-254	agat-314	agat-469
+OG0000285	agat-520	agat-255	agat-313	agat-468
+OG0000286	agat-536	agat-182	agat-490	agat-676
+OG0000287	agat-537, agat-680, agat-683			agat-522
+OG0000288	agat-551	agat-607, agat-pseudo36, agat-pseudo37		
+OG0000289	agat-558	agat-175	agat-301	agat-454
+OG0000290	agat-559	agat-614	agat-86	agat-278
+OG0000291	agat-560	agat-613	agat-85	agat-277
+OG0000292	agat-561	agat-344	agat-244	agat-379
+OG0000293	agat-562	agat-345	agat-243	agat-378
+OG0000294	agat-563	agat-346	agat-242	agat-377
+OG0000295	agat-564	agat-176	agat-302	agat-455
+OG0000296	agat-565	agat-177	agat-303	agat-456
+OG0000297	agat-567	agat-558	agat-104	agat-296
+OG0000298	agat-568	agat-559	agat-103	agat-295
+OG0000299	agat-570	agat-642	agat-428	agat-626
+OG0000300	agat-pseudo3	agat-427	agat-463	agat-46
+OG0000301	agat-572	agat-123	agat-343	agat-502
+OG0000302	agat-574	agat-588	agat-115	agat-307
+OG0000303	agat-575	agat-113	agat-382	agat-565
+OG0000304	agat-576	agat-112	agat-381	agat-564
+OG0000305	agat-577	agat-132	agat-311	agat-465
+OG0000306	agat-578	agat-133	agat-310	agat-464
+OG0000307	agat-585	agat-573	agat-312	agat-467
+OG0000308	agat-586	agat-446	agat-388	agat-573
+OG0000309	agat-587	agat-445	agat-387	agat-572
+OG0000310	agat-588	agat-444	agat-pseudo8	agat-571
+OG0000311	agat-589	agat-178	agat-296	agat-444
+OG0000312	agat-593	agat-598	agat-53	agat-139
+OG0000313	agat-595	agat-600	agat-488	agat-141
+OG0000314	agat-597	agat-586	agat-117	agat-309
+OG0000315	agat-608	agat-171	agat-357	agat-539
+OG0000316	agat-pseudo4	agat-170	agat-358	agat-540
+OG0000317	agat-609	agat-430	agat-225	agat-358
+OG0000318	agat-610	agat-431	agat-224	agat-357
+OG0000319	agat-pseudo5	agat-456	agat-427	agat-625
+OG0000320	agat-611	agat-135	agat-396	agat-581
+OG0000321	agat-617	agat-540	agat-48	agat-134
+OG0000322	agat-618	agat-307	agat-220	agat-353
+OG0000323	agat-619	agat-306	agat-219	agat-352
+OG0000324	agat-692	agat-426	agat-355	agat-517
+OG0000325	agat-695	agat-585	agat-127	agat-319
+OG0000326	agat-696	agat-594	agat-398	agat-583
+OG0000327	agat-702, agat-755	agat-68		agat-386
+OG0000328	agat-714	agat-488	agat-91	agat-283
+OG0000329	agat-715	agat-487	agat-92	agat-284
+OG0000330	agat-716	agat-486	agat-93	agat-285
+OG0000331	agat-720	agat-404	agat-403	agat-589
+OG0000332	agat-742	agat-432	agat-283	agat-431
+OG0000333	agat-745	agat-433	agat-284	agat-432
+OG0000334	agat-747	agat-435	agat-286	agat-434
+OG0000335	agat-748	agat-436	agat-287	agat-435
+OG0000336	agat-750	agat-407	agat-411	agat-597
+OG0000337	agat-753	agat-502	agat-131	agat-323
+OG0000338	agat-767	agat-351	agat-202	agat-171
+OG0000339	agat-768	agat-352	agat-201	agat-170
+OG0000340	agat-769	agat-418	agat-45	agat-131
+OG0000341	agat-770	agat-419	agat-44	agat-130
+OG0000342	agat-771	agat-420	agat-43	agat-129
+OG0000343	agat-772	agat-421	agat-42	agat-128
+OG0000344	agat-773	agat-422	agat-41	agat-127
+OG0000345	agat-774	agat-423	agat-40	agat-126
+OG0000346	agat-792	agat-536	agat-52	agat-138
+OG0000347	agat-pseudo6	agat-697	agat-76	agat-268
+OG0000348	agat-802	agat-8	agat-77	agat-269
+OG0000349	agat-803	agat-323	agat-259	agat-400
+OG0000350	agat-805	agat-592	agat-111	agat-303
+OG0000351	agat-pseudo7	agat-685	agat-144	agat-338
+OG0000352	agat-806	agat-124	agat-344	agat-503
+OG0000353	agat-807	agat-495	agat-319	agat-474
+OG0000354	agat-811	agat-165	agat-214	agat-346
+OG0000355	agat-813	agat-659	agat-9	agat-81
+OG0000356	agat-814	agat-660	agat-8	agat-80
+OG0000357	agat-815	agat-661	agat-7	agat-79
+OG0000358	agat-816	agat-662	agat-6	agat-78
+OG0000359	agat-819	agat-3	agat-195	agat-201
+OG0000360	agat-823	agat-676	agat-478	agat-63
+OG0000361	agat-824	agat-675	agat-479	agat-64
+OG0000362	agat-831	agat-674	agat-480	agat-65
+OG0000363	agat-825	agat-673	agat-481	agat-66
+OG0000364		agat-42	agat-433, agat-434	agat-631
+OG0000365		agat-49	agat-444	agat-11, agat-644
+OG0000366		agat-54	agat-439	agat-5, agat-638
+OG0000367		agat-127, agat-66, agat-717, agat-75		
+OG0000368		agat-172, agat-173	agat-79	agat-271
+OG0000369		agat-441, agat-442	agat-280	agat-428
+OG0000370		agat-468	agat-334	agat-491, agat-pseudo18
+OG0000371		agat-482	agat-443	agat-10, agat-643
+OG0000372			agat-100, agat-300, agat-pseudo20	agat-686
+OG0000373				agat-18, agat-651, agat-673, agat-677
+OG0000374	agat-607		agat-323	agat-480
+OG0000375	agat-427		agat-277	agat-425
+OG0000376	agat-25	agat-572		agat-466
+OG0000377	agat-70		agat-25	agat-101
+OG0000378	agat-87		agat-307	agat-460
+OG0000379	agat-88		agat-306	agat-459
+OG0000380	agat-150	agat-79	agat-148	
+OG0000381	agat-164, agat-615, agat-616			
+OG0000382	agat-211		agat-191	agat-259
+OG0000383	agat-247		agat-107	agat-299
+OG0000384	agat-321, agat-322, agat-809			
+OG0000385	agat-381			agat-36, agat-669
+OG0000386	agat-382			agat-37, agat-670
+OG0000387	agat-421		agat-95	agat-287
+OG0000388	agat-582, agat-583, agat-584			
+OG0000389	agat-723	agat-387, agat-388		
+OG0000390	agat-765		agat-156	agat-223
+OG0000391	agat-776		agat-213	agat-194
+OG0000392		agat-2	agat-194	agat-200
+OG0000393		agat-9	agat-432	agat-630
+OG0000394		agat-699	agat-431	agat-629
+OG0000395		agat-10	agat-430	agat-628
+OG0000396		agat-11	agat-429	agat-627
+OG0000397		agat-41	agat-475	agat-59
+OG0000398		agat-63	agat-147	agat-215
+OG0000399		agat-80	agat-149	agat-216
+OG0000400		agat-84	agat-152	agat-219
+OG0000401		agat-335, agat-87, agat-pseudo40		
+OG0000402		agat-89	agat-304	agat-457
+OG0000403		agat-99	agat-346	agat-505
+OG0000404		agat-109	agat-371	agat-554
+OG0000405		agat-136	agat-395	agat-580
+OG0000406		agat-138	agat-393	agat-578
+OG0000407		agat-150	agat-290	agat-438
+OG0000408		agat-179	agat-297	agat-445
+OG0000409		agat-181	agat-299	agat-447
+OG0000410		agat-185	agat-pseudo9	agat-47
+OG0000411		agat-195	agat-75	agat-267
+OG0000412		agat-201	agat-294	agat-442
+OG0000413		agat-724, agat-pseudo7, agat-pseudo9		
+OG0000414		agat-218	agat-368	agat-552
+OG0000415		agat-224	agat-353	agat-515
+OG0000416		agat-231	agat-468	agat-52
+OG0000417		agat-257	agat-217	agat-350
+OG0000418		agat-260	agat-364	agat-547
+OG0000419		agat-265	agat-227	agat-362
+OG0000420		agat-313	agat-233	agat-368
+OG0000421		agat-331	agat-253	agat-391
+OG0000422		agat-333	agat-255	agat-396
+OG0000423		agat-341	agat-247	agat-382
+OG0000424		agat-402	agat-401	agat-587
+OG0000425		agat-405	agat-404	agat-590
+OG0000426		agat-429	agat-413	agat-599
+OG0000427		agat-451	agat-391	agat-576
+OG0000428		agat-459	agat-26	agat-102
+OG0000429		agat-477	agat-347	agat-506
+OG0000430		agat-501	agat-132	agat-324
+OG0000431		agat-520	agat-328	agat-485
+OG0000432		agat-526	agat-351	agat-510
+OG0000433		agat-550	agat-38	agat-121
+OG0000434		agat-557	agat-418	agat-615
+OG0000435		agat-569	agat-35	agat-115
+OG0000436		agat-571	agat-309	agat-462
+OG0000437		agat-595	agat-399	agat-584
+OG0000438		agat-599	agat-54	agat-140
+OG0000439		agat-616	agat-88	agat-280
+OG0000440		agat-652, agat-729, agat-730		
+OG0000441		agat-643	agat-16	agat-91
+OG0000442		agat-667	agat-1	agat-73
+OG0000443		agat-668	agat-487	agat-72
+OG0000444		agat-669	agat-486	agat-71
+OG0000445		agat-693	agat-471	agat-55
+OG0000446			agat-453	agat-21, agat-654
+OG0000447			agat-456	agat-31, agat-664
+OG0000448				agat-158, agat-159, agat-612
+OG0000449				agat-164, agat-199, agat-495
+OG0000450				agat-165, agat-451, agat-526
+OG0000451	agat-480	agat-pseudo29		
+OG0000452	agat-754	agat-503		
+OG0000453	agat-7	agat-101		
+OG0000454	agat-20, agat-21			
+OG0000455	agat-323, agat-95			
+OG0000456	agat-154	agat-85		
+OG0000457	agat-158, agat-532			
+OG0000458	agat-159, agat-531			
+OG0000459	agat-167			agat-414
+OG0000460	agat-222	agat-619		
+OG0000461	agat-241	agat-677		
+OG0000462	agat-285	agat-149		
+OG0000463	agat-316	agat-551		
+OG0000464	agat-327	agat-46		
+OG0000465	agat-352	agat-622		
+OG0000466	agat-356	agat-624		
+OG0000467	agat-357	agat-623		
+OG0000468	agat-360			agat-394
+OG0000469	agat-363, agat-364			
+OG0000470	agat-378, agat-379			
+OG0000471	agat-384	agat-205		
+OG0000472	agat-385	agat-204		
+OG0000473	agat-386	agat-203		
+OG0000474	agat-393, agat-785			
+OG0000475	agat-406	agat-298		
+OG0000476	agat-461	agat-320		
+OG0000477	agat-483	agat-568		
+OG0000478	agat-492	agat-251		
+OG0000479	agat-493	agat-479		
+OG0000480	agat-501	agat-220		
+OG0000481	agat-502	agat-353		
+OG0000482	agat-513	agat-357		
+OG0000483	agat-521, agat-762			
+OG0000484	agat-523, agat-526			
+OG0000485	agat-538			agat-524
+OG0000486	agat-539			agat-519
+OG0000487	agat-540			agat-521
+OG0000488	agat-541			agat-523
+OG0000489	agat-542			agat-pseudo40
+OG0000490	agat-543			agat-520
+OG0000491	agat-552	agat-606		
+OG0000492	agat-554	agat-604		
+OG0000493	agat-571	agat-295		
+OG0000494	agat-675, agat-708			
+OG0000495	agat-676, agat-757			
+OG0000496	agat-679, agat-682			
+OG0000497	agat-681, agat-684			
+OG0000498	agat-699	agat-71		
+OG0000499	agat-700	agat-70		
+OG0000500	agat-703	agat-67		
+OG0000501	agat-707	agat-683		
+OG0000502	agat-788	agat-pseudo35		
+OG0000503	agat-789	agat-pseudo12		
+OG0000504		agat-134		agat-463
+OG0000505		agat-222, agat-225		
+OG0000506		agat-273		agat-pseudo33
+OG0000507		agat-338		agat-387
+OG0000508		agat-394, agat-395		
+OG0000509		agat-401		agat-586
+OG0000510		agat-515, agat-519		
+OG0000511		agat-634, agat-635		
+OG0000512		agat-679		agat-518
+OG0000513			agat-10	agat-85
+OG0000514			agat-11	agat-86
+OG0000515			agat-12	agat-87
+OG0000516			agat-18	agat-93
+OG0000517			agat-23	agat-99
+OG0000518			agat-46	agat-132
+OG0000519			agat-55	agat-142
+OG0000520			agat-60	agat-146
+OG0000521			agat-63	agat-150
+OG0000522			agat-71	agat-162
+OG0000523			agat-72	agat-714
+OG0000524			agat-78	agat-270
+OG0000525			agat-80	agat-272
+OG0000526			agat-99	agat-291
+OG0000527			agat-120	agat-312
+OG0000528			agat-121	agat-313
+OG0000529			agat-122	agat-314
+OG0000530			agat-123	agat-315
+OG0000531			agat-128	agat-320
+OG0000532			agat-pseudo1	agat-328
+OG0000533			agat-142	agat-336
+OG0000534			agat-153	agat-220
+OG0000535			agat-155	agat-222
+OG0000536			agat-157	agat-224
+OG0000537			agat-158	agat-225
+OG0000538			agat-192	agat-260
+OG0000539			agat-495	agat-681
+OG0000540			agat-208	agat-189
+OG0000541			agat-226	agat-361
+OG0000542			agat-228	agat-363
+OG0000543			agat-230	agat-365
+OG0000544			agat-251	agat-389
+OG0000545			agat-265	agat-406
+OG0000546			agat-266	agat-407
+OG0000547			agat-271	agat-419
+OG0000548			agat-279	agat-427
+OG0000549			agat-281	agat-429
+OG0000550			agat-282	agat-430
+OG0000551			agat-292	agat-440
+OG0000552			agat-293	agat-441
+OG0000553			agat-498	agat-684
+OG0000554			agat-298	agat-446
+OG0000555			agat-315	agat-470
+OG0000556			agat-316	agat-471
+OG0000557			agat-327	agat-484
+OG0000558			agat-330	agat-487
+OG0000559			agat-331	agat-488
+OG0000560			agat-332	agat-489
+OG0000561			agat-333	agat-490
+OG0000562			agat-337	agat-496
+OG0000563			agat-342	agat-501
+OG0000564			agat-345	agat-504
+OG0000565			agat-360	agat-543
+OG0000566			agat-366	agat-550
+OG0000567			agat-367	agat-551
+OG0000568			agat-372	agat-555
+OG0000569			agat-376	agat-559
+OG0000570			agat-377	agat-560
+OG0000571			agat-400	agat-585
+OG0000572			agat-402	agat-588
+OG0000573			agat-405	agat-591
+OG0000574			agat-409	agat-595
+OG0000575			agat-494	agat-624
+OG0000576			agat-467	agat-51
+OG0000577			agat-470	agat-54
+OG0000578			agat-474	agat-58
+OG0000579				agat-22, agat-655
+OG0000580				agat-34, agat-667
+OG0000581				agat-173, agat-178
+OG0000582				agat-174, agat-179
