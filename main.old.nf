@@ -19,7 +19,6 @@ log.info """\
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
 
 include { CAFE_PREP } from './modules/local/cafe_prep.nf'
-include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
@@ -188,15 +187,88 @@ workflow {
             RESCALE_TREE.out.rescaled_tree
         )
 
-
-        k_values = Channel.of( 1..params.cafe_max_k )
-
-        CAFE_RUN_K (
-        CAFE_PREP.out.prepared_counts,   // hog_gene_counts.tsv — possibly filtered
-        CAFE_PREP.out.prepared_tree,     // SpeciesTree_rooted_ultra.txt — from R script
-        CAFE_PREP.out.error_model,       // Base_error_model.txt — empty file if estimation failed
-        k_values                         // each fans out: 1, 2, 3 ... cafe_max_k
+        CAFE_RUN (
+            Channel.of( [id: 'gamma'], [id: 'gamma_per_family'] )
+                .combine( CAFE_PREP.out.prepared_counts )
+                .combine( CAFE_PREP.out.prepared_tree )
+                .map { meta, counts, tree -> [ meta, counts, tree ] }
         )
+
+        CAFE_MODEL_COMPARE (
+            CAFE_PREP.out.results,
+            CAFE_RUN.out.results.filter { meta, res -> meta.id == 'gamma' },
+            CAFE_RUN.out.results.filter { meta, res -> meta.id == 'gamma_per_family' }
+        )
+
+        // --- Select best model ---
+        ch_all_results = CAFE_PREP.out.results
+            .map { res -> [ 'base', res ] }
+            .mix(
+                CAFE_RUN.out.results.map { meta, res -> [ meta.id, res ] }
+            )
+
+        ch_best_results = CAFE_MODEL_COMPARE.out.best_model
+            .map  { f -> f.text.trim() }
+            .combine( ch_all_results )
+            .filter { best, model, res -> best == model }
+            .map    { best, model, res -> res }
+
+        CAFE_PLOT ( ch_best_results )
+
+        // --- CAFE GO enrichment (requires eggnog) ---
+
+        if (params.run_eggnog) {
+
+            EGGNOG_TO_OG_GO (
+                ch_go_files,
+                ORTHOFINDER_CAFE.out.orthologues
+            )
+
+            CAFE_GO_PREP (
+                ch_best_results,
+                CAFE_PREP.out.N0_table,
+                EGGNOG_TO_OG_GO.out.og_go
+            )
+
+            // Flatten pos and neg file lists into individual items
+            ch_target_files = CAFE_GO_PREP.out.pos_files
+                .mix( CAFE_GO_PREP.out.neg_files )
+                .flatten()
+
+            // Flatten background file list into individual items
+            ch_bk_files = CAFE_GO_PREP.out.bk_files
+                .flatten()
+
+            // Parse manifest - one row per ChopGO job
+            ch_manifest = CAFE_GO_PREP.out.manifest
+                .splitCsv( sep: '\t', header: false )
+                .map { row ->
+                    def name = row[0].replaceAll(/\.txt$/, '')
+                    tuple( [id: name], row[0], row[1] )
+                }
+
+            // Match each manifest row to its target file by filename
+            ch_with_target = ch_manifest
+                .combine( ch_target_files )
+                .filter { meta, target_name, bg_name, file -> file.name == target_name }
+                .map    { meta, target_name, bg_name, file -> tuple( meta, file, bg_name ) }
+
+            // Match each row to its background file by filename
+            ch_with_bg = ch_with_target
+                .combine( ch_bk_files )
+                .filter { meta, target_file, bg_name, file -> file.name == bg_name }
+                .map    { meta, target_file, bg_name, file -> tuple( meta, target_file, file ) }
+
+            // Add the shared OG_GO file to every job
+            ch_go_run_input = ch_with_bg
+                .combine( CAFE_GO_PREP.out.og_go.first() )
+                .map { meta, target_file, bg_file, og_go ->
+                    tuple( meta, target_file, bg_file, og_go )
+                }
+
+            CAFE_GO_RUN ( ch_go_run_input )
+
+        } // end if run_eggnog (CAFE GO)
 
     } // end if !skip_cafe
 
