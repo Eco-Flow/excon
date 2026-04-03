@@ -157,9 +157,20 @@ workflow {
          ch_annot_gff.map { meta, annot, gff -> [ meta, gff ] }
       )
 
-      ch_go_files = EGGNOG_TO_GO.out.go_file
+      ch_go_file_meta = EGGNOG_TO_GO.out.go_file
+      ch_go_files = ch_go_file_meta
     	.map { meta, go -> go }
     	.collect()
+
+   } else if (params.predownloaded_gofiles) {
+
+      // User-provided gene-to-GO files (one *.go.txt per species, tab-separated gene_id<TAB>GO:term)
+      ch_go_file_meta = Channel.fromPath("${params.predownloaded_gofiles}/*.go.txt")
+         .map { file -> [ [id: file.simpleName], file ] }
+      ch_go_files = ch_go_file_meta
+         .map { meta, go -> go }
+         .collect()
+
    }
 
    // --- Quality stats --- 
@@ -265,7 +276,7 @@ workflow {
 
         // --- CAFE GO enrichment (requires eggnog) ---
 
-        if (params.run_eggnog) {
+        if (params.run_eggnog || params.predownloaded_gofiles) {
 
             EGGNOG_TO_OG_GO (
                 ch_go_files,
@@ -316,18 +327,17 @@ workflow {
 
             CAFE_GO_RUN ( ch_go_run_input )
 
-        } // end if run_eggnog (CAFE GO)
-	
+        } // end if run_eggnog / predownloaded_gofiles (CAFE GO)
 
     } // end if !skip_cafe
 
 
     // --- Chromosome GO analysis (requires eggnog) ---
 
-    if (params.chromo_go && params.run_eggnog) {
+    if (params.chromo_go && (params.run_eggnog || params.predownloaded_gofiles)) {
 
         ch_gff_go = AGAT_SPKEEPLONGESTISOFORM.out.gff
-        .join( EGGNOG_TO_GO.out.go_file )
+        .join( ch_go_file_meta )
         .map { meta, gff, go -> tuple(meta, gff, go) }
 
         CHROMO_GO ( ch_gff_go, ch_orthologues)
