@@ -1,5 +1,14 @@
 # Changelog
 
+## [v2.1.4] - 2026-04-03
+
+### Fixed
+- Replaced `RESCALE_TREE` + `chronos()` with `MAKE_ULTRAMETRIC`, fixing incorrect ultrametric trees for OrthoFinder v3 output. The previous approach multiplied branch lengths by 1000 and then re-estimated them from scratch with `chronos()`, producing near-zero values (0.0001…) that broke CAFE5. The new module uses the OrthoFinder ultrametricization algorithm to adjust branch lengths while preserving relative topology.
+
+### Changed
+- `--tree_scale_factor` now sets the root-to-tip distance in the ultrametric output tree (default `1`) rather than a raw branch-length multiplier. Remove any `tree_scale_factor = 1000` from your config — the default of `1` is correct for CAFE5.
+- `cafe_prep.R` now asserts the input tree is already ultrametric rather than attempting to correct it with `chronos()`.
+
 ## [v2.1.3] - 2026-04-03
 
 ### Removed

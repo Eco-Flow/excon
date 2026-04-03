@@ -29,7 +29,7 @@ The general pipeline logic is as follows:
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
-* Rescales species tree branch lengths for CAFE `[RESCALE_TREE]`.
+* Converts the OrthoFinder species tree to an ultrametric tree for CAFE `[MAKE_ULTRAMETRIC]`.
 * Prepares gene count input and runs the base CAFE model `[CAFE_PREP]`.
 * Runs two additional CAFE models in parallel for model comparison `[CAFE_RUN]`:
   - Gamma model with k=3 rate categories (`-k 3`)
@@ -137,7 +137,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 |-----------|-------------|---------|
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
-| `--tree_scale_factor` | Scale factor for rescaling species tree branch lengths | `1000` |
+| `--tree_scale_factor` | Root-to-tip distance for the ultrametric tree passed to CAFE5 | `1` |
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
 | `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
 
