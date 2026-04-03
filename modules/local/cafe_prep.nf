@@ -3,14 +3,15 @@ process CAFE_PREP {
     label 'process_long'
     container 'ecoflowucl/cafe:r-4.3.1' //R version 4.3.1, cafe version 4.2.1 (confusing)
 
+
     errorStrategy {
-        if (task.attempt <= 1 && task.exitStatus == 1) {
-            log.warn "CAFE_PREP: Base run failed on attempt ${task.attempt} — retrying with differential filtering"
+        if (task.attempt <= 3 && task.exitStatus == 1) {
+            log.warn "CAFE_PREP: convergence failed on attempt ${task.attempt} — retrying with stricter differential filtering"
             return 'retry'
         }
         return 'ignore'
     }
-    maxRetries 1
+    maxRetries 3
 
     input:
     path table
@@ -30,7 +31,8 @@ process CAFE_PREP {
     tuple val("${task.process}"), val('cafe'), val('4.2.1'), emit: versions_cafe, topic: versions
 
     script:
-    def max_differential = params.cafe_max_differential ?: 50
+    def base_differential = params.cafe_max_differential ?: 50
+    def max_differential  = (base_differential / Math.pow(2, task.attempt - 2)).toInteger()
     def use_filtering    = task.attempt > 1
     """
     export PATH=\$PATH:/usr/bin
@@ -61,6 +63,27 @@ process CAFE_PREP {
         2>&1 | tee cafe_base.log
     cafe5_exit=\${PIPESTATUS[0]}
     [ \$cafe5_exit -ne 0 ] && exit \$cafe5_exit
+
+
+    # ---------------------------------------------------------------
+    # Check for convergence failure — CAFE5 exits 0 even on -inf lnL
+    # These conditions trigger a retry with differential filtering
+    # ---------------------------------------------------------------
+    if grep -q "largest size differential" cafe_base.log; then
+        echo "ERROR: CAFE5 detected size differential error — retrying with filtering" >&2
+        exit 1
+    fi
+
+    if grep -q "inf" cafe_base.log && ! grep -q "Final Likelihood" cafe_base.log; then
+        echo "ERROR: CAFE5 failed to converge (infinite likelihoods) — retrying with filtering" >&2
+        exit 1
+    fi
+
+    if ! grep -q "Final Likelihood" cafe_base.log; then
+        echo "ERROR: CAFE5 produced no likelihood score — retrying with filtering" >&2
+        exit 1
+    fi
+
 
     # ---------------------------------------------------------------
     # Stage 2: estimate error model
