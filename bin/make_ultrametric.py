@@ -29,11 +29,11 @@ import argparse
 class Node:
     __slots__ = ('name', 'dist', 'children', 'parent')
 
-    def __init__(self, name='', dist=0.0):
+    def __init__(self, name='', dist=0.0, parent=None):
         self.name = name
         self.dist = dist
         self.children = []
-        self.parent = None
+        self.parent = parent
 
     def is_leaf(self):
         return not self.children
