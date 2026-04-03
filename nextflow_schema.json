@@ -190,6 +190,11 @@
           "description": "Choose number of rows to plot in GO figure",
           "default": 10
         },
+        "go_algo": {
+          "type": "string",
+          "description": "topGO algorithm and statistic combination (classic_fisher, weight01_t, elim_ks, weight_ks)",
+          "default": "classic_fisher"
+        },
         "tree_scale_factor": {
             "type": "integer",
             "default": 1000,

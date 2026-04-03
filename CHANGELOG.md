@@ -1,5 +1,10 @@
 # Changelog
 
+## [v2.1.2] - 2026-04-02
+
+### Added
+- New `--go_algo` parameter to select the topGO algorithm and statistic combination: `classic_fisher` (default), `weight01_t`, `elim_ks`, or `weight_ks`. Applied to both CAFE GO and chromosome GO analyses.
+
 ## [v2.1.1] - 2026-04-01
 
 ### Fixed
