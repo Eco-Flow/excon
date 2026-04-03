@@ -1,5 +1,13 @@
 # Changelog
 
+## [v2.1.3] - 2026-04-03
+
+### Removed
+- `AGAT_CONVERTSPGXF2GXF` module removed — `AGAT_SPKEEPLONGESTISOFORM` already sanitises the GFF, making the conversion step redundant
+
+### Changed
+- `AGAT_SPKEEPLONGESTISOFORM` now publishes its sanitised GFF output to `agat/`
+
 ## [v2.1.2] - 2026-04-02
 
 ### Added
@@ -42,7 +50,7 @@
 - Removed orphaned heredoc version blocks from `CAFE` script
 
 ### Changed
-- `EGGNOG_TO_GO` now receives pre-filtered GFF (`AGAT_CONVERTSPGXF2GXF.out.output_gff`) to capture all isoforms
+- `EGGNOG_TO_GO` now receives the raw input GFF to capture all isoforms
 - Replaced deprecated `CUSTOM_DUMPSOFTWAREVERSIONS` module with native `topic: versions` approach
 - Legacy unused modules moved to `modules/local/legacy_modules/`
 
@@ -74,7 +82,7 @@
 
 ### Enhancements
 - Updated OrthoFinder module to v3.1.3 with corrected output paths
-- Added `AGAT_CONVERTSPGXF2GXF` step for robust GFF standardisation
+- `AGAT_SPKEEPLONGESTISOFORM` handles GFF sanitisation (making a separate convert step redundant)
 - Improved CAFE R scripts to support both OrthoFinder v2 and v3 output formats
 - Simplified workflow — removed unused modules (GET_DATA, GO_ASSIGN, GO_EXPANSION)
 - CHROMO_GO now uses ORTHOFINDER_CAFE results instead of waiting for ORTHOFINDER_GO

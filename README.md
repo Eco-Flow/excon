@@ -25,8 +25,7 @@ The general pipeline logic is as follows:
 
 * Downloads genome and annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`, or you provide your own.
 * Unzips the files, if necessary `[GUNZIP]`
-* Standardises and filters GFF annotations `[AGAT_CONVERTSPGXF2GXF]`.
-* Extracts longest protein `[AGAT_SPKEEPLONGESTISOFORM]`.
+* Sanitises GFF annotations and extracts longest isoform `[AGAT_SPKEEPLONGESTISOFORM]`.
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
