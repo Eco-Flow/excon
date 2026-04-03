@@ -183,6 +183,7 @@ Then pass `--eggnog_data_dir /path/to/eggnog_data` to the pipeline.
 | `--go_cutoff` | P-value cutoff for GO enrichment | `0.05` |
 | `--go_type` | GO test type (e.g. `none`) | `none` |
 | `--go_max_plot` | Maximum number of GO terms to plot | `10` |
+| `--go_algo` | topGO algorithm and statistic (`classic_fisher`, `weight01_t`, `elim_ks`, `weight_ks`) | `classic_fisher` |
 
 ### Resource limits
 

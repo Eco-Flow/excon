@@ -1,6 +1,9 @@
 process ORTHOFINDER {
     tag "$meta.id"
     label 'process_high'
+    label 'process_med_long'
+    label 'process_high_memory'
+
 
     conda "${moduleDir}/environment.yml"
     container {

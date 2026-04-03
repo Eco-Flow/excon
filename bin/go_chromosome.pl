@@ -4,6 +4,8 @@ use strict;
 
 print "Please be in folder with focal gff3 file and GO hashes\n\n";
 
+my $go_algo = $ARGV[0] // "classic_fisher";
+
 my @goes=`ls *.go.txt`;
 my @in_gfffile=`ls *.longest.gff`;
 my $ortho="Orthogroups.tsv";
@@ -238,11 +240,11 @@ foreach my $species (@jobs){
     close $filein5;
 
     `mkdir Unfiltered_Go_$species_name`;
-    `ChopGO_ChromoGoatee.pl -i $species_name\.go_r_file.txt --GO_file $go -sp $species_name`;
+    `ChopGO_ChromoGoatee.pl -i $species_name\.go_r_file.txt --GO_file $go -sp $species_name --go_algo $go_algo`;
     `mv *_res.tab Unfiltered_Go_$species_name`;
     `mv *_res.tab.pdf Unfiltered_Go_$species_name`;
     `mkdir Filtered_dup_Go_$species_name`;
-    `ChopGO_ChromoGoatee.pl -i $species_name\.go_r_file.noDuplicates.noSameScaffold.txt --GO_file $species_name\.go_r_file.noDuplicates_BK.noDuplicates.txt -sp $species_name`;
+    `ChopGO_ChromoGoatee.pl -i $species_name\.go_r_file.noDuplicates.noSameScaffold.txt --GO_file $species_name\.go_r_file.noDuplicates_BK.noDuplicates.txt -sp $species_name --go_algo $go_algo`;
     `mv *_res.tab Filtered_dup_Go_$species_name`;
     `mv *_res.tab.pdf Filtered_dup_Go_$species_name`;
 }
