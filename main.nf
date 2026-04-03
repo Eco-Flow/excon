@@ -45,6 +45,10 @@ include { CAFE_PREP } from './modules/local/cafe_prep.nf'
 include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
 include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
+include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
+include { CAFE_PLOT as CAFE_PLOT_LARGE } from './modules/local/cafe_plot.nf'
+include { CAFE_GO_PREP as CAFE_GO_PREP_LARGE } from './modules/local/cafe_go_prep.nf'
+include { CAFE_GO_RUN  as CAFE_GO_RUN_LARGE  } from './modules/local/cafe_go_run.nf'
 
 workflow {
 
@@ -222,6 +226,16 @@ workflow {
             RESCALE_TREE.out.rescaled_tree
         )
 
+        // Run CAFE with fixed lambda on high-differential families filtered out during prep.
+        // Only executes when cafe_prep_filtered.R was triggered (attempt > 1) and
+        // found families above the differential threshold — otherwise large_counts is empty.
+        CAFE_RUN_LARGE (
+            CAFE_PREP.out.large_counts,
+            CAFE_PREP.out.prepared_tree.first(),
+            CAFE_PREP.out.error_model.first(),
+            CAFE_PREP.out.lambda.map { f -> f.text.trim() }
+        )
+
 
         k_values = Channel.of( 1..params.cafe_max_k )
 
@@ -270,6 +284,9 @@ workflow {
 
 
         CAFE_PLOT ( ch_best_results )
+
+        // Plot high-differential families — only runs when CAFE_RUN_LARGE executed
+        CAFE_PLOT_LARGE ( CAFE_RUN_LARGE.out.results )
 
 
         // --- CAFE GO enrichment (requires eggnog) ---
@@ -324,6 +341,49 @@ workflow {
                 }
 
             CAFE_GO_RUN ( ch_go_run_input )
+
+
+            // --- GO enrichment on high-differential (large) families ---
+            // Only fires when CAFE_RUN_LARGE ran (i.e. large_counts was non-empty).
+            // Reuses the same EGGNOG_TO_OG_GO output — no extra annotation work needed.
+
+            CAFE_GO_PREP_LARGE (
+                CAFE_RUN_LARGE.out.results,
+                CAFE_PREP.out.N0_table,
+                EGGNOG_TO_OG_GO.out.og_go
+            )
+
+            ch_large_target_files = CAFE_GO_PREP_LARGE.out.pos_files
+                .mix( CAFE_GO_PREP_LARGE.out.neg_files )
+                .flatten()
+
+            ch_large_bk_files = CAFE_GO_PREP_LARGE.out.bk_files
+                .flatten()
+
+            ch_large_manifest = CAFE_GO_PREP_LARGE.out.manifest
+                .splitCsv( sep: '\t', header: false )
+                .map { row ->
+                    def name = row[0].replaceAll(/\.txt$/, '')
+                    tuple( [id: "large_${name}"], row[0], row[1] )
+                }
+
+            ch_large_with_target = ch_large_manifest
+                .combine( ch_large_target_files )
+                .filter { meta, target_name, bg_name, file -> file.name == target_name }
+                .map    { meta, target_name, bg_name, file -> tuple( meta, file, bg_name ) }
+
+            ch_large_with_bg = ch_large_with_target
+                .combine( ch_large_bk_files )
+                .filter { meta, target_file, bg_name, file -> file.name == bg_name }
+                .map    { meta, target_file, bg_name, file -> tuple( meta, target_file, file ) }
+
+            ch_large_go_run_input = ch_large_with_bg
+                .combine( CAFE_GO_PREP_LARGE.out.og_go.first() )
+                .map { meta, target_file, bg_file, og_go ->
+                    tuple( meta, target_file, bg_file, og_go )
+                }
+
+            CAFE_GO_RUN_LARGE ( ch_large_go_run_input )
 
         } // end if run_eggnog / predownloaded_gofiles (CAFE GO)
 
