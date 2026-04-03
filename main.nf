@@ -35,7 +35,6 @@ include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.n
 include { GFFREAD } from './modules/nf-core/gffread/main.nf'
 include { BUSCO_BUSCO } from './modules/nf-core/busco/busco/main.nf'
 include { AGAT_SPSTATISTICS } from './modules/nf-core/agat/spstatistics/main.nf'
-include { AGAT_CONVERTSPGXF2GXF } from './modules/nf-core/agat/convertspgxf2gxf/main.nf'
 include { AGAT_SPKEEPLONGESTISOFORM } from './modules/nf-core/agat/spkeeplongestisoform/main.nf'
 include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
@@ -103,9 +102,8 @@ workflow {
       GUNZIP ( ch_fna_gz )
       ch_fna = GUNZIP.out.gunzip.mix( ch_fna_plain )
 
-      // Convert GFF to standard AGAT format then keep longest isoform
-      AGAT_CONVERTSPGXF2GXF ( ch_gff )
-      AGAT_SPKEEPLONGESTISOFORM ( AGAT_CONVERTSPGXF2GXF.out.output_gff, [] )
+      // Keep longest isoform (AGAT sanitises the GFF as part of this step)
+      AGAT_SPKEEPLONGESTISOFORM ( ch_gff, [] )
 
       // Join fna + agat gff by meta, then split for GFFREAD's two inputs
       ch_fna_gff = ch_fna.join( AGAT_SPKEEPLONGESTISOFORM.out.gff )
@@ -149,7 +147,7 @@ workflow {
       )
 
       ch_annot_gff = EGGNOGMAPPER.out.annotations.join(
-         AGAT_CONVERTSPGXF2GXF.out.output_gff    // all isoforms, not longest only
+         ch_gff    // all isoforms
       )
 
       EGGNOG_TO_GO (
