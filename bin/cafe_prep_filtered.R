@@ -101,4 +101,18 @@ fwrite(counts, 'hog_gene_counts.tsv', sep='\t')
 
 cat("Filtered count table written to: hog_gene_counts.tsv\n")
 cat("Final gene family count:", nrow(counts), "\n")
+
+# Write the removed high-differential families for fixed-lambda re-analysis
+large_ids <- size_stats[differential > max_differential][[id_col]]
+if (length(large_ids) > 0) {
+  hog_large <- hog[get(id_col) %in% large_ids]
+  counts_large <- dcast(hog_large, get(id_col) ~ species, value.var='n', fill=0)
+  setnames(counts_large, 'id_col', 'HOG')
+  counts_large[, Desc := 'n/a']
+  setcolorder(counts_large, 'Desc')
+  fwrite(counts_large, 'hog_gene_counts_large.tsv', sep='\t')
+  cat("Large-differential families written to: hog_gene_counts_large.tsv\n")
+  cat("Count:", length(large_ids), "\n")
+}
+
 cat("================================================\n")

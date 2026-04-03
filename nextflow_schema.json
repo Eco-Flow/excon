@@ -197,8 +197,8 @@
         },
         "tree_scale_factor": {
             "type": "integer",
-            "default": 1000,
-            "description": "Scale factor for rescaling species tree branch lengths to prevent numerical precision issues in CAFE."
+            "default": 1,
+            "description": "Root-to-tip distance for the ultrametric tree passed to CAFE5. A value of 1 gives relative branch lengths, which is sufficient for CAFE5 model fitting."
         },
         "cafe_max_differential": {
             "type": "integer", 
