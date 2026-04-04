@@ -4,11 +4,10 @@
 
 ### Added
 - New OrthoFinder algorithm parameters: `--orthofinder_method` (`-M`), `--orthofinder_search` (`-S`), `--orthofinder_msa_prog` (`-A`), and `--orthofinder_tree` (`-T`). These map directly to OrthoFinder command-line flags and are all optional — OrthoFinder defaults are used when unset.
-- New `--use_ultrametric` flag (default `false`) to choose the tree scaling method passed to CAFE5. When `false` (default), the original `RESCALE_TREE` approach is used — `rescale_tree.py` multiplies all existing branch lengths by `--tree_scale_factor` (default `1000`) and `chronos()` in `cafe_prep.R` handles ultrametricity if needed. When `true`, `MAKE_ULTRAMETRIC` is used instead — `make_ultrametric.py` re-estimates branch lengths from scratch to force ultrametricity, setting root age to `--tree_scale_factor`.
-
+- New `--orthofinder_v2` flag (default `false`) to run OrthoFinder v2.5.5 instead of v3.1.3. Recommended for large datasets where v3 stalls or produces unusable trees.
 ### Changed
-- Reverted default tree scaling method to the original `RESCALE_TREE` approach (`--use_ultrametric false`). The `MAKE_ULTRAMETRIC` approach introduced in v2.1.4 produced branch length distributions that caused CAFE5 to return infinite likelihoods on some datasets; `chronos()` in `cafe_prep.R` already handles the ultrametricity requirement reliably.
-- `--tree_scale_factor` default changed from `1` back to `1000` to match the rescale approach.
+- Reverted tree scaling back to the original `RESCALE_TREE` approach (`rescale_tree.py` multiplies branch lengths by `--tree_scale_factor`, then `chronos()` in `cafe_prep.R` converts to a proper time tree). The `MAKE_ULTRAMETRIC` module introduced in v2.1.4 is removed — per the CAFE5 upstream developers, tools like `make_ultrametric.py` produce mathematically ultrametric trees but without proper divergence-time estimation, yielding uninterpretable rate estimates. `chronos()` is the correct method (hahnlab/CAFE5@b9e3b2e).
+- `--tree_scale_factor` default changed from `1` back to `1000`.
 
 ## [v2.1.4] - 2026-04-03
 

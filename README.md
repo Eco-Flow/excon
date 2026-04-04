@@ -29,7 +29,7 @@ The general pipeline logic is as follows:
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
-* Scales the OrthoFinder species tree for CAFE5 using either `RESCALE_TREE` (default — multiplies branch lengths by `--tree_scale_factor`; `chronos()` in `cafe_prep.R` handles ultrametricity) or `MAKE_ULTRAMETRIC` (opt-in via `--use_ultrametric true` — re-estimates branch lengths from scratch to force ultrametricity).
+* Scales the OrthoFinder species tree branch lengths by `--tree_scale_factor` `[RESCALE_TREE]`; `chronos()` in `cafe_prep.R` then converts it to a proper time tree for CAFE5.
 * Prepares gene count input and runs the base CAFE model `[CAFE_PREP]`.
 * Runs two additional CAFE models in parallel for model comparison `[CAFE_RUN]`:
   - Gamma model with k=3 rate categories (`-k 3`)
@@ -135,6 +135,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
+| `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.1.3. Recommended for large datasets where v3 stalls or fails. | `false` |
 | `--orthofinder_method` | Gene tree inference method: `msa` or `dendroblast` | `msa` |
 | `--orthofinder_search` | Sequence search program: `diamond`, `blast`, or `mmseqs2` | `diamond` |
 | `--orthofinder_msa_prog` | MSA program (requires `--orthofinder_method msa`): `mafft` or `muscle` | `mafft` |
@@ -148,12 +149,9 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 |-----------|-------------|---------|
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
-| `--use_ultrametric` | Use `make_ultrametric.py` to re-estimate branch lengths from scratch (`true`), or use `rescale_tree.py` to multiply existing branch lengths by `--tree_scale_factor` (`false`, default). See note below. | `false` |
-| `--tree_scale_factor` | When `--use_ultrametric false` (default): factor to multiply all branch lengths by. When `--use_ultrametric true`: root age set in the ultrametric tree. | `1000` |
+| `--tree_scale_factor` | Factor to multiply all OrthoFinder branch lengths by before `chronos()` converts the tree to a time tree for CAFE5. Lower values can cause numerical issues. | `1000` |
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
 | `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
-
-> **Tree scaling method:** The default (`--use_ultrametric false`) multiplies existing OrthoFinder branch lengths by `--tree_scale_factor` (default `1000`) using `rescale_tree.py`. If the tree is not already ultrametric, `chronos()` in `cafe_prep.R` will correct it. This is the recommended approach and works reliably across OrthoFinder v2 and v3. Use `--use_ultrametric true` only if you specifically need branch lengths re-estimated from scratch (sets root age to `--tree_scale_factor`, default `1` for relative units).
 
 > **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it 
 > (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs:

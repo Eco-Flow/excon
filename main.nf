@@ -22,7 +22,6 @@ include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN } from './modules/local/cafe_go_run.nf'
-include { MAKE_ULTRAMETRIC } from './modules/local/make_ultrametric.nf'
 include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
@@ -40,6 +39,7 @@ include { AGAT_SPKEEPLONGESTISOFORM } from './modules/nf-core/agat/spkeeplongest
 include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
+include { ORTHOFINDER_V2 as ORTHOFINDER_V2_CAFE } from './modules/local/orthofinder_v2.nf'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
 
 include { CAFE_PREP } from './modules/local/cafe_prep.nf'
@@ -208,6 +208,15 @@ workflow {
         if (params.input_tree && params.input_orthogroups) {
             ch_speciestree = Channel.fromPath(params.input_tree, checkIfExists: true)
             ch_orthologues = Channel.fromPath(params.input_orthogroups, checkIfExists: true)
+        } else if (params.orthofinder_v2) {
+            ORTHOFINDER_V2_CAFE (
+                merge_ch
+                    .map { meta, fasta -> fasta }
+                    .collect()
+                    .map { files -> [ [id: "ortho_cafe"], files ] }
+            )
+            ch_speciestree = ORTHOFINDER_V2_CAFE.out.speciestree
+            ch_orthologues = ORTHOFINDER_V2_CAFE.out.orthologues
         } else {
             ORTHOFINDER_CAFE (
                 merge_ch
@@ -220,17 +229,11 @@ workflow {
             ch_orthologues = ORTHOFINDER_CAFE.out.orthologues
         }
 
-        if (params.use_ultrametric) {
-            MAKE_ULTRAMETRIC ( ch_speciestree )
-            ch_tree_for_cafe = MAKE_ULTRAMETRIC.out.rescaled_tree
-        } else {
-            RESCALE_TREE ( ch_speciestree )
-            ch_tree_for_cafe = RESCALE_TREE.out.rescaled_tree
-        }
+        RESCALE_TREE ( ch_speciestree )
 
         CAFE_PREP (
             ch_orthologues,
-            ch_tree_for_cafe
+            RESCALE_TREE.out.rescaled_tree
         )
 
         // Run CAFE with fixed lambda on high-differential families filtered out during prep.
