@@ -76,10 +76,12 @@ process CAFE_PREP {
         exit 1
     fi
 
-    if grep -q "inf" cafe_base.log && ! grep -q "Final Likelihood" cafe_base.log; then
+    # Check for actual -inf likelihood values, not the word "Inferring"
+    if grep -q "Score (-lnL):  *inf" cafe_base.log && ! grep -q "Final Likelihood" cafe_base.log; then
         echo "ERROR: CAFE5 failed to converge (infinite likelihoods) — retrying with filtering" >&2
         exit 1
     fi
+
 
     if ! grep -q "Final Likelihood" cafe_base.log; then
         echo "ERROR: CAFE5 produced no likelihood score — retrying with filtering" >&2
