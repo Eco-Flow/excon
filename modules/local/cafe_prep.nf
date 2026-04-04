@@ -47,10 +47,10 @@ process CAFE_PREP {
 
     if [ "${use_filtering}" = "true" ]; then
         echo "CAFE_PREP attempt ${task.attempt}: applying differential filtering (threshold: ${max_differential})"
-        /usr/bin/Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential}
+        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential}
     else
         echo "CAFE_PREP attempt ${task.attempt}: no filtering"
-        /usr/bin/Rscript ${projectDir}/bin/cafe_prep.R
+        Rscript ${projectDir}/bin/cafe_prep.R
     fi
 
     # ---------------------------------------------------------------
