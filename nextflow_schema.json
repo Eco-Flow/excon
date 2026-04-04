@@ -195,10 +195,15 @@
           "description": "topGO algorithm and statistic combination (classic_fisher, weight01_t, elim_ks, weight_ks)",
           "default": "classic_fisher"
         },
+        "use_ultrametric": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, use make_ultrametric.py to re-estimate branch lengths from scratch (forces ultrametricity, sets root age to tree_scale_factor). If false (default), use rescale_tree.py which simply multiplies existing branch lengths by tree_scale_factor; chronos() in cafe_prep.R handles ultrametricity if needed."
+        },
         "tree_scale_factor": {
             "type": "integer",
-            "default": 1,
-            "description": "Root-to-tip distance for the ultrametric tree passed to CAFE5. A value of 1 gives relative branch lengths, which is sufficient for CAFE5 model fitting."
+            "default": 1000,
+            "description": "When use_ultrametric=false (default): scaling factor multiplied across all branch lengths by rescale_tree.py (default 1000). When use_ultrametric=true: root age set by make_ultrametric.py (default 1 gives relative branch lengths)."
         },
         "cafe_max_differential": {
             "type": "integer", 

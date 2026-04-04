@@ -23,6 +23,7 @@ include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN } from './modules/local/cafe_go_run.nf'
 include { MAKE_ULTRAMETRIC } from './modules/local/make_ultrametric.nf'
+include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
 include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
@@ -219,11 +220,17 @@ workflow {
             ch_orthologues = ORTHOFINDER_CAFE.out.orthologues
         }
 
-        MAKE_ULTRAMETRIC ( ch_speciestree )
+        if (params.use_ultrametric) {
+            MAKE_ULTRAMETRIC ( ch_speciestree )
+            ch_tree_for_cafe = MAKE_ULTRAMETRIC.out.rescaled_tree
+        } else {
+            RESCALE_TREE ( ch_speciestree )
+            ch_tree_for_cafe = RESCALE_TREE.out.rescaled_tree
+        }
 
         CAFE_PREP (
             ch_orthologues,
-            MAKE_ULTRAMETRIC.out.rescaled_tree
+            ch_tree_for_cafe
         )
 
         // Run CAFE with fixed lambda on high-differential families filtered out during prep.
