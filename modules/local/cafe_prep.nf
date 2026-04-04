@@ -40,7 +40,7 @@ process CAFE_PREP {
     export PATH=\$PATH:/usr/bin
     set -e
 
-    mv Orthogroups.tsv N0.tsv
+    [ "${table}" = "N0.tsv" ] || cp ${table} N0.tsv
     cp ${tree_newick} pruned_tree
     sed -i 's/\\.clean//g' pruned_tree
     sed -i 's/\\.clean//g' N0.tsv
