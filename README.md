@@ -1,4 +1,4 @@
-# EXCON (v2.1.0)
+# EXCON (v2.2.0)
 
 A Nextflow pipeline for gene family **EX**pansion and **CON**traction analysis 
 across multiple species using CAFE5.
@@ -130,6 +130,17 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--busco_mode` | BUSCO mode (`genome`, `proteins`, `transcriptome`) | `null` |
 | `--busco_lineages_path` | Path to local BUSCO lineage databases | `null` |
 | `--busco_config` | Path to BUSCO config file | `null` |
+
+### OrthoFinder options (optional)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--orthofinder_method` | Gene tree inference method: `dendromer` or `msa` | `dendromer` |
+| `--orthofinder_search` | Sequence search program: `diamond`, `blast`, or `mmseqs2` | `diamond` |
+| `--orthofinder_msa_prog` | MSA program (requires `--orthofinder_method msa`): `mafft` or `muscle` | `mafft` |
+| `--orthofinder_tree` | Tree inference method (requires `--orthofinder_method msa`): `fasttree`, `raxml`, `raxml-ng`, or `iqtree` | `fasttree` |
+
+> **Note:** `-A` and `-T` are only valid when `-M msa` is set. If you set `--orthofinder_msa_prog` or `--orthofinder_tree` without `--orthofinder_method msa`, OrthoFinder will error.
 
 ### CAFE gene family evolution
 
