@@ -52,7 +52,9 @@ process RENAME_FASTA {
                 tran_to_gene["transcript:" + tran_id] = gene_id
                 tran_to_gene[tran_id.replace("rna-", "")] = gene_id
 
+    seen = set()
     with open("${fasta}") as fin, open("${meta.id}.clean.fasta", "w") as fout:
+        skip = False
         for line in fin:
             if line.startswith(">"):
                 seq_id = line[1:].strip().split()[0]
@@ -60,10 +62,17 @@ process RENAME_FASTA {
                 # Last resort: strip .tN suffix for Braker style
                 if gene_id == seq_id and "." in seq_id:
                     gene_id = seq_id.rsplit(".", 1)[0]
-                fout.write(f">{gene_id}\\n")
+                if gene_id in seen:
+                    skip = True
+                    print(f"WARNING: Duplicate gene ID skipped: {gene_id}", flush=True)
+                else:
+                    seen.add(gene_id)
+                    skip = False
+                    fout.write(f">{gene_id}\\n")
             else:
-                # Also strip stop codons
-                fout.write(line.replace(".", "").replace("*", ""))
+                if not skip:
+                    fout.write(line.replace(".", "").replace("*", ""))
     EOF
     """
 }
+
