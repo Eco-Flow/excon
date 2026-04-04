@@ -8,8 +8,8 @@ process ORTHOFINDER {
     conda "${moduleDir}/environment.yml"
     container {
         workflow.containerEngine == 'singularity' && !task.ext?.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/orthofinder:3.1.3--hdfd78af_0' :
-        'biocontainers/orthofinder:3.1.3--hdfd78af_0'
+        'https://depot.galaxyproject.org/singularity/orthofinder:3.1.4--hdfd78af_0' :
+        'biocontainers/orthofinder:3.1.4--hdfd78af_0'
     }
 
     input:
