@@ -135,7 +135,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--orthofinder_method` | Gene tree inference method: `dendromer` or `msa` | `dendromer` |
+| `--orthofinder_method` | Gene tree inference method: `dendroblast` or `msa` | `dendroblast` |
 | `--orthofinder_search` | Sequence search program: `diamond`, `blast`, or `mmseqs2` | `diamond` |
 | `--orthofinder_msa_prog` | MSA program (requires `--orthofinder_method msa`): `mafft` or `muscle` | `mafft` |
 | `--orthofinder_tree` | Tree inference method (requires `--orthofinder_method msa`): `fasttree`, `raxml`, `raxml-ng`, or `iqtree` | `fasttree` |
