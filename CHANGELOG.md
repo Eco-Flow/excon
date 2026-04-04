@@ -1,5 +1,10 @@
 # Changelog
 
+## [v2.2.0] - 2026-04-04
+
+### Added
+- New OrthoFinder algorithm parameters: `--orthofinder_method` (`-M`), `--orthofinder_search` (`-S`), `--orthofinder_msa_prog` (`-A`), and `--orthofinder_tree` (`-T`). These map directly to OrthoFinder command-line flags and are all optional — OrthoFinder defaults are used when unset.
+
 ## [v2.1.4] - 2026-04-03
 
 ### Fixed
