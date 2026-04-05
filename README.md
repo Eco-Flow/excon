@@ -305,6 +305,8 @@ nextflow run main.nf -resume -profile docker \
 ```
 
 ## Output Structure
+
+> For a detailed description of outputs with example figures, see the **[Output Guide](docs/outputs.md)**.
 ```
 results/
 ├── cafe/
@@ -321,7 +323,9 @@ results/
 ├── cafe_go/                         # GO enrichment (one job per species/node x direction)
 │   ├── CAFE_summary.txt             # Summary of expansions/contractions per branch
 │   ├── *_TopGo_results_ALL.tab      # TopGO results per target
-│   ├── TopGO_Pval_barplot_*.pdf     # Barplots per target
+│   ├── TopGO_barplot_*.pdf          # Bar chart per target (ggplot2, full GO names)
+│   ├── TopGO_dotplot_*.pdf          # Dot plot per target (fold enrichment x significance)
+│   ├── TopGO_Pval_barplot_*.pdf     # Legacy barplots (base R)
 │   ├── Go_summary_pos.pdf           # Summary plot across all expansions
 │   ├── Go_summary_neg.pdf           # Summary plot across all contractions
 │   ├── Go_summary_pos_noNode.pdf    # As above, terminal branches only
