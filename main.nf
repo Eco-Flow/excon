@@ -139,10 +139,10 @@ workflow {
    if (params.run_eggnog) {
 
       if (params.eggnog_data_dir) {
-         ch_eggnog_data = channel.fromPath(params.eggnog_data_dir).first()
+         ch_eggnog_data = channel.value(file(params.eggnog_data_dir))
       } else {
          EGGNOG_DOWNLOAD()
-         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir.first()
+         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir
       }
 
       EGGNOGMAPPER (
@@ -241,8 +241,8 @@ workflow {
         // found families above the differential threshold — otherwise large_counts is empty.
         CAFE_RUN_LARGE (
             CAFE_PREP.out.large_counts,
-            CAFE_PREP.out.prepared_tree.first(),
-            CAFE_PREP.out.error_model.first(),
+            CAFE_PREP.out.prepared_tree,
+            CAFE_PREP.out.error_model,
             CAFE_PREP.out.lambda.map { f -> f.text.trim() }
         )
 
@@ -345,7 +345,7 @@ workflow {
 
             // Add the shared OG_GO file to every job
             ch_go_run_input = ch_with_bg
-                .combine( CAFE_GO_PREP.out.og_go.first() )
+                .combine( CAFE_GO_PREP.out.og_go )
                 .map { meta, target_file, bg_file, og_go ->
                     tuple( meta, target_file, bg_file, og_go )
                 }
@@ -388,7 +388,7 @@ workflow {
                 .map    { meta, target_file, bg_name, file -> tuple( meta, target_file, file ) }
 
             ch_large_go_run_input = ch_large_with_bg
-                .combine( CAFE_GO_PREP_LARGE.out.og_go.first() )
+                .combine( CAFE_GO_PREP_LARGE.out.og_go )
                 .map { meta, target_file, bg_file, og_go ->
                     tuple( meta, target_file, bg_file, og_go )
                 }
