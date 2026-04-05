@@ -27,7 +27,7 @@ stopifnot(is.binary(tre))
 stopifnot(is.rooted(tre))
 
 if (!is.ultrametric(tre)) {
-  tre <- chronos(tre)
+  tre <- force.ultrametric(tre, method = "extend")
 }
 tre$edge.length <- tre$edge.length * scale_factor
 write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
