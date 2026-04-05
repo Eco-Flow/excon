@@ -6,13 +6,16 @@
 library(ape)
 library(data.table)
 
-# Get threshold from command line or environment variable
+# Get threshold and optional scale factor from command line
+# args[1] = max_differential threshold (default 50)
+# args[2] = branch-length scale factor applied after chronos() (default 1000)
 args <- commandArgs(trailingOnly = TRUE)
 max_differential <- if (length(args) >= 1) {
   as.numeric(args[1])
 } else {
   as.numeric(Sys.getenv("CAFE_MAX_DIFF", "50"))
 }
+scale_factor <- if (length(args) >= 2) as.numeric(args[2]) else 1000
 
 cat("================================================\n")
 cat("CAFE PREP with Differential Filtering\n")
@@ -23,12 +26,11 @@ tre <- read.tree('pruned_tree')
 stopifnot(is.binary(tre))
 stopifnot(is.rooted(tre))
 
-if (is.ultrametric(tre)) {
-  utre <- tre
-} else {
-  utre <- chronos(tre)
+if (!is.ultrametric(tre)) {
+  tre <- chronos(tre)
 }
-write.tree(utre, 'SpeciesTree_rooted_ultra.txt')
+tre$edge.length <- tre$edge.length * scale_factor
+write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
 
 hog <- fread('N0.tsv')
 
