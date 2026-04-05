@@ -29,13 +29,12 @@ The general pipeline logic is as follows:
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
-* Scales the OrthoFinder species tree branch lengths by `--tree_scale_factor` `[RESCALE_TREE]`; `chronos()` in `cafe_prep.R` then converts it to a proper time tree for CAFE5.
-* Prepares gene count input and runs the base CAFE model `[CAFE_PREP]`.
-* Runs two additional CAFE models in parallel for model comparison `[CAFE_RUN]`:
-  - Gamma model with k=3 rate categories (`-k 3`)
-  - Gamma model with per-family rates (`-p -k 3`)
-* Compares all three CAFE models using AIC and likelihood ratio tests, 
-  selects the best fitting model `[CAFE_MODEL_COMPARE]`.
+* Converts the OrthoFinder species tree to an ultrametric tree for CAFE `[MAKE_ULTRAMETRIC]`.
+* Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
+* Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
+* Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
+* Re-runs CAFE5 at the best k with Poisson birth-death (`-p`) `[CAFE_RUN_BEST]`.
+* Compares uniform vs Poisson model at the best k by likelihood, selects the winner `[CAFE_MODEL_COMPARE]`.
 * Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
 
 ### Optional — GO enrichment (`--run_eggnog` or `--predownloaded_gofiles`)
@@ -148,6 +147,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `--skip_cafe` | Skip CAFE analysis | `null` |
+| `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
 | `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
 | `--tree_scale_factor` | Factor to multiply all OrthoFinder branch lengths by before `chronos()` converts the tree to a time tree for CAFE5. Lower values can cause numerical issues. | `1000` |
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
@@ -161,14 +161,11 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 > ```
 > Both parameters must be supplied together. If either is omitted, OrthoFinder runs normally.
 
-> **Note on CAFE model selection:** The pipeline runs three CAFE models — a 
-> base single-λ model, a Gamma model with k=3 rate categories, and a Gamma 
-> model with per-family rate estimation. These run in parallel and are compared 
-> using AIC. The best-fitting model is automatically selected and used for all 
-> downstream GO enrichment and plotting. Model comparison results are written to 
-> `results/cafe/model_comparison/cafe_model_comparison.tsv`. If model scores 
-> cannot be parsed (e.g. on very small datasets), the pipeline defaults to the 
-> base model.
+> **Note on CAFE model selection:** The pipeline runs CAFE5 with k=1 through k=`cafe_max_k` (default 6) 
+> rate categories in parallel, then selects the best k by AIC. It then re-runs the best k with the 
+> Poisson birth-death option (`-p`) and picks the final model by likelihood. Model selection results 
+> (AIC table across k values) are in `results/cafe/model_comparison/`. If scores cannot be parsed 
+> (e.g. on very small datasets), the pipeline defaults to the uniform model.
 
 ### GO annotation (optional)
 
@@ -308,27 +305,27 @@ nextflow run main.nf -resume -profile docker \
 ```
 
 ## Output Structure
+
+> For a detailed description of outputs with example figures, see the **[Output Guide](docs/outputs.md)**.
 ```
 results/
 ├── cafe/
-│   ├── base/                        # Base single-λ CAFE model outputs
-│   │   ├── Out_cafe/                # CAFE5 output files (trees, counts, probabilities)
+│   ├── base/                        # CAFE_PREP outputs
 │   │   ├── hog_gene_counts.tsv      # Filtered gene count input to CAFE
-│   │   └── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
-│   ├── gamma/                       # Gamma k=3 model outputs
-│   │   └── Out_gamma/               # CAFE5 output files
-│   ├── gamma_per_family/            # Gamma per-family rate model outputs
-│   │   └── Out_gamma_per_family/    # CAFE5 output files
+│   │   ├── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
+│   │   └── SpeciesTree_rooted_ultra.txt  # Ultrametric tree used by CAFE5
+│   ├── large_families/              # CAFE run on high-differential families (retry path only)
 │   └── model_comparison/
-│       ├── cafe_model_comparison.tsv # AIC, delta-AIC, AIC weights, LRT results
-│       ├── best_model.txt            # Name of the winning model
-│       └── Significant_trees.tre    # Nexus trees with significant branches (from best model)
+│       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
+│       └── best_model.txt            # "uniform" or "poisson"
 ├── cafe_plot/
 │   └── cafe_plotter/                # Expansion/contraction plots for best model
 ├── cafe_go/                         # GO enrichment (one job per species/node x direction)
 │   ├── CAFE_summary.txt             # Summary of expansions/contractions per branch
 │   ├── *_TopGo_results_ALL.tab      # TopGO results per target
-│   ├── TopGO_Pval_barplot_*.pdf     # Barplots per target
+│   ├── TopGO_barplot_*.pdf          # Bar chart per target (ggplot2, full GO names)
+│   ├── TopGO_dotplot_*.pdf          # Dot plot per target (fold enrichment x significance)
+│   ├── TopGO_Pval_barplot_*.pdf     # Legacy barplots (base R)
 │   ├── Go_summary_pos.pdf           # Summary plot across all expansions
 │   ├── Go_summary_neg.pdf           # Summary plot across all contractions
 │   ├── Go_summary_pos_noNode.pdf    # As above, terminal branches only
