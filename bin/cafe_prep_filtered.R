@@ -27,7 +27,13 @@ stopifnot(is.binary(tre))
 stopifnot(is.rooted(tre))
 
 if (!is.ultrametric(tre)) {
-  tre <- force.ultrametric(tre, method = "extend")
+  depths    <- node.depth.edgelength(tre)
+  tip_depths <- depths[seq_len(Ntip(tre))]
+  max_depth  <- max(tip_depths)
+  tip_edges  <- which(tre$edge[, 2] <= Ntip(tre))
+  tip_nodes  <- tre$edge[tip_edges, 2]
+  tre$edge.length[tip_edges] <- tre$edge.length[tip_edges] +
+    (max_depth - tip_depths[tip_nodes])
 }
 tre$edge.length <- tre$edge.length * scale_factor
 write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
