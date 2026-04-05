@@ -12,16 +12,8 @@ tre <- read.tree('pruned_tree')
 stopifnot(is.binary(tre))
 stopifnot(is.rooted(tre))
 if (!is.ultrametric(tre)) {
-  # Extend short tip branches to match the deepest tip (equivalent to
-  # force.ultrametric(method="extend") in newer ape versions).
-  # Preserves all internal branch lengths; no optimisation needed.
-  depths    <- node.depth.edgelength(tre)
-  tip_depths <- depths[seq_len(Ntip(tre))]
-  max_depth  <- max(tip_depths)
-  tip_edges  <- which(tre$edge[, 2] <= Ntip(tre))
-  tip_nodes  <- tre$edge[tip_edges, 2]
-  tre$edge.length[tip_edges] <- tre$edge.length[tip_edges] +
-    (max_depth - tip_depths[tip_nodes])
+  # Mean path lengths method: robust, no optimisation, always converges.
+  tre <- chronoMPL(tre, SE = FALSE, test = FALSE)
 }
 tre$edge.length <- tre$edge.length * scale_factor
 write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
