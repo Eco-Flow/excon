@@ -18,6 +18,7 @@ log.info """\
 
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
 
+include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
@@ -228,9 +229,11 @@ workflow {
             ch_orthologues = ORTHOFINDER_CAFE.out.orthologues
         }
 
+        RESCALE_TREE ( ch_speciestree )
+
         CAFE_PREP (
             ch_orthologues,
-            ch_speciestree
+            RESCALE_TREE.out.rescaled_tree
         )
 
         // Run CAFE with fixed lambda on high-differential families filtered out during prep.
