@@ -13,9 +13,8 @@ process ORTHOFINDER_V2 {
 
     output:
     tuple val(meta), path("$prefix")                                          , emit: orthofinder
-    path("$prefix/Orthogroups/Orthogroups.tsv")                               , emit: orthologues
+    path("$prefix/Phylogenetic_Hierarchical_Orthogroups/N0.tsv")              , emit: orthologues
     path("$prefix/Species_Tree/SpeciesTree_rooted_node_labels.txt")           , emit: speciestree
-    path("$prefix/Phylogenetic_Hierarchical_Orthogroups/N0.tsv")              , emit: no_ortho
     tuple val("${task.process}"), val('orthofinder'), eval("orthofinder -h | sed -n 's/.*version \\(.*\\) Copy.*/\\1/p'"), emit: versions_orthofinder, topic: versions
 
     when:
