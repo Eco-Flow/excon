@@ -12,11 +12,13 @@ tre <- read.tree('pruned_tree')
 stopifnot(is.binary(tre))
 stopifnot(is.rooted(tre))
 if (!is.ultrametric(tre)) {
-  # chronos() recalculates branch lengths from scratch, discarding any
-  # pre-existing scaling — so re-apply the scale factor afterwards.
   tre <- chronos(tre)
-  tre$edge.length <- tre$edge.length * scale_factor
 }
+# Scale after the ultrametric step so chronos() always receives the
+# original OrthoFinder branch lengths (~0.5), not the ×1000 inflated
+# values — those cause chronos to start in a degenerate region and
+# fail to converge.
+tre$edge.length <- tre$edge.length * scale_factor
 write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
 
 hog <- fread('N0.tsv')
