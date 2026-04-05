@@ -29,7 +29,7 @@ The general pipeline logic is as follows:
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
-* Converts the OrthoFinder species tree to an ultrametric tree for CAFE `[MAKE_ULTRAMETRIC]`.
+* Scales the OrthoFinder species tree branch lengths by `--tree_scale_factor` `[RESCALE_TREE]`; `chronos()` in `cafe_prep.R` then converts it to a proper time tree for CAFE5.
 * Prepares gene count input and runs the base CAFE model `[CAFE_PREP]`.
 * Runs two additional CAFE models in parallel for model comparison `[CAFE_RUN]`:
   - Gamma model with k=3 rate categories (`-k 3`)
@@ -135,6 +135,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
+| `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.1.3. Recommended for large datasets where v3 stalls or fails. | `false` |
 | `--orthofinder_method` | Gene tree inference method: `msa` or `dendroblast` | `msa` |
 | `--orthofinder_search` | Sequence search program: `diamond`, `blast`, or `mmseqs2` | `diamond` |
 | `--orthofinder_msa_prog` | MSA program (requires `--orthofinder_method msa`): `mafft` or `muscle` | `mafft` |
@@ -148,7 +149,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 |-----------|-------------|---------|
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
-| `--tree_scale_factor` | Root-to-tip distance for the ultrametric tree passed to CAFE5 | `1` |
+| `--tree_scale_factor` | Factor to multiply all OrthoFinder branch lengths by before `chronos()` converts the tree to a time tree for CAFE5. Lower values can cause numerical issues. | `1000` |
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
 | `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
 

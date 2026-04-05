@@ -22,7 +22,7 @@ include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN } from './modules/local/cafe_go_run.nf'
-include { MAKE_ULTRAMETRIC } from './modules/local/make_ultrametric.nf'
+include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
 include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
@@ -39,6 +39,7 @@ include { AGAT_SPKEEPLONGESTISOFORM } from './modules/nf-core/agat/spkeeplongest
 include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
+include { ORTHOFINDER_V2 as ORTHOFINDER_V2_CAFE } from './modules/local/orthofinder_v2.nf'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
 
 include { CAFE_PREP } from './modules/local/cafe_prep.nf'
@@ -138,10 +139,10 @@ workflow {
    if (params.run_eggnog) {
 
       if (params.eggnog_data_dir) {
-         ch_eggnog_data = channel.fromPath(params.eggnog_data_dir).first()
+         ch_eggnog_data = channel.value(file(params.eggnog_data_dir))
       } else {
          EGGNOG_DOWNLOAD()
-         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir.first()
+         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir
       }
 
       EGGNOGMAPPER (
@@ -207,6 +208,15 @@ workflow {
         if (params.input_tree && params.input_orthogroups) {
             ch_speciestree = Channel.fromPath(params.input_tree, checkIfExists: true)
             ch_orthologues = Channel.fromPath(params.input_orthogroups, checkIfExists: true)
+        } else if (params.orthofinder_v2) {
+            ORTHOFINDER_V2_CAFE (
+                merge_ch
+                    .map { meta, fasta -> fasta }
+                    .collect()
+                    .map { files -> [ [id: "ortho_cafe"], files ] }
+            )
+            ch_speciestree = ORTHOFINDER_V2_CAFE.out.speciestree
+            ch_orthologues = ORTHOFINDER_V2_CAFE.out.orthologues
         } else {
             ORTHOFINDER_CAFE (
                 merge_ch
@@ -219,11 +229,11 @@ workflow {
             ch_orthologues = ORTHOFINDER_CAFE.out.orthologues
         }
 
-        MAKE_ULTRAMETRIC ( ch_speciestree )
+        RESCALE_TREE ( ch_speciestree )
 
         CAFE_PREP (
             ch_orthologues,
-            MAKE_ULTRAMETRIC.out.rescaled_tree
+            RESCALE_TREE.out.rescaled_tree
         )
 
         // Run CAFE with fixed lambda on high-differential families filtered out during prep.
@@ -231,8 +241,8 @@ workflow {
         // found families above the differential threshold — otherwise large_counts is empty.
         CAFE_RUN_LARGE (
             CAFE_PREP.out.large_counts,
-            CAFE_PREP.out.prepared_tree.first(),
-            CAFE_PREP.out.error_model.first(),
+            CAFE_PREP.out.prepared_tree,
+            CAFE_PREP.out.error_model,
             CAFE_PREP.out.lambda.map { f -> f.text.trim() }
         )
 
@@ -335,7 +345,7 @@ workflow {
 
             // Add the shared OG_GO file to every job
             ch_go_run_input = ch_with_bg
-                .combine( CAFE_GO_PREP.out.og_go.first() )
+                .combine( CAFE_GO_PREP.out.og_go )
                 .map { meta, target_file, bg_file, og_go ->
                     tuple( meta, target_file, bg_file, og_go )
                 }
@@ -378,7 +388,7 @@ workflow {
                 .map    { meta, target_file, bg_name, file -> tuple( meta, target_file, file ) }
 
             ch_large_go_run_input = ch_large_with_bg
-                .combine( CAFE_GO_PREP_LARGE.out.og_go.first() )
+                .combine( CAFE_GO_PREP_LARGE.out.og_go )
                 .map { meta, target_file, bg_file, og_go ->
                     tuple( meta, target_file, bg_file, og_go )
                 }

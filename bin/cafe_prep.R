@@ -5,8 +5,12 @@ library(data.table)
 tre <- read.tree('pruned_tree')
 stopifnot(is.binary(tre))
 stopifnot(is.rooted(tre))
-stopifnot(is.ultrametric(tre))
-write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
+if (is.ultrametric(tre)) {
+  utre <- tre
+} else {
+  utre <- chronos(tre)
+}
+write.tree(utre, 'SpeciesTree_rooted_ultra.txt')
 
 hog <- fread('N0.tsv')
 

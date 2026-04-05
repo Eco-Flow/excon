@@ -40,17 +40,17 @@ process CAFE_PREP {
     export PATH=\$PATH:/usr/bin
     set -e
 
-    mv Orthogroups.tsv N0.tsv
+    [ "${table}" = "N0.tsv" ] || cp ${table} N0.tsv
     cp ${tree_newick} pruned_tree
     sed -i 's/\\.clean//g' pruned_tree
     sed -i 's/\\.clean//g' N0.tsv
 
     if [ "${use_filtering}" = "true" ]; then
         echo "CAFE_PREP attempt ${task.attempt}: applying differential filtering (threshold: ${max_differential})"
-        /usr/bin/Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential}
+        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential}
     else
         echo "CAFE_PREP attempt ${task.attempt}: no filtering"
-        /usr/bin/Rscript ${projectDir}/bin/cafe_prep.R
+        Rscript ${projectDir}/bin/cafe_prep.R
     fi
 
     # ---------------------------------------------------------------

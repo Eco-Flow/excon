@@ -195,10 +195,15 @@
           "description": "topGO algorithm and statistic combination (classic_fisher, weight01_t, elim_ks, weight_ks)",
           "default": "classic_fisher"
         },
+        "orthofinder_v2": {
+            "type": "boolean",
+            "default": false,
+            "description": "Use OrthoFinder v2.5.5 instead of v3.1.3. Recommended for large datasets where v3 stalls or fails."
+        },
         "tree_scale_factor": {
             "type": "integer",
-            "default": 1,
-            "description": "Root-to-tip distance for the ultrametric tree passed to CAFE5. A value of 1 gives relative branch lengths, which is sufficient for CAFE5 model fitting."
+            "default": 1000,
+            "description": "Scaling factor multiplied across all branch lengths by rescale_tree.py before CAFE5. chronos() in cafe_prep.R then converts the result to a proper time tree. Default 1000 prevents numerical precision issues in CAFE5."
         },
         "cafe_max_differential": {
             "type": "integer", 

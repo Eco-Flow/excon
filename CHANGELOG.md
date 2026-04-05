@@ -4,6 +4,10 @@
 
 ### Added
 - New OrthoFinder algorithm parameters: `--orthofinder_method` (`-M`), `--orthofinder_search` (`-S`), `--orthofinder_msa_prog` (`-A`), and `--orthofinder_tree` (`-T`). These map directly to OrthoFinder command-line flags and are all optional — OrthoFinder defaults are used when unset.
+- New `--orthofinder_v2` flag (default `false`) to run OrthoFinder v2.5.5 instead of v3.1.3. Recommended for large datasets where v3 stalls or produces unusable trees.
+### Changed
+- Reverted tree scaling back to the original `RESCALE_TREE` approach (`rescale_tree.py` multiplies branch lengths by `--tree_scale_factor`, then `chronos()` in `cafe_prep.R` converts to a proper time tree). The `MAKE_ULTRAMETRIC` module introduced in v2.1.4 is removed — per the CAFE5 upstream developers, tools like `make_ultrametric.py` produce mathematically ultrametric trees but without proper divergence-time estimation, yielding uninterpretable rate estimates. `chronos()` is the correct method (hahnlab/CAFE5@b9e3b2e).
+- `--tree_scale_factor` default changed from `1` back to `1000`.
 
 ## [v2.1.4] - 2026-04-03
 
