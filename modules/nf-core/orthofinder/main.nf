@@ -2,7 +2,6 @@ process ORTHOFINDER {
     tag "$meta.id"
     label 'process_high'
     label 'process_med_long'
-    label 'process_high_memory'
 
 
     conda "${moduleDir}/environment.yml"
@@ -35,7 +34,7 @@ process ORTHOFINDER {
     """
     orthofinder \\
         -t $task.cpus \\
-        -a $task.cpus \\
+        -a ${[task.cpus, 4].min()} \\
         -f input \\
         -n $prefix \\
         $include_command \\

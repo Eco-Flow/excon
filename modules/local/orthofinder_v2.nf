@@ -30,7 +30,7 @@ process ORTHOFINDER_V2 {
     orthofinder \\
         $args \\
         -t $task.cpus \\
-        -a $task.cpus \\
+        -a ${[task.cpus, 4].min()} \\
         -p temp_pickle \\
         -f input \\
         -n $prefix
