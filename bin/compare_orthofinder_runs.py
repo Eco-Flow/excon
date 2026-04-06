@@ -169,7 +169,7 @@ def summarise(stats, label, out):
     print(f"\n{'='*60}", file=out)
     print(f"  {label}", file=out)
     print(f"{'='*60}", file=out)
-    print(f"  HOGs (≥2 species):      {n:,}", file=out)
+    print(f"  HOGs (>=2 species):     {n:,}", file=out)
     print(f"  Max gene count (any):   {max(maxes):,}", file=out)
     print(f"  Size differential:", file=out)
     print(f"    min    = {min(diffs)}", file=out)
