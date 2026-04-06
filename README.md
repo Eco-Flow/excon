@@ -29,7 +29,7 @@ The general pipeline logic is as follows:
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
-* Converts the OrthoFinder species tree to an ultrametric tree for CAFE `[MAKE_ULTRAMETRIC]`.
+* Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`.
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
 * Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
@@ -134,7 +134,7 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.1.3. Recommended for large datasets where v3 stalls or fails. | `false` |
+| `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.1.4. v2 produces Hierarchical Orthogroups (`N0.tsv`) which have lower copy-number variance and are better suited to CAFE5. v3 produces flat orthogroups (`Orthogroups.tsv`). Recommended for large datasets (>30 species) or when CAFE5 fails to converge. | `false` |
 | `--orthofinder_method` | Gene tree inference method: `msa` or `dendroblast` | `msa` |
 | `--orthofinder_search` | Sequence search program: `diamond`, `blast`, or `mmseqs2` | `diamond` |
 | `--orthofinder_msa_prog` | MSA program (requires `--orthofinder_method msa`): `mafft` or `muscle` | `mafft` |
@@ -153,13 +153,22 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
 | `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
 
-> **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it 
-> (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs:
+> **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it
+> (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs.
+> The orthogroups file to pass depends on which version of OrthoFinder was used:
+>
+> **OrthoFinder v2 (`--orthofinder_v2`)** — use `N0.tsv` (Hierarchical Orthogroups):
+> ```
+> --input_tree results/orthofinder_cafe/ortho_cafe/Species_Tree/SpeciesTree_rooted_node_labels.txt \
+> --input_orthogroups results/orthofinder_cafe/ortho_cafe/Phylogenetic_Hierarchical_Orthogroups/N0.tsv
+> ```
+>
+> **OrthoFinder v3 (default)** — use `Orthogroups.tsv` (flat orthogroups):
 > ```
 > --input_tree results/orthofinder_cafe/ortho_cafe/Species_Tree/SpeciesTree_rooted_node_labels.txt \
 > --input_orthogroups results/orthofinder_cafe/ortho_cafe/Orthogroups/Orthogroups.tsv
 > ```
-> Both parameters must be supplied together. If either is omitted, OrthoFinder runs normally.
+> Both `--input_tree` and `--input_orthogroups` must be supplied together. If either is omitted, OrthoFinder runs normally.
 
 > **Note on CAFE model selection:** The pipeline runs CAFE5 with k=1 through k=`cafe_max_k` (default 6) 
 > rate categories in parallel, then selects the best k by AIC. It then re-runs the best k with the 
@@ -296,12 +305,22 @@ The `go_files/` directory should contain one `{species_id}.go.txt` per species (
 
 5. To reuse a previous OrthoFinder run (skips the slow OrthoFinder step). Or to use tree/table from another source use:
 
+OrthoFinder v3 (default):
 ```
 # NXF_VER=25.04.8
 nextflow run main.nf -resume -profile docker \
   --input data/input_small-s3.csv \
   --input_tree results/orthofinder_cafe/ortho_cafe/Species_Tree/SpeciesTree_rooted_node_labels.txt \
   --input_orthogroups results/orthofinder_cafe/ortho_cafe/Orthogroups/Orthogroups.tsv
+```
+
+OrthoFinder v2 (`--orthofinder_v2`):
+```
+# NXF_VER=25.04.8
+nextflow run main.nf -resume -profile docker \
+  --input data/input_small-s3.csv \
+  --input_tree results/orthofinder_cafe/ortho_cafe/Species_Tree/SpeciesTree_rooted_node_labels.txt \
+  --input_orthogroups results/orthofinder_cafe/ortho_cafe/Phylogenetic_Hierarchical_Orthogroups/N0.tsv
 ```
 
 ## Output Structure

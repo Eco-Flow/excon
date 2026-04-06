@@ -1,13 +1,29 @@
 # Changelog
 
-## [v2.2.0] - 2026-04-04
+## [v2.2.0] - 2026-04-06
 
 ### Added
 - New OrthoFinder algorithm parameters: `--orthofinder_method` (`-M`), `--orthofinder_search` (`-S`), `--orthofinder_msa_prog` (`-A`), and `--orthofinder_tree` (`-T`). These map directly to OrthoFinder command-line flags and are all optional — OrthoFinder defaults are used when unset.
-- New `--orthofinder_v2` flag (default `false`) to run OrthoFinder v2.5.5 instead of v3.1.3. Recommended for large datasets where v3 stalls or produces unusable trees.
+- New `--orthofinder_v2` flag (default `false`) to run OrthoFinder v2.5.5 instead of v3.1.3. v2 uses Hierarchical Orthogroups (`N0.tsv`) which are more appropriate for CAFE5 as they represent gene families traceable to the common ancestor. v3 uses flat orthogroups (`Orthogroups.tsv`) which can have inflated copy-number variance. For large datasets (>30 species), v2 is recommended.
+- `ORTHOFINDER_V2_CAFE` results are now published to `results/orthofinder_cafe/` (was only published for v3).
+- `CAFE_PREP` now emits `pruned_tree` (the rescaled, species-name-stripped tree) for use by all downstream CAFE runs.
+- `CAFE_RUN_LARGE` now retries with progressively smaller lambda values (estimated → 1e-4 → 1e-5 → 1e-6 → 1e-7) when the initial fixed-lambda run fails to converge, as recommended in hahnlab/CAFE5#132.
+- CAFE GO enrichment plots now display full GO term text labels and GO IDs.
+- New output documentation page `docs/outputs.md` with example figures and detailed descriptions of all output files.
+
 ### Changed
-- Reverted tree scaling back to the original `RESCALE_TREE` approach (`rescale_tree.py` multiplies branch lengths by `--tree_scale_factor`, then `chronos()` in `cafe_prep.R` converts to a proper time tree). The `MAKE_ULTRAMETRIC` module introduced in v2.1.4 is removed — per the CAFE5 upstream developers, tools like `make_ultrametric.py` produce mathematically ultrametric trees but without proper divergence-time estimation, yielding uninterpretable rate estimates. `chronos()` is the correct method (hahnlab/CAFE5@b9e3b2e).
+- Reverted tree scaling back to the original `RESCALE_TREE` approach (`rescale_tree.py` multiplies branch lengths by `--tree_scale_factor`). The `MAKE_ULTRAMETRIC` module introduced in v2.1.4 is removed.
 - `--tree_scale_factor` default changed from `1` back to `1000`.
+- `CAFE_PREP` base run and error model estimation now use `pruned_tree` (the rescaled non-ultrametric tree) directly, matching the approach that was validated on large datasets. `SpeciesTree_rooted_ultra.txt` (produced by `chronoMPL()`) is retained for reference only.
+- `CAFE_RUN_K` and `CAFE_RUN_BEST` now use `pruned_tree` instead of `SpeciesTree_rooted_ultra.txt`, avoiding convergence failures caused by the ultrametric tree's maximum-possible-lambda constraint.
+- `CAFE_RUN_LARGE` failure is now non-fatal — the pipeline continues even if high-differential families cannot be modelled.
+- `CAFE_PLOT` (and `CAFE_PLOT_LARGE`) now skip gracefully when CAFE5 did not produce an `*_asr.tre` file, instead of crashing the pipeline.
+- `ORTHOFINDER_V2` module now emits `N0.tsv` as `orthologues` (previously emitted `Orthogroups.tsv`). This ensures CAFE_PREP receives hierarchical orthogroups, which have lower copy-number variance and are required for correct CAFE5 analysis.
+- `CHROMO_GO` now symlinks `N0.tsv` to `Orthogroups.tsv` when the v2 path is used, so the downstream perl script works regardless of OrthoFinder version.
+
+### Fixed
+- Fixed species name mismatch between tree and gene counts in `CAFE_RUN_K`: the `SpeciesTree_rescaled.nwk` retains `.clean` suffixes but `hog_gene_counts.tsv` uses plain names. All CAFE runs now use `pruned_tree` which has suffixes stripped by `sed` in `CAFE_PREP`.
+- Fixed `chronos()` convergence failure on large datasets: passing the ×1000 pre-scaled tree to `chronos()` caused a degenerate starting point (~-74 billion log-likelihood). `CAFE_PREP` now receives the original unscaled tree and scaling is applied after any ultrametric correction.
 
 ## [v2.1.4] - 2026-04-03
 
@@ -39,17 +55,17 @@
 
 ## [v2.1.0] - 2026-03-30
 
-### New features
-- CAFE runs in three separate jobs
-- CAFE tests which run was the most likely. []. GO running on that.
-- CAFE GO run in parrelel.
-- Nextlfow schema added (replacing nf-validation)
+### Added
+- CAFE now runs k=1 through k=`cafe_max_k` (default 6) rate categories in parallel (`CAFE_RUN_K`), then selects the best k by AIC (`CAFE_SELECT_K`).
+- Best k is re-run with the Poisson birth-death option (`-p`) via `CAFE_RUN_BEST`, and the winner between uniform and Poisson is selected by likelihood (`CAFE_MODEL_COMPARE`).
+- CAFE GO enrichment now runs in parallel, one job per species/node and direction (`CAFE_GO_RUN`).
+- Nextflow schema added (replacing nf-validation).
 
 ### Changed
-- New readme output file format added. 
+- Updated output documentation structure in README.
 
 ### Fixed
-- Fixed issue with flag names for eggnog parameters.
+- Fixed flag names for EggNOG parameters.
 
 ## [v2.0.4] - 2026-03-28 (2)
 
