@@ -20,6 +20,7 @@ process CAFE_PREP {
     output:
     path("hog_gene_counts.tsv"),                         emit: prepared_counts
     path("SpeciesTree_rooted_ultra.txt"),                emit: prepared_tree
+    path("pruned_tree"),                                 emit: pruned_tree
     path("N0.tsv"),                                      emit: N0_table
     path("Out_cafe"),                                    emit: results
     path("Out_cafe/Base_count.tab"),                     emit: result_nftest
