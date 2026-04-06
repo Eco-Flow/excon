@@ -13,7 +13,7 @@ chromosome.
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
 (minimum of 5 species ideally up to around 30). Maximum 100 species (normally). 
 
-<img width="398" height="667" alt="image" src="https://github.com/user-attachments/assets/f6d9c492-6010-49fd-a730-40bf7f3df498" />
+<img width="398" height="667" alt="image" src="docs/images/excon_pipeline.3.svg" />
 
 
 GO annotation can be run in two ways:
