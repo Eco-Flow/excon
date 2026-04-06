@@ -229,9 +229,11 @@ workflow {
             ch_orthologues = ORTHOFINDER_CAFE.out.orthologues
         }
 
+        RESCALE_TREE ( ch_speciestree )
+
         CAFE_PREP (
             ch_orthologues,
-            ch_speciestree
+            RESCALE_TREE.out.rescaled_tree
         )
 
         // Run CAFE with fixed lambda on high-differential families filtered out during prep.

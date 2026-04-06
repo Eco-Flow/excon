@@ -55,11 +55,13 @@ process CAFE_PREP {
 
     # ---------------------------------------------------------------
     # Stage 1: base run (λ estimation, no error model)
-    # Used as the baseline result and to confirm the data is parseable
+    # Use pruned_tree (rescaled, non-ultrametric) — this matches the
+    # working run2 approach and avoids chronoMPL numerical instability.
+    # SpeciesTree_rooted_ultra.txt is used only for downstream k-sweeps.
     # ---------------------------------------------------------------
     cafe5 \\
         -i hog_gene_counts.tsv \\
-        -t SpeciesTree_rooted_ultra.txt \\
+        -t pruned_tree \\
         --cores ${task.cpus} \\
         -o Out_cafe \\
         2>&1 | tee cafe_base.log
@@ -99,7 +101,7 @@ process CAFE_PREP {
     # ---------------------------------------------------------------
     cafe5 \\
         -i hog_gene_counts.tsv \\
-        -t SpeciesTree_rooted_ultra.txt \\
+        -t pruned_tree \\
         --cores ${task.cpus} \\
         -e \\
         -o Out_cafe_errormodel \\
