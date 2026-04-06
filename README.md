@@ -1,4 +1,4 @@
-# EXCON (v2.1.0)
+# EXCON (v2.2.0)
 
 A Nextflow pipeline for gene family **EX**pansion and **CON**traction analysis 
 across multiple species using CAFE5.
@@ -13,10 +13,11 @@ chromosome.
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
 (minimum of 5 species ideally up to around 30). Maximum 100 species (normally). 
 
-To run the GO annotation. You must provide a database yourself with `--eggnog_data_dir`, 
-else everytime you run the pipeline, it will download the DB for you. 
-So be careful, it is ~45GB. Please run it once, and save the DB somewhere handy to point to. 
-This is then used to check what GO terms are associated with expanded or contracted gene sets.
+GO annotation can be run in two ways:
+- **Run EggNOG-mapper** (`--run_eggnog`): assigns GO terms from scratch using the EggNOG database (~45 GB). 
+  Provide `--eggnog_data_dir` to reuse a pre-downloaded copy and avoid re-downloading on every run.
+- **Supply your own GO files** (`--predownloaded_gofiles`): if you already have gene-to-GO mappings, 
+  point to a directory of `{species_id}.go.txt` files and skip EggNOG entirely (see [Parameters](#go-annotation-optional) below).
 
 ## Overview
 
@@ -24,29 +25,27 @@ The general pipeline logic is as follows:
 
 * Downloads genome and annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`, or you provide your own.
 * Unzips the files, if necessary `[GUNZIP]`
-* Standardises and filters GFF annotations `[AGAT_CONVERTSPGXF2GXF]`.
-* Extracts longest protein `[AGAT_SPKEEPLONGESTISOFORM]`.
+* Sanitises GFF annotations and extracts longest isoform `[AGAT_SPKEEPLONGESTISOFORM]`.
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
-* Rescales species tree branch lengths for CAFE `[RESCALE_TREE]`.
-* Prepares gene count input and runs the base CAFE model `[CAFE_PREP]`.
-* Runs two additional CAFE models in parallel for model comparison `[CAFE_RUN]`:
-  - Gamma model with k=3 rate categories (`-k 3`)
-  - Gamma model with per-family rates (`-p -k 3`)
-* Compares all three CAFE models using AIC and likelihood ratio tests, 
-  selects the best fitting model `[CAFE_MODEL_COMPARE]`.
+* Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`.
+* Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
+* Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
+* Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
+* Re-runs CAFE5 at the best k with Poisson birth-death (`-p`) `[CAFE_RUN_BEST]`.
+* Compares uniform vs Poisson model at the best k by likelihood, selects the winner `[CAFE_MODEL_COMPARE]`.
 * Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
 
-### Optional — GO enrichment (`--run_eggnog`)
+### Optional — GO enrichment (`--run_eggnog` or `--predownloaded_gofiles`)
 
-* Optionally downloads the eggnogmapper database `[EGGNOG_DOWNLOAD]`.
-* Optionally assigns GO terms to genes using `[EGGNOGMAPPER]`.
+* Optionally downloads the EggNOG-mapper database `[EGGNOG_DOWNLOAD]`.
+* Optionally assigns GO terms to genes using EggNOG-mapper `[EGGNOGMAPPER]`, or reads GO terms from user-supplied files.
 * Optionally prepares GO gene lists from the best CAFE model results `[CAFE_GO_PREP]`.
 * Optionally runs GO enrichment in parallel, one job per species/node 
   and direction (expansion/contraction) `[CAFE_GO_RUN]`.
 
-### Optional — chromosome GO enrichment (`--chromo_go --run_eggnog`)
+### Optional — chromosome GO enrichment (`--chromo_go`, requires GO annotation)
 
 * Optionally plots GO enrichment of genes by chromosome `[CHROMO_GO]`.
 * Optionally summarizes GO enrichment by chromosome `[SUMMARIZE_CHROMO_GO]`.
@@ -131,39 +130,62 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--busco_lineages_path` | Path to local BUSCO lineage databases | `null` |
 | `--busco_config` | Path to BUSCO config file | `null` |
 
+### OrthoFinder options (optional)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.1.4. v2 produces Hierarchical Orthogroups (`N0.tsv`) which have lower copy-number variance and are better suited to CAFE5. v3 produces flat orthogroups (`Orthogroups.tsv`). Recommended for large datasets (>30 species) or when CAFE5 fails to converge. | `false` |
+| `--orthofinder_method` | Gene tree inference method: `msa` or `dendroblast` | `msa` |
+| `--orthofinder_search` | Sequence search program: `diamond`, `blast`, or `mmseqs2` | `diamond` |
+| `--orthofinder_msa_prog` | MSA program (requires `--orthofinder_method msa`): `mafft` or `muscle` | `mafft` |
+| `--orthofinder_tree` | Tree inference method (requires `--orthofinder_method msa`): `fasttree`, `raxml`, `raxml-ng`, or `iqtree` | `fasttree` |
+
+> **Note:** `-A` and `-T` are only valid when `-M msa` is set. If you set `--orthofinder_msa_prog` or `--orthofinder_tree` without `--orthofinder_method msa`, OrthoFinder will error.
+
 ### CAFE gene family evolution
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `--skip_cafe` | Skip CAFE analysis | `null` |
+| `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
 | `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
-| `--tree_scale_factor` | Scale factor for rescaling species tree branch lengths | `1000` |
+| `--tree_scale_factor` | Factor to multiply all OrthoFinder branch lengths by before `chronos()` converts the tree to a time tree for CAFE5. Lower values can cause numerical issues. | `1000` |
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
 | `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
 
-> **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it 
-> (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs:
+> **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it
+> (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs.
+> The orthogroups file to pass depends on which version of OrthoFinder was used:
+>
+> **OrthoFinder v2 (`--orthofinder_v2`)** — use `N0.tsv` (Hierarchical Orthogroups):
+> ```
+> --input_tree results/orthofinder_cafe/ortho_cafe/Species_Tree/SpeciesTree_rooted_node_labels.txt \
+> --input_orthogroups results/orthofinder_cafe/ortho_cafe/Phylogenetic_Hierarchical_Orthogroups/N0.tsv
+> ```
+>
+> **OrthoFinder v3 (default)** — use `Orthogroups.tsv` (flat orthogroups):
 > ```
 > --input_tree results/orthofinder_cafe/ortho_cafe/Species_Tree/SpeciesTree_rooted_node_labels.txt \
 > --input_orthogroups results/orthofinder_cafe/ortho_cafe/Orthogroups/Orthogroups.tsv
 > ```
-> Both parameters must be supplied together. If either is omitted, OrthoFinder runs normally.
+> Both `--input_tree` and `--input_orthogroups` must be supplied together. If either is omitted, OrthoFinder runs normally.
 
-> **Note on CAFE model selection:** The pipeline runs three CAFE models — a 
-> base single-λ model, a Gamma model with k=3 rate categories, and a Gamma 
-> model with per-family rate estimation. These run in parallel and are compared 
-> using AIC. The best-fitting model is automatically selected and used for all 
-> downstream GO enrichment and plotting. Model comparison results are written to 
-> `results/cafe/model_comparison/cafe_model_comparison.tsv`. If model scores 
-> cannot be parsed (e.g. on very small datasets), the pipeline defaults to the 
-> base model.
+> **Note on CAFE model selection:** The pipeline runs CAFE5 with k=1 through k=`cafe_max_k` (default 6) 
+> rate categories in parallel, then selects the best k by AIC. It then re-runs the best k with the 
+> Poisson birth-death option (`-p`) and picks the final model by likelihood. Model selection results 
+> (AIC table across k values) are in `results/cafe/model_comparison/`. If scores cannot be parsed 
+> (e.g. on very small datasets), the pipeline defaults to the uniform model.
 
-### GO annotation with EggNOG-mapper (optional)
+### GO annotation (optional)
+
+GO enrichment requires gene-to-GO mappings. Choose one of the two approaches below — they are mutually exclusive, and `--run_eggnog` takes priority if both are set.
+
+#### Option A — Run EggNOG-mapper
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--run_eggnog` | Run EggNOG-mapper GO annotation | `false` |
-| `--eggnog_data_dir` | Path to pre-downloaded EggNOG database directory | `null` |
+| `--run_eggnog` | Run EggNOG-mapper to assign GO terms | `false` |
+| `--eggnog_data_dir` | Path to pre-downloaded EggNOG database directory | `null` (downloads ~45 GB automatically) |
 | `--eggnog_target_taxa` | Restrict annotations to orthologs from this taxon and its descendants (NCBI taxon ID) | `null` |
 | `--eggnog_tax_scope` | Taxonomic scope for orthologous group assignment (e.g. `50557` for Insecta) | `null` |
 | `--eggnog_evalue` | Maximum e-value threshold for sequence matches | `null` |
@@ -172,10 +194,25 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--eggnog_query_cover` | Minimum query coverage (%) | `null` |
 | `--eggnog_subject_cover` | Minimum subject coverage (%) | `null` |
 
-**Note:** The EggNOG database is ~45GB. If `--eggnog_data_dir` is not provided, the database will be downloaded automatically on each run. We strongly recommend downloading it once and reusing it:
-Then pass `--eggnog_data_dir /path/to/eggnog_data` to the pipeline.
+> **Note:** The EggNOG database is ~45 GB. We strongly recommend downloading it once and passing `--eggnog_data_dir /path/to/eggnog_data` to avoid re-downloading on every run.
 
-### GO enrichment analysis (optional, requires `--run_eggnog`)
+#### Option B — Supply your own GO files
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--predownloaded_gofiles` | Path to a directory of pre-computed gene-to-GO mapping files | `null` |
+
+The directory must contain one file per species, named `{species_id}.go.txt` where `species_id` matches the species names in your input CSV. Each file is a two-column, tab-separated file with one gene–GO pair per line:
+
+```
+geneA    GO:0006412
+geneA    GO:0008150
+geneB    GO:0003674
+```
+
+This lets you skip EggNOG entirely if you already have GO annotations (e.g. from a previous run, a public database, or another annotation tool).
+
+### GO enrichment analysis (optional, requires GO annotation)
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
@@ -183,6 +220,7 @@ Then pass `--eggnog_data_dir /path/to/eggnog_data` to the pipeline.
 | `--go_cutoff` | P-value cutoff for GO enrichment | `0.05` |
 | `--go_type` | GO test type (e.g. `none`) | `none` |
 | `--go_max_plot` | Maximum number of GO terms to plot | `10` |
+| `--go_algo` | topGO algorithm and statistic (`classic_fisher`, `weight01_t`, `elim_ks`, `weight_ks`) | `classic_fisher` |
 
 ### Resource limits
 
@@ -256,8 +294,18 @@ nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv
 nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv --chromo_go --go_type bonferoni --stats --run_eggnog --eggnog_data_dir /path/to/eggnogdb 
 ```
 
-4. To reuse a previous OrthoFinder run (skips the slow OrthoFinder step). Or to use tree/table from another source use:
+4. To run with CAFE and GO analysis using your own pre-computed GO files (skips EggNOG):
 
+```
+# NXF_VER=25.04.8
+nextflow run main.nf -resume -profile docker --input data/input_small-s3.csv --predownloaded_gofiles /path/to/go_files/
+```
+
+The `go_files/` directory should contain one `{species_id}.go.txt` per species (tab-separated `gene_id<TAB>GO:term`, one pair per line).
+
+5. To reuse a previous OrthoFinder run (skips the slow OrthoFinder step). Or to use tree/table from another source use:
+
+OrthoFinder v3 (default):
 ```
 # NXF_VER=25.04.8
 nextflow run main.nf -resume -profile docker \
@@ -266,28 +314,37 @@ nextflow run main.nf -resume -profile docker \
   --input_orthogroups results/orthofinder_cafe/ortho_cafe/Orthogroups/Orthogroups.tsv
 ```
 
+OrthoFinder v2 (`--orthofinder_v2`):
+```
+# NXF_VER=25.04.8
+nextflow run main.nf -resume -profile docker \
+  --input data/input_small-s3.csv \
+  --input_tree results/orthofinder_cafe/ortho_cafe/Species_Tree/SpeciesTree_rooted_node_labels.txt \
+  --input_orthogroups results/orthofinder_cafe/ortho_cafe/Phylogenetic_Hierarchical_Orthogroups/N0.tsv
+```
+
 ## Output Structure
+
+> For a detailed description of outputs with example figures, see the **[Output Guide](docs/outputs.md)**.
 ```
 results/
 ├── cafe/
-│   ├── base/                        # Base single-λ CAFE model outputs
-│   │   ├── Out_cafe/                # CAFE5 output files (trees, counts, probabilities)
+│   ├── base/                        # CAFE_PREP outputs
 │   │   ├── hog_gene_counts.tsv      # Filtered gene count input to CAFE
-│   │   └── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
-│   ├── gamma/                       # Gamma k=3 model outputs
-│   │   └── Out_gamma/               # CAFE5 output files
-│   ├── gamma_per_family/            # Gamma per-family rate model outputs
-│   │   └── Out_gamma_per_family/    # CAFE5 output files
+│   │   ├── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
+│   │   └── SpeciesTree_rooted_ultra.txt  # Ultrametric tree used by CAFE5
+│   ├── large_families/              # CAFE run on high-differential families (retry path only)
 │   └── model_comparison/
-│       ├── cafe_model_comparison.tsv # AIC, delta-AIC, AIC weights, LRT results
-│       ├── best_model.txt            # Name of the winning model
-│       └── Significant_trees.tre    # Nexus trees with significant branches (from best model)
+│       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
+│       └── best_model.txt            # "uniform" or "poisson"
 ├── cafe_plot/
 │   └── cafe_plotter/                # Expansion/contraction plots for best model
 ├── cafe_go/                         # GO enrichment (one job per species/node x direction)
 │   ├── CAFE_summary.txt             # Summary of expansions/contractions per branch
 │   ├── *_TopGo_results_ALL.tab      # TopGO results per target
-│   ├── TopGO_Pval_barplot_*.pdf     # Barplots per target
+│   ├── TopGO_barplot_*.pdf          # Bar chart per target (ggplot2, full GO names)
+│   ├── TopGO_dotplot_*.pdf          # Dot plot per target (fold enrichment x significance)
+│   ├── TopGO_Pval_barplot_*.pdf     # Legacy barplots (base R)
 │   ├── Go_summary_pos.pdf           # Summary plot across all expansions
 │   ├── Go_summary_neg.pdf           # Summary plot across all contractions
 │   ├── Go_summary_pos_noNode.pdf    # As above, terminal branches only

@@ -3,7 +3,7 @@
 log.info """\
 =========================================
 
- EXCON v2.1.0
+ EXCON v2.2.0
 
  -----------------------------------------
 
@@ -18,12 +18,11 @@ log.info """\
 
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
 
-include { CAFE_PREP } from './modules/local/cafe_prep.nf'
+include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN } from './modules/local/cafe_go_run.nf'
-include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
 include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
@@ -36,12 +35,21 @@ include { NCBIGENOMEDOWNLOAD } from './modules/nf-core/ncbigenomedownload/main.n
 include { GFFREAD } from './modules/nf-core/gffread/main.nf'
 include { BUSCO_BUSCO } from './modules/nf-core/busco/busco/main.nf'
 include { AGAT_SPSTATISTICS } from './modules/nf-core/agat/spstatistics/main.nf'
-include { AGAT_CONVERTSPGXF2GXF } from './modules/nf-core/agat/convertspgxf2gxf/main.nf'
 include { AGAT_SPKEEPLONGESTISOFORM } from './modules/nf-core/agat/spkeeplongestisoform/main.nf'
 include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
+include { ORTHOFINDER_V2 as ORTHOFINDER_V2_CAFE } from './modules/local/orthofinder_v2.nf'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
+
+include { CAFE_PREP } from './modules/local/cafe_prep.nf'
+include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
+include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
+include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
+include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
+include { CAFE_PLOT as CAFE_PLOT_LARGE } from './modules/local/cafe_plot.nf'
+include { CAFE_GO_PREP as CAFE_GO_PREP_LARGE } from './modules/local/cafe_go_prep.nf'
+include { CAFE_GO_RUN  as CAFE_GO_RUN_LARGE  } from './modules/local/cafe_go_run.nf'
 
 workflow {
 
@@ -99,9 +107,8 @@ workflow {
       GUNZIP ( ch_fna_gz )
       ch_fna = GUNZIP.out.gunzip.mix( ch_fna_plain )
 
-      // Convert GFF to standard AGAT format then keep longest isoform
-      AGAT_CONVERTSPGXF2GXF ( ch_gff )
-      AGAT_SPKEEPLONGESTISOFORM ( AGAT_CONVERTSPGXF2GXF.out.output_gff, [] )
+      // Keep longest isoform (AGAT sanitises the GFF as part of this step)
+      AGAT_SPKEEPLONGESTISOFORM ( ch_gff, [] )
 
       // Join fna + agat gff by meta, then split for GFFREAD's two inputs
       ch_fna_gff = ch_fna.join( AGAT_SPKEEPLONGESTISOFORM.out.gff )
@@ -132,10 +139,10 @@ workflow {
    if (params.run_eggnog) {
 
       if (params.eggnog_data_dir) {
-         ch_eggnog_data = channel.fromPath(params.eggnog_data_dir).first()
+         ch_eggnog_data = channel.value(file(params.eggnog_data_dir))
       } else {
          EGGNOG_DOWNLOAD()
-         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir.first()
+         ch_eggnog_data = EGGNOG_DOWNLOAD.out.eggnog_data_dir
       }
 
       EGGNOGMAPPER (
@@ -145,7 +152,7 @@ workflow {
       )
 
       ch_annot_gff = EGGNOGMAPPER.out.annotations.join(
-         AGAT_CONVERTSPGXF2GXF.out.output_gff    // all isoforms, not longest only
+         ch_gff    // all isoforms
       )
 
       EGGNOG_TO_GO (
@@ -153,9 +160,20 @@ workflow {
          ch_annot_gff.map { meta, annot, gff -> [ meta, gff ] }
       )
 
-      ch_go_files = EGGNOG_TO_GO.out.go_file
+      ch_go_file_meta = EGGNOG_TO_GO.out.go_file
+      ch_go_files = ch_go_file_meta
     	.map { meta, go -> go }
     	.collect()
+
+   } else if (params.predownloaded_gofiles) {
+
+      // User-provided gene-to-GO files (one *.go.txt per species, tab-separated gene_id<TAB>GO:term)
+      ch_go_file_meta = Channel.fromPath("${params.predownloaded_gofiles}/*.go.txt")
+         .map { file -> [ [id: file.simpleName], file ] }
+      ch_go_files = ch_go_file_meta
+         .map { meta, go -> go }
+         .collect()
+
    }
 
    // --- Quality stats --- 
@@ -190,6 +208,15 @@ workflow {
         if (params.input_tree && params.input_orthogroups) {
             ch_speciestree = Channel.fromPath(params.input_tree, checkIfExists: true)
             ch_orthologues = Channel.fromPath(params.input_orthogroups, checkIfExists: true)
+        } else if (params.orthofinder_v2) {
+            ORTHOFINDER_V2_CAFE (
+                merge_ch
+                    .map { meta, fasta -> fasta }
+                    .collect()
+                    .map { files -> [ [id: "ortho_cafe"], files ] }
+            )
+            ch_speciestree = ORTHOFINDER_V2_CAFE.out.speciestree
+            ch_orthologues = ORTHOFINDER_V2_CAFE.out.orthologues
         } else {
             ORTHOFINDER_CAFE (
                 merge_ch
@@ -209,37 +236,72 @@ workflow {
             RESCALE_TREE.out.rescaled_tree
         )
 
-        CAFE_RUN (
-            Channel.of( [id: 'gamma'], [id: 'gamma_per_family'] )
-                .combine( CAFE_PREP.out.prepared_counts )
-                .combine( CAFE_PREP.out.prepared_tree )
-                .map { meta, counts, tree -> [ meta, counts, tree ] }
+        // Run CAFE with fixed lambda on high-differential families filtered out during prep.
+        // Only executes when cafe_prep_filtered.R was triggered (attempt > 1) and
+        // found families above the differential threshold — otherwise large_counts is empty.
+        CAFE_RUN_LARGE (
+            CAFE_PREP.out.large_counts,
+            CAFE_PREP.out.pruned_tree,
+            CAFE_PREP.out.error_model,
+            CAFE_PREP.out.lambda.map { f -> f.text.trim() }
         )
 
+
+        k_values = Channel.of( 1..params.cafe_max_k )
+
+        CAFE_RUN_K (
+        CAFE_PREP.out.prepared_counts,   // hog_gene_counts.tsv — possibly filtered
+        CAFE_PREP.out.pruned_tree,       // rescaled tree with species names already stripped
+        CAFE_PREP.out.error_model,       // Base_error_model.txt — empty file if estimation failed
+        k_values                         // each fans out: 1, 2, 3 ... cafe_max_k
+        )
+
+        CAFE_SELECT_K(
+            CAFE_RUN_K.out.results.map { k, d -> d }.collect()
+        )
+
+        // Read the integer out of best_k.txt for passing to CAFE_RUN_BEST
+        best_k_ch = CAFE_SELECT_K.out.best_k
+           .map { f -> f.text.trim().toInteger() }
+
+        ch_best_uniform = CAFE_RUN_K.out.results
+            .combine( best_k_ch )
+            .filter { k, dir, best_k -> k == best_k }
+            .map    { k, dir, best_k -> dir }
+
+        CAFE_RUN_BEST(
+           CAFE_PREP.out.prepared_counts,
+           CAFE_PREP.out.pruned_tree,
+           CAFE_PREP.out.error_model,
+           best_k_ch,
+           Channel.of( true )  //Only run poisson here, as we ran without -p earlier
+        )
+
+        // Compare uniform vs Poisson at best k, emit the winning directory
         CAFE_MODEL_COMPARE (
-            CAFE_PREP.out.results,
-            CAFE_RUN.out.results.filter { meta, res -> meta.id == 'gamma' },
-            CAFE_RUN.out.results.filter { meta, res -> meta.id == 'gamma_per_family' }
+            ch_best_uniform,
+            CAFE_RUN_BEST.out.results
         )
-
-        // --- Select best model ---
-        ch_all_results = CAFE_PREP.out.results
-            .map { res -> [ 'base', res ] }
-            .mix(
-                CAFE_RUN.out.results.map { meta, res -> [ meta.id, res ] }
-            )
 
         ch_best_results = CAFE_MODEL_COMPARE.out.best_model
-            .map  { f -> f.text.trim() }
-            .combine( ch_all_results )
-            .filter { best, model, res -> best == model }
-            .map    { best, model, res -> res }
+            .map { f -> f.text.trim() }
+            .combine(
+                ch_best_uniform.map       { dir -> [ 'uniform', dir ] }
+                .mix( CAFE_RUN_BEST.out.results.map { dir -> [ 'poisson', dir ] } )
+            )
+            .filter { best, model, dir -> best == model }
+            .map    { best, model, dir -> dir }
+
 
         CAFE_PLOT ( ch_best_results )
 
+        // Plot high-differential families — only runs when CAFE_RUN_LARGE executed
+        CAFE_PLOT_LARGE ( CAFE_RUN_LARGE.out.results )
+
+
         // --- CAFE GO enrichment (requires eggnog) ---
 
-        if (params.run_eggnog) {
+        if (params.run_eggnog || params.predownloaded_gofiles) {
 
             EGGNOG_TO_OG_GO (
                 ch_go_files,
@@ -283,24 +345,67 @@ workflow {
 
             // Add the shared OG_GO file to every job
             ch_go_run_input = ch_with_bg
-                .combine( CAFE_GO_PREP.out.og_go.first() )
+                .combine( CAFE_GO_PREP.out.og_go )
                 .map { meta, target_file, bg_file, og_go ->
                     tuple( meta, target_file, bg_file, og_go )
                 }
 
             CAFE_GO_RUN ( ch_go_run_input )
 
-        } // end if run_eggnog (CAFE GO)
+
+            // --- GO enrichment on high-differential (large) families ---
+            // Only fires when CAFE_RUN_LARGE ran (i.e. large_counts was non-empty).
+            // Reuses the same EGGNOG_TO_OG_GO output — no extra annotation work needed.
+
+            CAFE_GO_PREP_LARGE (
+                CAFE_RUN_LARGE.out.results,
+                CAFE_PREP.out.N0_table,
+                EGGNOG_TO_OG_GO.out.og_go
+            )
+
+            ch_large_target_files = CAFE_GO_PREP_LARGE.out.pos_files
+                .mix( CAFE_GO_PREP_LARGE.out.neg_files )
+                .flatten()
+
+            ch_large_bk_files = CAFE_GO_PREP_LARGE.out.bk_files
+                .flatten()
+
+            ch_large_manifest = CAFE_GO_PREP_LARGE.out.manifest
+                .splitCsv( sep: '\t', header: false )
+                .map { row ->
+                    def name = row[0].replaceAll(/\.txt$/, '')
+                    tuple( [id: "large_${name}"], row[0], row[1] )
+                }
+
+            ch_large_with_target = ch_large_manifest
+                .combine( ch_large_target_files )
+                .filter { meta, target_name, bg_name, file -> file.name == target_name }
+                .map    { meta, target_name, bg_name, file -> tuple( meta, file, bg_name ) }
+
+            ch_large_with_bg = ch_large_with_target
+                .combine( ch_large_bk_files )
+                .filter { meta, target_file, bg_name, file -> file.name == bg_name }
+                .map    { meta, target_file, bg_name, file -> tuple( meta, target_file, file ) }
+
+            ch_large_go_run_input = ch_large_with_bg
+                .combine( CAFE_GO_PREP_LARGE.out.og_go )
+                .map { meta, target_file, bg_file, og_go ->
+                    tuple( meta, target_file, bg_file, og_go )
+                }
+
+            CAFE_GO_RUN_LARGE ( ch_large_go_run_input )
+
+        } // end if run_eggnog / predownloaded_gofiles (CAFE GO)
 
     } // end if !skip_cafe
 
 
     // --- Chromosome GO analysis (requires eggnog) ---
 
-    if (params.chromo_go && params.run_eggnog) {
+    if (params.chromo_go && (params.run_eggnog || params.predownloaded_gofiles)) {
 
         ch_gff_go = AGAT_SPKEEPLONGESTISOFORM.out.gff
-        .join( EGGNOG_TO_GO.out.go_file )
+        .join( ch_go_file_meta )
         .map { meta, gff, go -> tuple(meta, gff, go) }
 
         CHROMO_GO ( ch_gff_go, ch_orthologues)

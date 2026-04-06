@@ -2,16 +2,21 @@
 library(ape)
 library(data.table)
 
+# Optional first arg: branch-length scale factor (default 1000).
+# Applied *after* chronos() so the scaling is not lost when the tree is
+# non-ultrametric (chronos recalculates branch lengths from scratch).
+args <- commandArgs(trailingOnly = TRUE)
+scale_factor <- if (length(args) >= 1) as.numeric(args[1]) else 1000
+
 tre <- read.tree('pruned_tree')
 stopifnot(is.binary(tre))
 stopifnot(is.rooted(tre))
-
-if(is.ultrametric(tre)) {
-    utre <- tre
-} else{
-    utre <- chronos(tre)
+if (!is.ultrametric(tre)) {
+  # Mean path lengths method: robust, no optimisation, always converges.
+  tre <- chronoMPL(tre)
 }
-write.tree(utre, 'SpeciesTree_rooted_ultra.txt')
+tre$edge.length <- tre$edge.length * scale_factor
+write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
 
 hog <- fread('N0.tsv')
 

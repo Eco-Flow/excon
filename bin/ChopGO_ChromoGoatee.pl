@@ -27,6 +27,7 @@ my $sort_enrich=0;
 my $min_genes=2;
 my $max_genes=100000;
 my $infer=0;
+my $go_algo = "classic_fisher";
 
 GetOptions(	  "help" => \$helpFlag,
 		  'i=s' => \$input,
@@ -45,6 +46,7 @@ GetOptions(	  "help" => \$helpFlag,
 		  "min_genes_req=s" => \$min_genes,
 		  "max_genes_req=s" => \$max_genes,
 		  "allow_inferred" => \$infer,
+		  "go_algo=s"     => \$go_algo,
     );
 
 
@@ -83,6 +85,7 @@ plotting options:
     -min_genes_req   Choose minimum number of genes containing each GO term. Default=2.
     -max_genes_req   Choose maximum number of genes containing each GO term. Default=100000.
     -allow_inferred  Allow inferred parent (GO, not in original file) into final enrichment. Default=0=OFF.
+    -go_algo         topGO algorithm and statistic: classic_fisher (default), weight01_t, elim_ks, weight_ks.
     -plot_only       Plot Only (BOOLEAN, optional), don't do GO enrichments. Default=0=OFF.
     -open_plot       Open plots once made (BOOLEAN, optional). Default=0=OFF.
 
@@ -146,6 +149,11 @@ my @ALL_made_files;
 
 my @methods=("holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none");
 
+my ($algo, $stat);
+if    ($go_algo eq "weight01_t") { $algo = "weight01"; $stat = "t"; }
+elsif ($go_algo eq "elim_ks")    { $algo = "elim";     $stat = "ks"; }
+elsif ($go_algo eq "weight_ks")  { $algo = "weight";   $stat = "ks"; }
+else                             { $algo = "classic";  $stat = "fisher"; }
 
 
 ### DATABASE CHOICE, print to user
@@ -349,30 +357,30 @@ foreach my $key ( keys %Gene_Go_Hash ){
     
     #BP
     print $outhandle3 "GOdata <- new(\"topGOdata\", ontology=\"BP\", allGenes=inGenes, annot=annFUN.gene2GO, gene2GO=Chop.gene2GO)\n";
-    print $outhandle3 "resultFisher <- runTest(GOdata, algorithm = \"classic\", statistic = \"fisher\")\n";
-    print $outhandle3 "allRes_BP <- GenTable(GOdata, classicFisher = resultFisher,orderBy = \"classicFisher\", ranksOf = \"classicFisher\", topNodes = 50)\n";
+    print $outhandle3 "result <- runTest(GOdata, algorithm = \"$algo\", statistic = \"$stat\")\n";
+    print $outhandle3 "allRes_BP <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50)\n";
     foreach my $meths (@methods){
-	print $outhandle3 "allRes_BP\$",$meths,"<-p.adjust(allRes_BP\$classicFisher, method = \"",$meths,"\")\n";
+	print $outhandle3 "allRes_BP\$",$meths,"<-p.adjust(allRes_BP\$topGOresult, method = \"",$meths,"\")\n";
     }
     print $outhandle3 "allRes_BP\$FoldChange<-allRes_BP\$Significant/allRes_BP\$Expected\n";
     print $outhandle3 "allRes_BP\$ontology<-\"BP\"\n";
     
     #MF
     print $outhandle3 "GOdata <- new(\"topGOdata\", ontology=\"MF\", allGenes=inGenes, annot=annFUN.gene2GO, gene2GO=Chop.gene2GO)\n";
-    print $outhandle3 "resultFisher <- runTest(GOdata, algorithm = \"classic\", statistic = \"fisher\")\n";
-    print $outhandle3 "allRes_MF <- GenTable(GOdata, classicFisher = resultFisher,orderBy = \"classicFisher\", ranksOf = \"classicFisher\", topNodes = 50)\n";
+    print $outhandle3 "result <- runTest(GOdata, algorithm = \"$algo\", statistic = \"$stat\")\n";
+    print $outhandle3 "allRes_MF <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50)\n";
     foreach my $meths (@methods){
-	print $outhandle3 "allRes_MF\$",$meths,"<-p.adjust(allRes_MF\$classicFisher, method = \"",$meths,"\")\n";
+	print $outhandle3 "allRes_MF\$",$meths,"<-p.adjust(allRes_MF\$topGOresult, method = \"",$meths,"\")\n";
     }
     print $outhandle3 "allRes_MF\$FoldChange<-allRes_MF\$Significant/allRes_MF\$Expected\n";
     print $outhandle3 "allRes_MF\$ontology<-\"MF\"\n";
     
     #CC
     print $outhandle3 "GOdata <- new(\"topGOdata\", ontology=\"CC\", allGenes=inGenes, annot=annFUN.gene2GO, gene2GO=Chop.gene2GO)\n";
-    print $outhandle3 "resultFisher <- runTest(GOdata, algorithm = \"classic\", statistic = \"fisher\")\n";
-    print $outhandle3 "allRes_CC <- GenTable(GOdata, classicFisher = resultFisher,orderBy = \"classicFisher\", ranksOf = \"classicFisher\", topNodes = 50)\n";
+    print $outhandle3 "result <- runTest(GOdata, algorithm = \"$algo\", statistic = \"$stat\")\n";
+    print $outhandle3 "allRes_CC <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50)\n";
     foreach my $meths (@methods){
-	print $outhandle3 "allRes_CC\$",$meths,"<-p.adjust(allRes_CC\$classicFisher, method = \"",$meths,"\")\n";
+	print $outhandle3 "allRes_CC\$",$meths,"<-p.adjust(allRes_CC\$topGOresult, method = \"",$meths,"\")\n";
     }
     print $outhandle3 "allRes_CC\$FoldChange<-allRes_CC\$Significant/allRes_CC\$Expected\n";
     print $outhandle3 "allRes_CC\$ontology<-\"CC\"\n";

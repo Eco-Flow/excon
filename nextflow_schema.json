@@ -122,7 +122,7 @@
         },
         "predownloaded_gofiles": {
           "type": "string",
-          "description": "A path to a folder containing a singular or multiple go files for each species you wish to use for GO assignment."
+          "description": "Path to a folder containing pre-computed gene-to-GO mapping files (one per species), as an alternative to running EggNOG-mapper. Each file must be named {species_id}.go.txt and contain two tab-separated columns: gene_id and GO term (one pair per line, e.g. 'geneA\\tGO:0006412'). Multiple GO terms for the same gene are given on separate lines."
         },
         "chromo_go": {
           "type": "boolean",
@@ -190,10 +190,20 @@
           "description": "Choose number of rows to plot in GO figure",
           "default": 10
         },
+        "go_algo": {
+          "type": "string",
+          "description": "topGO algorithm and statistic combination (classic_fisher, weight01_t, elim_ks, weight_ks)",
+          "default": "classic_fisher"
+        },
+        "orthofinder_v2": {
+            "type": "boolean",
+            "default": false,
+            "description": "Use OrthoFinder v2.5.5 instead of v3.1.3. Recommended for large datasets where v3 stalls or fails."
+        },
         "tree_scale_factor": {
             "type": "integer",
             "default": 1000,
-            "description": "Scale factor for rescaling species tree branch lengths to prevent numerical precision issues in CAFE."
+            "description": "Scaling factor multiplied across all branch lengths by rescale_tree.py before CAFE5. chronos() in cafe_prep.R then converts the result to a proper time tree. Default 1000 prevents numerical precision issues in CAFE5."
         },
         "cafe_max_differential": {
             "type": "integer", 

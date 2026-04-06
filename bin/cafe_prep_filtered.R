@@ -6,13 +6,16 @@
 library(ape)
 library(data.table)
 
-# Get threshold from command line or environment variable
+# Get threshold and optional scale factor from command line
+# args[1] = max_differential threshold (default 50)
+# args[2] = branch-length scale factor applied after chronos() (default 1000)
 args <- commandArgs(trailingOnly = TRUE)
 max_differential <- if (length(args) >= 1) {
   as.numeric(args[1])
 } else {
   as.numeric(Sys.getenv("CAFE_MAX_DIFF", "50"))
 }
+scale_factor <- if (length(args) >= 2) as.numeric(args[2]) else 1000
 
 cat("================================================\n")
 cat("CAFE PREP with Differential Filtering\n")
@@ -23,12 +26,11 @@ tre <- read.tree('pruned_tree')
 stopifnot(is.binary(tre))
 stopifnot(is.rooted(tre))
 
-if (is.ultrametric(tre)) {
-  utre <- tre
-} else {
-  utre <- chronos(tre)
+if (!is.ultrametric(tre)) {
+  tre <- chronoMPL(tre)
 }
-write.tree(utre, 'SpeciesTree_rooted_ultra.txt')
+tre$edge.length <- tre$edge.length * scale_factor
+write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
 
 hog <- fread('N0.tsv')
 
@@ -101,4 +103,18 @@ fwrite(counts, 'hog_gene_counts.tsv', sep='\t')
 
 cat("Filtered count table written to: hog_gene_counts.tsv\n")
 cat("Final gene family count:", nrow(counts), "\n")
+
+# Write the removed high-differential families for fixed-lambda re-analysis
+large_ids <- size_stats[differential > max_differential][[id_col]]
+if (length(large_ids) > 0) {
+  hog_large <- hog[get(id_col) %in% large_ids]
+  counts_large <- dcast(hog_large, get(id_col) ~ species, value.var='n', fill=0)
+  setnames(counts_large, 'id_col', 'HOG')
+  counts_large[, Desc := 'n/a']
+  setcolorder(counts_large, 'Desc')
+  fwrite(counts_large, 'hog_gene_counts_large.tsv', sep='\t')
+  cat("Large-differential families written to: hog_gene_counts_large.tsv\n")
+  cat("Count:", length(large_ids), "\n")
+}
+
 cat("================================================\n")

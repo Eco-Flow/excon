@@ -18,8 +18,11 @@ process CHROMO_GO {
     # Make R available to perl backtick calls
     ln -s /usr/bin/R ./R
     export PATH=\$PWD:\$PATH
-    
-    go_chromosome.pl
+
+    # go_chromosome.pl expects the orthogroups file to be named Orthogroups.tsv
+    [ "${Orthogroups}" = "Orthogroups.tsv" ] || ln -s ${Orthogroups} Orthogroups.tsv
+
+    go_chromosome.pl ${params.go_algo}
 
     """
 }

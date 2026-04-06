@@ -257,6 +257,18 @@ if (-e $ARGV[0]){
         if ($open_me){
             `open $plot_file`;
         }
+
+        # Also run new ggplot2 bar + dot plots
+        my $script_dir = $0;
+        $script_dir =~ s/[^\/]+$//;
+        $script_dir = "." unless $script_dir;
+        my $new_r = "${script_dir}plot_go_enrichment.R";
+        if (-e $new_r) {
+            (my $root_safe  = $ARGV[0]) =~ s/([ ()])/\\$1/g;
+            (my $infer_safe = $inferred) =~ s/([ ()])/\\$1/g;
+            `Rscript $new_r $root_safe $min_p $num_results $open_me $correction $enrich $min_gene $max_gene $infer_safe`;
+            print STDERR "New ggplot2 plots written for $root\n";
+        }
     }
 
 
