@@ -237,8 +237,8 @@ def main():
     stats1 = hog_stats(hogs1, sp1)
     stats2 = hog_stats(hogs2, sp2)
 
-    summarise(stats1, f"Run 1 — {args.run1}", out)
-    summarise(stats2, f"Run 2 — {args.run2}", out)
+    summarise(stats1, f"Run 1 - {args.run1}", out)
+    summarise(stats2, f"Run 2 - {args.run2}", out)
 
     # --- Tree comparison ---
     if args.tree1 and args.tree2:
