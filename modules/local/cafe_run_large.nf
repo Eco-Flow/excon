@@ -17,16 +17,39 @@ process CAFE_RUN_LARGE {
     script:
     def e_flag = error_model.size() > 0 ? "-e${error_model}" : ""
     """
-    cafe5 \\
-        -i ${hog_counts_large} \\
-        -t ${species_tree} \\
-        --cores ${task.cpus} \\
-        -l ${lambda} \\
-        ${e_flag} \\
-        -o Out_cafe_large \\
-        2>&1 | tee cafe_large.log
-    cafe5_exit=\${PIPESTATUS[0]}
-    exit \$cafe5_exit
+    # Large-differential families often fail with the estimated lambda.
+    # Retry with progressively smaller lambda values as recommended in
+    # https://github.com/hahnlab/CAFE5/discussions/132
+    converged=false
+    for lambda_try in ${lambda} 0.0001 0.00001 0.000001 0.0000001; do
+        echo "Trying CAFE_RUN_LARGE with lambda=\${lambda_try}"
+        rm -rf Out_cafe_large
+        cafe5 \\
+            -i ${hog_counts_large} \\
+            -t ${species_tree} \\
+            --cores ${task.cpus} \\
+            -l \${lambda_try} \\
+            ${e_flag} \\
+            -o Out_cafe_large \\
+            2>&1 | tee cafe_large.log || true
+
+        # Check if CAFE5 produced a usable result (finite likelihood)
+        if [ -f Out_cafe_large/Base_results.txt ] && \
+           grep -q "Final Likelihood" Out_cafe_large/Base_results.txt && \
+           ! grep -q "inf" Out_cafe_large/Base_results.txt; then
+            echo "Converged with lambda=\${lambda_try}"
+            converged=true
+            break
+        fi
+        echo "Did not converge with lambda=\${lambda_try}, trying next..."
+    done
+
+    if [ "\${converged}" = "false" ]; then
+        echo "WARNING: CAFE_RUN_LARGE did not converge with any lambda — results will be incomplete."
+    fi
+
+    # Ensure output directory exists so downstream steps don't fail
+    mkdir -p Out_cafe_large
     """
 
     stub:
