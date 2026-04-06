@@ -13,7 +13,7 @@ stopifnot(is.binary(tre))
 stopifnot(is.rooted(tre))
 if (!is.ultrametric(tre)) {
   # Mean path lengths method: robust, no optimisation, always converges.
-  tre <- chronoMPL(tre, SE = FALSE, test = FALSE)
+  tre <- chronoMPL(tre)
 }
 tre$edge.length <- tre$edge.length * scale_factor
 write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
