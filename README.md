@@ -13,18 +13,11 @@ chromosome.
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
 (minimum of 5 species ideally up to around 30). Maximum 100 species (normally). 
 
-<img width="398" height="667" alt="image" src="docs/images/excon_pipeline.3.svg" />
-
-
-GO annotation can be run in two ways:
-- **Run EggNOG-mapper** (`--run_eggnog`): assigns GO terms from scratch using the EggNOG database (~45 GB). 
-  Provide `--eggnog_data_dir` to reuse a pre-downloaded copy and avoid re-downloading on every run.
-- **Supply your own GO files** (`--predownloaded_gofiles`): if you already have gene-to-GO mappings, 
-  point to a directory of `{species_id}.go.txt` files and skip EggNOG entirely (see [Parameters](#go-annotation-optional) below).
-
 ## Overview
 
 The general pipeline logic is as follows:
+
+<img width="398" height="667" alt="image" src="docs/images/excon_pipeline.3b.svg" align="right" />
 
 * Downloads genome and annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`, or you provide your own.
 * Unzips the files, if necessary `[GUNZIP]`
@@ -42,7 +35,12 @@ The general pipeline logic is as follows:
 
 ### Optional — GO enrichment (`--run_eggnog` or `--predownloaded_gofiles`)
 
-* Optionally downloads the EggNOG-mapper database `[EGGNOG_DOWNLOAD]`.
+* GO annotation can be run in two ways:
+- **Run EggNOG-mapper** (`--run_eggnog`): assigns GO terms from scratch using the EggNOG database (~45 GB). 
+  Provide `--eggnog_data_dir` to reuse a pre-downloaded copy and avoid re-downloading on every run.
+- **Supply your own GO files** (`--predownloaded_gofiles`): if you already have gene-to-GO mappings, 
+  point to a directory of `{species_id}.go.txt` files and skip EggNOG entirely (see [Parameters](#go-annotation-optional) below).
+* Optionally downloads the EggNOG-mapper database `[EGGNOG_DOWNLOAD]`. Default is on, unless you provide it.
 * Optionally assigns GO terms to genes using EggNOG-mapper `[EGGNOGMAPPER]`, or reads GO terms from user-supplied files.
 * Optionally prepares GO gene lists from the best CAFE model results `[CAFE_GO_PREP]`.
 * Optionally runs GO enrichment in parallel, one job per species/node 
