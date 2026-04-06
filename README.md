@@ -13,6 +13,9 @@ chromosome.
 It works with any set of species that have a genome (fasta) and annotation (gff) file. 
 (minimum of 5 species ideally up to around 30). Maximum 100 species (normally). 
 
+<img width="398" height="667" alt="image" src="https://github.com/user-attachments/assets/f6d9c492-6010-49fd-a730-40bf7f3df498" />
+
+
 GO annotation can be run in two ways:
 - **Run EggNOG-mapper** (`--run_eggnog`): assigns GO terms from scratch using the EggNOG database (~45 GB). 
   Provide `--eggnog_data_dir` to reuse a pre-downloaded copy and avoid re-downloading on every run.
