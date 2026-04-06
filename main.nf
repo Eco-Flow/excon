@@ -251,7 +251,7 @@ workflow {
 
         CAFE_RUN_K (
         CAFE_PREP.out.prepared_counts,   // hog_gene_counts.tsv — possibly filtered
-        CAFE_PREP.out.prepared_tree,     // SpeciesTree_rooted_ultra.txt — from R script
+        RESCALE_TREE.out.rescaled_tree,  // same tree as base run — avoids max-lambda mismatch
         CAFE_PREP.out.error_model,       // Base_error_model.txt — empty file if estimation failed
         k_values                         // each fans out: 1, 2, 3 ... cafe_max_k
         )
@@ -271,7 +271,7 @@ workflow {
 
         CAFE_RUN_BEST(
            CAFE_PREP.out.prepared_counts,
-           CAFE_PREP.out.prepared_tree,
+           RESCALE_TREE.out.rescaled_tree,
            CAFE_PREP.out.error_model,
            best_k_ch,
            Channel.of( true )  //Only run poisson here, as we ran without -p earlier
