@@ -1,0 +1,612 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="533.04321"
+   height="1035.3719"
+   version="1.1"
+   id="svg28"
+   sodipodi:docname="excon_pipeline.3b.svg"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs28" />
+  <sodipodi:namedview
+     id="namedview28"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.238396"
+     inkscape:cx="299.92114"
+     inkscape:cy="549.50586"
+     inkscape:window-width="1248"
+     inkscape:window-height="887"
+     inkscape:window-x="106"
+     inkscape:window-y="38"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg28" />
+  <style
+     id="style1">
+.line { fill: none; stroke-width: 8; stroke-linecap: round; }
+.station { fill: white; stroke: black; stroke-width: 3; }
+.label { font-family: Helvetica, Arial, sans-serif; font-size: 14px; }
+.small { font-size: 11px; fill: #555; }
+.title { font-size: 28px; font-weight: bold; }
+</style>
+  <path
+     d="m 356.73959,295.21414 v -80"
+     class="line"
+     stroke="#7f7f7f"
+     id="path25" />
+  <path
+     d="M 356.73959,550.56787 V 383.24707"
+     class="line"
+     stroke="#7f7f7f"
+     id="path25-6"
+     style="fill:none;stroke-width:8.74692;stroke-linecap:round;stroke-dasharray:none" />
+  <path
+     d="m 349.00613,253.90056 h -80"
+     class="line"
+     stroke="#7f7f7f"
+     id="path25-3"
+     style="fill:none;stroke-width:8;stroke-linecap:round" />
+  <path
+     d="m 347.40659,334.7337 h -80"
+     class="line"
+     stroke="#7f7f7f"
+     id="path25-3-3"
+     style="fill:none;stroke-width:8;stroke-linecap:round" />
+  <path
+     d="m 432.31913,415.82773 h -80"
+     class="line"
+     stroke="#7f7f7f"
+     id="path25-3-3-3"
+     style="fill:none;stroke-width:8;stroke-linecap:round" />
+  <path
+     d="M 258.14005,198.23279 H 132.68551"
+     class="line"
+     stroke="#7f7f7f"
+     id="path25-3-2"
+     style="fill:none;stroke-width:8;stroke-linecap:round;stroke-dasharray:none" />
+  <!-- TITLE -->
+  <text
+     x="62.353603"
+     y="21.273438"
+     class="title"
+     id="text1">EXCON Pipeline (v2.2.0)</text>
+  <path
+     d="M 125.36027,636.32243 H 260.2159"
+     class="line"
+     stroke="#1f77b4"
+     id="path18"
+     style="fill:#666666;stroke:#7f7f7f;stroke-opacity:1" />
+  <!-- MAIN VERTICAL LINE -->
+  <path
+     d="M 262.3536,91.611767 V 1014.0742"
+     class="line"
+     stroke="#000000"
+     id="path1"
+     style="stroke-width:8;stroke-dasharray:none" />
+  <path
+     d="m 263.2627,415.94286 h 90.30793"
+     class="line"
+     stroke="#1f77b4"
+     id="path18-8"
+     style="fill:#666666;stroke:#7f7f7f;stroke-width:8;stroke-linecap:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+  <!-- ================= MAIN STATIONS ================= -->
+  <!-- Input -->
+  <circle
+     cx="262.35361"
+     cy="91.273438"
+     r="9"
+     class="station"
+     id="circle1" />
+  <text
+     x="292.35361"
+     y="96.273438"
+     class="label"
+     id="text2">Input CSV</text>
+  <!-- Download -->
+  <circle
+     cx="262.35361"
+     cy="172.52344"
+     r="9"
+     class="station"
+     id="circle2" />
+  <text
+     x="292.35361"
+     y="176.27344"
+     class="label"
+     id="text3">Genome Download</text>
+  <text
+     x="292.35361"
+     y="191.27344"
+     class="small"
+     id="text4">[NCBIGENOMEDOWNLOAD]</text>
+  <text
+     x="191.5542"
+     y="269.75717"
+     class="small"
+     id="text4-4"
+     style="font-size:11px;fill:#555555">[GUNZIP]</text>
+  <!-- Gunzip -->
+  <text
+     x="191.50616"
+     y="256.27344"
+     class="label"
+     id="text5">Gunzip</text>
+  <circle
+     cx="262.35361"
+     cy="253.77344"
+     r="9"
+     class="station"
+     id="circle4" />
+  <!-- AGAT -->
+  <circle
+     cx="262.35361"
+     cy="335.02344"
+     r="9"
+     class="station"
+     id="circle5" />
+  <text
+     x="137.14966"
+     y="338.27344"
+     class="label"
+     id="text6">Longest Isoform</text>
+  <text
+     x="137.14966"
+     y="353.27344"
+     class="small"
+     id="text7">[AGAT]</text>
+  <!-- GFFREAD -->
+  <circle
+     cx="262.35361"
+     cy="416.27344"
+     r="9"
+     class="station"
+     id="circle7" />
+  <text
+     x="136.63327"
+     y="420.79037"
+     class="label"
+     id="text8">Protein Extraction</text>
+  <text
+     x="136.63327"
+     y="435.79037"
+     class="small"
+     id="text9">[GFFREAD]</text>
+  <text
+     x="290.375"
+     y="944.69867"
+     class="small"
+     id="text9-6"
+     style="font-size:11px;fill:#555555">[CAFE PLOTTER]</text>
+  <text
+     x="290.74789"
+     y="1033.2665"
+     class="small"
+     id="text9-6-8"
+     style="font-size:11px;fill:#555555">[TOPGO]</text>
+  <!-- Rename -->
+  <circle
+     cx="262.35361"
+     cy="497.52344"
+     r="9"
+     class="station"
+     id="circle9" />
+  <!-- OrthoFinder -->
+  <circle
+     cx="262.35361"
+     cy="578.77344"
+     r="9"
+     class="station"
+     id="circle10" />
+  <text
+     x="170.70728"
+     y="500.55194"
+     class="label"
+     id="text11">OrthoFinder</text>
+  <!-- Tree prep -->
+  <circle
+     cx="262.35361"
+     cy="666.27344"
+     r="9"
+     class="station"
+     id="circle11" />
+  <text
+     x="163.32819"
+     y="581.96783"
+     class="label"
+     id="text12">Rescale Tree</text>
+  <circle
+     cx="262.35361"
+     cy="753.77344"
+     r="9"
+     class="station"
+     id="circle12" />
+  <text
+     x="292.35361"
+     y="668.5246"
+     class="label"
+     id="text13">CAFE Prep</text>
+  <!-- CAFE loop -->
+  <circle
+     cx="262.35361"
+     cy="841.27344"
+     r="9"
+     class="station"
+     id="circle13" />
+  <text
+     x="292.35361"
+     y="757.59357"
+     class="label"
+     id="text14">CAFE Run k = 1..N</text>
+  <text
+     x="292.35361"
+     y="845.32269"
+     class="label"
+     id="text14-1"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif">CAFE select best</text>
+  <!-- Select k -->
+  <circle
+     cx="262.35361"
+     cy="782.94012"
+     r="9"
+     class="station"
+     id="circle14" />
+  <!-- Final run -->
+  <circle
+     cx="262.35361"
+     cy="812.10675"
+     r="9"
+     class="station"
+     id="circle15" />
+  <text
+     x="292.35361"
+     y="785.51044"
+     class="label"
+     id="text16">CAFE Run poisson</text>
+  <text
+     x="292.35361"
+     y="814.7569"
+     class="label"
+     id="text16-1"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif">CAFE model compare</text>
+  <!-- Model compare -->
+  <circle
+     cx="262.35361"
+     cy="925.80731"
+     r="9"
+     class="station"
+     id="circle16" />
+  <text
+     x="292.35361"
+     y="929.25543"
+     class="label"
+     id="text17">CAFE plot</text>
+  <!-- Output -->
+  <circle
+     cx="262.35361"
+     cy="1014.7904"
+     r="9"
+     class="station"
+     id="circle17" />
+  <text
+     x="292.35361"
+     y="1019.7904"
+     class="label"
+     id="text18">CAFE GO*</text>
+  <!-- ================= LEFT INPUT BRANCH ================= -->
+  <circle
+     cx="128.03159"
+     cy="197.98384"
+     class="station"
+     id="circle18"
+     r="7" />
+  <text
+     x="61.379025"
+     y="186.92476"
+     class="label"
+     id="text19">Local FASTA + GFF</text>
+  <text
+     x="462.0452"
+     y="518.51538"
+     class="label"
+     id="text19-8"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
+       sodipodi:role="line"
+       id="tspan38"
+       x="462.0452"
+       y="518.51538">Local Gene</tspan><tspan
+       sodipodi:role="line"
+       id="tspan39"
+       x="462.0452"
+       y="536.01538">to GO hash</tspan></text>
+  <text
+     x="366.92093"
+     y="568.41418"
+     class="label"
+     id="text19-8-0"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
+       sodipodi:role="line"
+       id="tspan39-2"
+       x="366.92093"
+       y="568.41418">Sent to GO jobs</tspan></text>
+  <!-- ================= ORTHOFINDER SKIP ================= -->
+  <circle
+     cx="122.58279"
+     cy="637.4151"
+     r="7"
+     class="station"
+     id="circle19" />
+  <text
+     x="-0.59895682"
+     y="622.4903"
+     class="small"
+     id="text20"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3333px;font-family:Helvetica, Arial, sans-serif;-inkscape-font-specification:'Helvetica, Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1"><tspan
+       sodipodi:role="line"
+       id="tspan30"
+       x="-0.59895682"
+       y="622.4903">Precomputed tree</tspan><tspan
+       sodipodi:role="line"
+       id="tspan31"
+       x="-0.59895682"
+       y="639.15692">+ Orthogroups</tspan></text>
+  <!-- ================= GO BRANCH ================= -->
+  <!-- EggNOG -->
+  <circle
+     cx="356.73959"
+     cy="375.88171"
+     r="7"
+     class="station"
+     id="circle22" />
+  <circle
+     cx="356.73959"
+     cy="453.23489"
+     r="7"
+     class="station"
+     id="circle22-8"
+     style="fill:#ffffff;stroke:#000000;stroke-width:3" />
+  <circle
+     cx="356.73959"
+     cy="490.54572"
+     r="7"
+     class="station"
+     id="circle22-8-9"
+     style="fill:#ffffff;stroke:#000000;stroke-width:3" />
+  <path
+     d="M 432.87428,524.6002 H 358.35599"
+     class="line"
+     stroke="#7f7f7f"
+     id="path25-3-3-3-1"
+     style="fill:none;stroke-width:8;stroke-linecap:round;stroke-dasharray:none" />
+  <circle
+     cx="356.73959"
+     cy="527.85651"
+     r="7"
+     class="station"
+     id="circle22-4"
+     style="fill:#ffffff;stroke:#000000;stroke-width:3" />
+  <text
+     x="372.72946"
+     y="458.11478"
+     class="label"
+     id="text23">EggNOGmapper</text>
+  <text
+     x="367.33359"
+     y="380.02649"
+     class="label"
+     id="text23-0"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif">EggNOG db download</text>
+  <text
+     x="456.23221"
+     y="411.62006"
+     class="label"
+     id="text23-0-6"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
+       sodipodi:role="line"
+       id="tspan35"
+       x="456.23221"
+       y="411.62006">EggNOG db</tspan><tspan
+       sodipodi:role="line"
+       id="tspan36"
+       x="456.23221"
+       y="429.12006">provided</tspan></text>
+  <text
+     x="370.1395"
+     y="493.61652"
+     class="label"
+     id="text23-3"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
+       sodipodi:role="line"
+       x="370.1395"
+       y="493.61652"
+       id="tspan32">EggNOG to GO hash</tspan><tspan
+       sodipodi:role="line"
+       x="370.1395"
+       y="511.11652"
+       id="tspan33" /></text>
+  <text
+     x="380.13943"
+     y="514.22162"
+     class="label"
+     id="text23-3-3"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
+       sodipodi:role="line"
+       x="380.13943"
+       y="514.22162"
+       id="tspan32-9">OR</tspan><tspan
+       sodipodi:role="line"
+       x="380.13943"
+       y="531.72162"
+       id="tspan33-6" /></text>
+  <!-- Chromosome GO -->
+  <!-- ================= STATS BRANCH ================= -->
+  <circle
+     cx="-356.73959"
+     cy="-295.21414"
+     r="7"
+     class="station"
+     id="circle24"
+     transform="scale(-1)" />
+  <circle
+     cx="-356.73959"
+     cy="-254.77774"
+     r="7"
+     class="station"
+     id="circle24-3"
+     transform="scale(-1)"
+     style="fill:#ffffff;stroke:#000000;stroke-width:3" />
+  <circle
+     cx="-356.73959"
+     cy="-334.47275"
+     r="7"
+     class="station"
+     id="circle24-3-2"
+     transform="scale(-1)"
+     style="fill:#ffffff;stroke:#000000;stroke-width:3" />
+  <text
+     x="368.05704"
+     y="217.11241"
+     class="label"
+     id="text25">BUSCO</text>
+  <circle
+     cx="-356.73959"
+     cy="-215.21411"
+     r="7"
+     class="station"
+     id="circle25"
+     transform="scale(-1)" />
+  <text
+     x="366.57394"
+     y="298.59549"
+     class="label"
+     id="text26">AGAT stats</text>
+  <text
+     x="365.44058"
+     y="339.37619"
+     class="label"
+     id="text26-6"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif">ChromosomeGO*</text>
+  <text
+     x="367.82889"
+     y="258.22595"
+     class="label"
+     id="text26-9"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif">QUAST</text>
+  <!-- ================= OUTPUTS ================= -->
+  <path
+     sodipodi:type="star"
+     style="opacity:0.998;fill:#000000;fill-opacity:0.8;stroke:#000000;stroke-width:8;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     id="path29"
+     inkscape:flatsided="false"
+     sodipodi:sides="3"
+     sodipodi:cx="231.35593"
+     sodipodi:cy="134.21609"
+     sodipodi:r1="10.3016"
+     sodipodi:r2="5.1508002"
+     sodipodi:arg1="0.52359878"
+     sodipodi:arg2="1.5707963"
+     inkscape:rounded="0"
+     inkscape:randomized="0"
+     d="m 240.27737,139.3669 -8.92144,0 -8.92145,0 4.46072,-7.72621 4.46073,-7.7262 4.46072,7.7262 z"
+     transform="matrix(-0.65566913,0,0,-0.65566913,413.77701,160.30705)"
+     inkscape:transform-center-x="-1.8751775e-06"
+     inkscape:transform-center-y="1.6886092" />
+  <path
+     sodipodi:type="star"
+     style="opacity:0.998;fill:#7f7f7f;fill-opacity:1;stroke:#7f7f7f;stroke-width:8;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     id="path29-1"
+     inkscape:flatsided="false"
+     sodipodi:sides="3"
+     sodipodi:cx="231.35593"
+     sodipodi:cy="134.21609"
+     sodipodi:r1="10.3016"
+     sodipodi:r2="5.1508002"
+     sodipodi:arg1="0.52359878"
+     sodipodi:arg2="1.5707963"
+     inkscape:rounded="0"
+     inkscape:randomized="0"
+     d="m 240.27737,139.3669 -8.92144,0 -8.92145,0 4.46072,-7.72621 4.46073,-7.7262 4.46072,7.7262 z"
+     transform="matrix(0,0.65566913,-0.65566913,0,198.66593,45.215988)"
+     inkscape:transform-center-x="-1.688611"
+     inkscape:transform-center-y="-1.8751774e-06" />
+  <path
+     sodipodi:type="star"
+     style="opacity:0.998;fill:#7f7f7f;fill-opacity:1;stroke:#7f7f7f;stroke-width:8;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     id="path29-1-3"
+     inkscape:flatsided="false"
+     sodipodi:sides="3"
+     sodipodi:cx="231.35593"
+     sodipodi:cy="134.21609"
+     sodipodi:r1="10.3016"
+     sodipodi:r2="5.1508002"
+     sodipodi:arg1="0.52359878"
+     sodipodi:arg2="1.5707963"
+     inkscape:rounded="0"
+     inkscape:randomized="0"
+     d="m 240.27737,139.3669 -8.92144,0 -8.92145,0 4.46072,-7.72621 4.46073,-7.7262 4.46072,7.7262 z"
+     transform="matrix(0,-0.65566913,0.65566913,0,357.71316,567.48159)"
+     inkscape:transform-center-x="1.6886092" />
+  <path
+     sodipodi:type="star"
+     style="opacity:0.998;fill:#7f7f7f;fill-opacity:1;stroke:#7f7f7f;stroke-width:8;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     id="path29-1-3-3"
+     inkscape:flatsided="false"
+     sodipodi:sides="3"
+     sodipodi:cx="231.35593"
+     sodipodi:cy="134.21609"
+     sodipodi:r1="10.3016"
+     sodipodi:r2="5.1508002"
+     sodipodi:arg1="0.52359878"
+     sodipodi:arg2="1.5707963"
+     inkscape:rounded="0"
+     inkscape:randomized="0"
+     d="m 240.27737,139.3669 -8.92144,0 -8.92145,0 4.46072,-7.72621 4.46073,-7.7262 4.46072,7.7262 z"
+     transform="matrix(0,-0.65566913,0.65566913,0,357.71316,676.25406)"
+     inkscape:transform-center-x="1.6886092" />
+  <path
+     sodipodi:type="star"
+     style="opacity:0.998;fill:#7f7f7f;fill-opacity:1;stroke:#7f7f7f;stroke-width:8;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     id="path29-1-6"
+     inkscape:flatsided="false"
+     sodipodi:sides="3"
+     sodipodi:cx="231.35593"
+     sodipodi:cy="134.21609"
+     sodipodi:r1="10.3016"
+     sodipodi:r2="5.1508002"
+     sodipodi:arg1="0.52359878"
+     sodipodi:arg2="1.5707963"
+     inkscape:rounded="0"
+     inkscape:randomized="0"
+     d="m 240.27737,139.3669 -8.92144,0 -8.92145,0 4.46072,-7.72621 4.46073,-7.7262 4.46072,7.7262 z"
+     transform="matrix(0,0.65566913,-0.65566913,0,194.4396,485.53555)"
+     inkscape:transform-center-x="-1.688611"
+     inkscape:transform-center-y="-1.8751774e-06" />
+  <text
+     xml:space="preserve"
+     style="font-weight:bold;font-size:16px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Bold';letter-spacing:0px"
+     x="462.53232"
+     y="431.64191"
+     id="text34"><tspan
+       sodipodi:role="line"
+       id="tspan34"
+       x="462.53232"
+       y="431.64191"></tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-weight:bold;font-size:16px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Bold';letter-spacing:0px"
+     x="350.73502"
+     y="573.48163"
+     id="text37"><tspan
+       sodipodi:role="line"
+       id="tspan37"
+       x="350.73502"
+       y="573.48163">*</tspan></text>
+</svg>
