@@ -295,8 +295,14 @@ workflow {
 
         CAFE_PLOT ( ch_best_results )
 
-        // Plot high-differential families — only runs when CAFE_RUN_LARGE executed
-        CAFE_PLOT_LARGE ( CAFE_RUN_LARGE.out.results )
+        // Plot high-differential families — only runs when CAFE_RUN_LARGE converged
+        // (converged.txt is an optional output; if absent the channel is empty and
+        //  downstream steps are silently skipped)
+        ch_large_results_ok = CAFE_RUN_LARGE.out.converged
+            .combine( CAFE_RUN_LARGE.out.results )
+            .map { flag, dir -> dir }
+
+        CAFE_PLOT_LARGE ( ch_large_results_ok )
 
 
         // --- CAFE GO enrichment (requires eggnog) ---
@@ -358,7 +364,7 @@ workflow {
             // Reuses the same EGGNOG_TO_OG_GO output — no extra annotation work needed.
 
             CAFE_GO_PREP_LARGE (
-                CAFE_RUN_LARGE.out.results,
+                ch_large_results_ok,
                 CAFE_PREP.out.N0_table,
                 EGGNOG_TO_OG_GO.out.og_go
             )
