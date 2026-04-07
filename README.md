@@ -17,7 +17,7 @@ It works with any set of species that have a genome (fasta) and annotation (gff)
 
 The general pipeline logic is as follows:
 
-<img width="398" height="667" alt="image" src="docs/images/excon_pipeline.3b.svg" align="right" />
+<img width="398" alt="image" src="docs/images/excon_pipeline.3b.svg" align="right" />
 
 * Downloads genome and annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`, or you provide your own.
 * Unzips the files, if necessary `[GUNZIP]`
