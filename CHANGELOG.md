@@ -1,5 +1,18 @@
 # Changelog
 
+## [v2.3.0] - 2026-04-07
+
+### Added
+- New `OG_ANNOTATION_SUMMARY` module: when `--run_eggnog` is set, produces `OG_annotation_summary.tsv` with one row per orthogroup containing the representative gene ID, description, preferred name, COG category, KEGG KO, and PFAM domains from EggNOG-mapper annotations. Output is written to `results/eggnogmapper/OG_annotation_summary.tsv`.
+- New `--eggnog_rep_species` parameter to force the representative species used for orthogroup annotation. When unset, the species with the most annotated genes is chosen automatically.
+- `EGGNOGMAPPER` output (`.emapper.annotations` files) is now published to `results/eggnogmapper/`.
+- `CAFE_RUN_LARGE` now emits an optional `converged.txt` sentinel. `CAFE_PLOT_LARGE` and `CAFE_GO_PREP_LARGE` only run when convergence was achieved, preventing downstream failures when high-differential families cannot be modelled.
+- `CAFE_RUN_LARGE` lambda retry sweep extended: now tries estimated λ, 0.005, 0.001, 0.0005, 0.0001, 0.00005, 0.00001, 0.000001, 0.0000001 (previously only descended; now also tries larger values which are more physically appropriate for families with extreme size differentials).
+- `EGGNOG_TO_OG_GO` now parallelises GO file reading using `ProcessPoolExecutor` with `task.cpus` workers, reducing runtime on large species sets.
+
+### Changed
+- `EGGNOG_TO_OG_GO` label changed from `process_single` to `process_high` (8 CPUs) to support parallel GO file reading.
+
 ## [v2.2.0] - 2026-04-06
 
 ### Added

@@ -194,6 +194,7 @@ GO enrichment requires gene-to-GO mappings. Choose one of the two approaches bel
 | `--eggnog_pident` | Minimum percent identity (%) | `null` |
 | `--eggnog_query_cover` | Minimum query coverage (%) | `null` |
 | `--eggnog_subject_cover` | Minimum subject coverage (%) | `null` |
+| `--eggnog_rep_species` | Species to use as the representative for the OG annotation summary (must match a species name in the input CSV). Auto-selects the most-annotated species when unset. | `null` (auto) |
 
 > **Note:** The EggNOG database is ~45 GB. We strongly recommend downloading it once and passing `--eggnog_data_dir /path/to/eggnog_data` to avoid re-downloading on every run.
 
@@ -354,6 +355,8 @@ results/
 │   ├── *.pdf                        # Per-chromosome GO plots
 │   └── summary/                     # Summarized results across chromosomes
 ├── eggnogmapper/
+│   ├── *.emapper.annotations        # Raw EggNOG-mapper annotation files (one per species)
+│   ├── OG_annotation_summary.tsv    # Per-orthogroup functional summary (description, COG, KEGG, PFAM)
 │   └── go_files/                    # Per-species GO annotation files
 ├── gffread/
 │   └── *.fasta                      # Protein sequences per species

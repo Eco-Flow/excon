@@ -50,6 +50,7 @@ include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
 include { CAFE_PLOT as CAFE_PLOT_LARGE } from './modules/local/cafe_plot.nf'
 include { CAFE_GO_PREP as CAFE_GO_PREP_LARGE } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN  as CAFE_GO_RUN_LARGE  } from './modules/local/cafe_go_run.nf'
+include { OG_ANNOTATION_SUMMARY } from './modules/local/og_annotation_summary.nf'
 
 workflow {
 
@@ -164,6 +165,17 @@ workflow {
       ch_go_files = ch_go_file_meta
     	.map { meta, go -> go }
     	.collect()
+
+      // OG functional annotation summary — one row per OG with representative gene description
+      ch_annot_files = EGGNOGMAPPER.out.annotations
+          .map { meta, annot -> annot }
+          .collect()
+
+      OG_ANNOTATION_SUMMARY (
+          ch_annot_files,
+          ch_orthologues,
+          params.eggnog_rep_species ?: ""
+      )
 
    } else if (params.predownloaded_gofiles) {
 
