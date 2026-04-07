@@ -2,7 +2,7 @@ process EGGNOG_TO_OG_GO {
     tag "og_go"
     label 'process_high'
 
-    container "${ workflow.containerEngine == 'singularity' && !(task.ext?.singularity_pull_docker_container) ?
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/eggnog-mapper:2.1.13--pyhdfd78af_2' :
         'biocontainers/eggnog-mapper:2.1.13--pyhdfd78af_2' }"
 
@@ -11,8 +11,8 @@ process EGGNOG_TO_OG_GO {
     path orthogroups   // N0.tsv or Orthogroups.tsv from OrthoFinder
 
     output:
-    path "OG_GO_format.tsv", emit: og_go
-    tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), emit: versions, topic: versions
+        path("OG_GO_format.tsv"),                                                                        emit: og_go
+        tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), emit: versions, topic: versions
 
     script:
     """
