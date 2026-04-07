@@ -171,12 +171,6 @@ workflow {
           .map { meta, annot -> annot }
           .collect()
 
-      OG_ANNOTATION_SUMMARY (
-          ch_annot_files,
-          ch_orthologues,
-          params.eggnog_rep_species ?: ""
-      )
-
    } else if (params.predownloaded_gofiles) {
 
       // User-provided gene-to-GO files (one *.go.txt per species, tab-separated gene_id<TAB>GO:term)
@@ -317,7 +311,16 @@ workflow {
         CAFE_PLOT_LARGE ( ch_large_results_ok )
 
 
-        // --- CAFE GO enrichment (requires eggnog) ---
+        // 
+        if (params.run_eggnog || !params.skip_cafe) {
+        OG_ANNOTATION_SUMMARY (
+          ch_annot_files,
+          ch_orthologues,
+          params.eggnog_rep_species ?: ""
+        )
+        }
+
+        // --- CAFE GO enrichment ---
 
         if (params.run_eggnog || params.predownloaded_gofiles) {
 
