@@ -10,8 +10,9 @@ process CAFE_RUN_LARGE {
     val   lambda
 
     output:
-    path "Out_cafe_large/",   emit: results
-    path "cafe_large.log",    emit: log
+    path "Out_cafe_large/",               emit: results
+    path "cafe_large.log",                emit: log
+    path "converged.txt", optional: true, emit: converged
     tuple val("${task.process}"), val('cafe'), val('4.2.1'), emit: versions_cafe, topic: versions
 
     script:
@@ -21,7 +22,7 @@ process CAFE_RUN_LARGE {
     # Retry with progressively smaller lambda values as recommended in
     # https://github.com/hahnlab/CAFE5/discussions/132
     converged=false
-    for lambda_try in ${lambda} 0.0001 0.00001 0.000001 0.0000001; do
+    for lambda_try in ${lambda} 0.005 0.001 0.0005 0.0001 0.00005 0.00001 0.000001 0.0000001; do
         echo "Trying CAFE_RUN_LARGE with lambda=\${lambda_try}"
         rm -rf Out_cafe_large
         cafe5 \\
@@ -44,8 +45,10 @@ process CAFE_RUN_LARGE {
         echo "Did not converge with lambda=\${lambda_try}, trying next..."
     done
 
-    if [ "\${converged}" = "false" ]; then
-        echo "WARNING: CAFE_RUN_LARGE did not converge with any lambda — results will be incomplete."
+    if [ "\${converged}" = "true" ]; then
+        touch converged.txt
+    else
+        echo "WARNING: CAFE_RUN_LARGE did not converge with any lambda — downstream large-family steps will be skipped."
     fi
 
     # Ensure output directory exists so downstream steps don't fail
@@ -57,5 +60,6 @@ process CAFE_RUN_LARGE {
     mkdir -p Out_cafe_large
     touch Out_cafe_large/Base_results.txt
     touch cafe_large.log
+    touch converged.txt
     """
 }
