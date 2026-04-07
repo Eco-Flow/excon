@@ -4,7 +4,7 @@
    height="1035.3719"
    version="1.1"
    id="svg28"
-   sodipodi:docname="excon_pipeline.3b.svg"
+   sodipodi:docname="TrainMap.svg"
    inkscape:version="1.3.2 (091e20e, 2023-11-25)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -21,12 +21,12 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="0.238396"
-     inkscape:cx="299.92114"
-     inkscape:cy="549.50586"
+     inkscape:zoom="0.67428571"
+     inkscape:cx="180.19068"
+     inkscape:cy="538.34746"
      inkscape:window-width="1248"
      inkscape:window-height="887"
-     inkscape:window-x="106"
+     inkscape:window-x="68"
      inkscape:window-y="38"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg28" />
@@ -39,61 +39,74 @@
 .title { font-size: 28px; font-weight: bold; }
 </style>
   <path
-     d="m 356.73959,295.21414 v -80"
+     d="m 346.73959,272.96838 v -80"
      class="line"
      stroke="#7f7f7f"
      id="path25" />
   <path
-     d="M 356.73959,550.56787 V 383.24707"
+     d="M 346.73959,528.32211 V 361.00131"
      class="line"
      stroke="#7f7f7f"
      id="path25-6"
      style="fill:none;stroke-width:8.74692;stroke-linecap:round;stroke-dasharray:none" />
   <path
-     d="m 349.00613,253.90056 h -80"
+     d="m 339.00613,231.6548 h -80"
      class="line"
      stroke="#7f7f7f"
      id="path25-3"
      style="fill:none;stroke-width:8;stroke-linecap:round" />
   <path
-     d="m 347.40659,334.7337 h -80"
+     d="m 337.40659,312.48794 h -80"
      class="line"
      stroke="#7f7f7f"
      id="path25-3-3"
      style="fill:none;stroke-width:8;stroke-linecap:round" />
   <path
-     d="m 432.31913,415.82773 h -80"
+     d="m 422.31913,393.58197 h -80"
      class="line"
      stroke="#7f7f7f"
      id="path25-3-3-3"
      style="fill:none;stroke-width:8;stroke-linecap:round" />
   <path
-     d="M 258.14005,198.23279 H 132.68551"
+     d="M 248.14005,175.98703 H 122.68551"
      class="line"
      stroke="#7f7f7f"
      id="path25-3-2"
      style="fill:none;stroke-width:8;stroke-linecap:round;stroke-dasharray:none" />
   <!-- TITLE -->
-  <text
-     x="62.353603"
-     y="21.273438"
-     class="title"
-     id="text1">EXCON Pipeline (v2.2.0)</text>
   <path
-     d="M 125.36027,636.32243 H 260.2159"
+     d="M 115.36027,614.07667 H 250.2159"
      class="line"
      stroke="#1f77b4"
      id="path18"
      style="fill:#666666;stroke:#7f7f7f;stroke-opacity:1" />
+  <path
+     d="M 69.039796,985.24577 H 96.095492"
+     class="line"
+     stroke="#1f77b4"
+     id="path18-0"
+     style="fill:#666666;stroke:#7f7f7f;stroke-width:8;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     d="m 69.039796,964.41525 h 27.0557"
+     class="line"
+     stroke="#1f77b4"
+     id="path18-0-3"
+     style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:8;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1" />
   <!-- MAIN VERTICAL LINE -->
   <path
-     d="M 262.3536,91.611767 V 1014.0742"
+     d="M 252.3536,68.97072 V 900.27457"
      class="line"
      stroke="#000000"
      id="path1"
      style="stroke-width:8;stroke-dasharray:none" />
   <path
-     d="m 263.2627,415.94286 h 90.30793"
+     d="m 252.40142,902.1534 v 87.6092"
+     class="line"
+     stroke="#000000"
+     id="path1-2"
+     style="fill:#7f7f7f;fill-opacity:1;stroke:#7f7f7f;stroke-width:8;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     d="m 253.2627,393.6971 h 90.30793"
      class="line"
      stroke="#1f77b4"
      id="path18-8"
@@ -101,402 +114,443 @@
   <!-- ================= MAIN STATIONS ================= -->
   <!-- Input -->
   <circle
-     cx="262.35361"
-     cy="91.273438"
+     cx="252.35361"
+     cy="69.027672"
      r="9"
      class="station"
      id="circle1" />
   <text
-     x="292.35361"
-     y="96.273438"
+     x="282.35361"
+     y="74.027672"
      class="label"
      id="text2">Input CSV</text>
   <!-- Download -->
   <circle
-     cx="262.35361"
-     cy="172.52344"
+     cx="252.35361"
+     cy="150.27768"
      r="9"
      class="station"
      id="circle2" />
   <text
-     x="292.35361"
-     y="176.27344"
+     x="282.35361"
+     y="154.02768"
      class="label"
      id="text3">Genome Download</text>
   <text
-     x="292.35361"
-     y="191.27344"
+     x="282.35361"
+     y="169.02768"
      class="small"
      id="text4">[NCBIGENOMEDOWNLOAD]</text>
   <text
-     x="191.5542"
-     y="269.75717"
+     x="181.5542"
+     y="247.51141"
      class="small"
      id="text4-4"
      style="font-size:11px;fill:#555555">[GUNZIP]</text>
   <!-- Gunzip -->
   <text
-     x="191.50616"
-     y="256.27344"
+     x="181.50616"
+     y="234.02768"
      class="label"
      id="text5">Gunzip</text>
   <circle
-     cx="262.35361"
-     cy="253.77344"
+     cx="252.35361"
+     cy="231.52768"
      r="9"
      class="station"
      id="circle4" />
   <!-- AGAT -->
   <circle
-     cx="262.35361"
-     cy="335.02344"
+     cx="252.35361"
+     cy="312.77768"
      r="9"
      class="station"
      id="circle5" />
   <text
-     x="137.14966"
-     y="338.27344"
+     x="127.14966"
+     y="316.02768"
      class="label"
      id="text6">Longest Isoform</text>
   <text
-     x="137.14966"
-     y="353.27344"
+     x="127.14966"
+     y="331.02768"
      class="small"
      id="text7">[AGAT]</text>
   <!-- GFFREAD -->
   <circle
-     cx="262.35361"
-     cy="416.27344"
+     cx="252.35361"
+     cy="394.02768"
      r="9"
      class="station"
      id="circle7" />
   <text
-     x="136.63327"
-     y="420.79037"
+     x="126.63327"
+     y="398.54462"
      class="label"
      id="text8">Protein Extraction</text>
   <text
-     x="136.63327"
-     y="435.79037"
+     x="126.63327"
+     y="413.54462"
      class="small"
      id="text9">[GFFREAD]</text>
   <text
-     x="290.375"
-     y="944.69867"
+     x="153.77563"
+     y="492.26419"
+     class="small"
+     id="text9-0"
+     style="font-size:11px;fill:#555555">[ORTHOFINDER]</text>
+  <text
+     x="280.375"
+     y="922.45288"
      class="small"
      id="text9-6"
      style="font-size:11px;fill:#555555">[CAFE PLOTTER]</text>
   <text
-     x="290.74789"
-     y="1033.2665"
+     x="282.51291"
+     y="662.34045"
+     class="small"
+     id="text9-6-0"
+     style="font-size:11px;fill:#555555">[CAFE / R]</text>
+  <text
+     x="281.60614"
+     y="839.20062"
+     class="small"
+     id="text9-6-0-4"
+     style="font-size:11px;fill:#555555">[CAFE]</text>
+  <text
+     x="280.74789"
+     y="1011.0207"
      class="small"
      id="text9-6-8"
      style="font-size:11px;fill:#555555">[TOPGO]</text>
   <!-- Rename -->
   <circle
-     cx="262.35361"
-     cy="497.52344"
+     cx="252.35361"
+     cy="475.27768"
      r="9"
      class="station"
      id="circle9" />
   <!-- OrthoFinder -->
   <circle
-     cx="262.35361"
-     cy="578.77344"
+     cx="252.35361"
+     cy="556.52765"
      r="9"
      class="station"
      id="circle10" />
   <text
-     x="170.70728"
-     y="500.55194"
+     x="152.70728"
+     y="478.30618"
      class="label"
      id="text11">OrthoFinder</text>
   <!-- Tree prep -->
   <circle
-     cx="262.35361"
-     cy="666.27344"
+     cx="252.35361"
+     cy="644.02765"
      r="9"
      class="station"
      id="circle11" />
   <text
-     x="163.32819"
-     y="581.96783"
+     x="153.32819"
+     y="559.72205"
      class="label"
-     id="text12">Rescale Tree</text>
+     id="text12"><tspan
+       sodipodi:role="line"
+       id="tspan44"
+       x="153.32819"
+       y="559.72205">Rescale Tree</tspan></text>
   <circle
-     cx="262.35361"
-     cy="753.77344"
+     cx="252.35361"
+     cy="731.52765"
      r="9"
      class="station"
      id="circle12" />
   <text
-     x="292.35361"
-     y="668.5246"
+     x="282.35361"
+     y="646.27881"
      class="label"
      id="text13">CAFE Prep</text>
   <!-- CAFE loop -->
   <circle
-     cx="262.35361"
-     cy="841.27344"
+     cx="252.35361"
+     cy="819.02765"
      r="9"
      class="station"
      id="circle13" />
   <text
-     x="292.35361"
-     y="757.59357"
+     x="282.35361"
+     y="735.34778"
      class="label"
      id="text14">CAFE Run k = 1..N</text>
   <text
-     x="292.35361"
-     y="845.32269"
+     x="282.35361"
+     y="823.0769"
      class="label"
      id="text14-1"
      style="font-size:14px;font-family:Helvetica, Arial, sans-serif">CAFE select best</text>
   <!-- Select k -->
   <circle
-     cx="262.35361"
-     cy="782.94012"
+     cx="252.35361"
+     cy="760.69434"
      r="9"
      class="station"
      id="circle14" />
   <!-- Final run -->
   <circle
-     cx="262.35361"
-     cy="812.10675"
+     cx="252.35361"
+     cy="789.86096"
      r="9"
      class="station"
      id="circle15" />
   <text
-     x="292.35361"
-     y="785.51044"
+     x="282.35361"
+     y="763.26465"
      class="label"
      id="text16">CAFE Run poisson</text>
   <text
-     x="292.35361"
-     y="814.7569"
+     x="282.35361"
+     y="792.51111"
      class="label"
      id="text16-1"
      style="font-size:14px;font-family:Helvetica, Arial, sans-serif">CAFE model compare</text>
   <!-- Model compare -->
   <circle
-     cx="262.35361"
-     cy="925.80731"
+     cx="252.35361"
+     cy="903.56152"
      r="9"
      class="station"
      id="circle16" />
   <text
-     x="292.35361"
-     y="929.25543"
+     x="282.35361"
+     y="907.00964"
      class="label"
      id="text17">CAFE plot</text>
   <!-- Output -->
   <circle
-     cx="262.35361"
-     cy="1014.7904"
+     cx="252.35361"
+     cy="992.54462"
      r="9"
      class="station"
      id="circle17" />
   <text
-     x="292.35361"
-     y="1019.7904"
+     x="282.35361"
+     y="997.54462"
      class="label"
-     id="text18">CAFE GO*</text>
-  <!-- ================= LEFT INPUT BRANCH ================= -->
-  <circle
-     cx="128.03159"
-     cy="197.98384"
-     class="station"
-     id="circle18"
-     r="7" />
+     id="text18"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif">CAFE GO<tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan42">*</tspan></text>
   <text
-     x="61.379025"
-     y="186.92476"
+     x="106.72375"
+     y="988.22144"
+     class="label"
+     id="text18-9"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif">OPTIONAL</text>
+  <text
+     x="105.83448"
+     y="969.03577"
+     class="label"
+     id="text18-9-1"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif">CORE CODE</text>
+  <!-- ================= LEFT INPUT BRANCH ================= -->
+  <text
+     x="51.379025"
+     y="164.679"
      class="label"
      id="text19">Local FASTA + GFF</text>
   <text
-     x="462.0452"
-     y="518.51538"
+     x="446.0452"
+     y="496.26962"
      class="label"
      id="text19-8"
      style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
        sodipodi:role="line"
        id="tspan38"
-       x="462.0452"
-       y="518.51538">Local Gene</tspan><tspan
+       x="446.0452"
+       y="496.26962">Local Gene</tspan><tspan
        sodipodi:role="line"
        id="tspan39"
-       x="462.0452"
-       y="536.01538">to GO hash</tspan></text>
+       x="446.0452"
+       y="513.76965">to GO hash</tspan></text>
   <text
-     x="366.92093"
-     y="568.41418"
+     x="356.92093"
+     y="546.1684"
      class="label"
      id="text19-8-0"
      style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
        sodipodi:role="line"
        id="tspan39-2"
-       x="366.92093"
-       y="568.41418">Sent to GO jobs</tspan></text>
+       x="356.92093"
+       y="546.1684">Sent to GO jobs</tspan></text>
   <!-- ================= ORTHOFINDER SKIP ================= -->
-  <circle
-     cx="122.58279"
-     cy="637.4151"
-     r="7"
-     class="station"
-     id="circle19" />
   <text
-     x="-0.59895682"
-     y="622.4903"
+     x="55.370239"
+     y="586.61176"
      class="small"
      id="text20"
      style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3333px;font-family:Helvetica, Arial, sans-serif;-inkscape-font-specification:'Helvetica, Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1"><tspan
        sodipodi:role="line"
        id="tspan30"
-       x="-0.59895682"
-       y="622.4903">Precomputed tree</tspan><tspan
+       x="55.370239"
+       y="586.61176">Precomputed tree</tspan><tspan
        sodipodi:role="line"
        id="tspan31"
-       x="-0.59895682"
-       y="639.15692">+ Orthogroups</tspan></text>
+       x="55.370239"
+       y="603.27838">+ Orthogroups</tspan></text>
   <!-- ================= GO BRANCH ================= -->
   <!-- EggNOG -->
   <circle
-     cx="356.73959"
-     cy="375.88171"
+     cx="346.73959"
+     cy="353.63596"
      r="7"
      class="station"
      id="circle22" />
   <circle
-     cx="356.73959"
-     cy="453.23489"
+     cx="346.73959"
+     cy="430.98914"
      r="7"
      class="station"
      id="circle22-8"
      style="fill:#ffffff;stroke:#000000;stroke-width:3" />
   <circle
-     cx="356.73959"
-     cy="490.54572"
+     cx="346.73959"
+     cy="468.29996"
      r="7"
      class="station"
      id="circle22-8-9"
      style="fill:#ffffff;stroke:#000000;stroke-width:3" />
   <path
-     d="M 432.87428,524.6002 H 358.35599"
+     d="M 422.87428,502.35444 H 348.35599"
      class="line"
      stroke="#7f7f7f"
      id="path25-3-3-3-1"
      style="fill:none;stroke-width:8;stroke-linecap:round;stroke-dasharray:none" />
   <circle
-     cx="356.73959"
-     cy="527.85651"
+     cx="346.73959"
+     cy="505.61075"
      r="7"
      class="station"
      id="circle22-4"
      style="fill:#ffffff;stroke:#000000;stroke-width:3" />
   <text
-     x="372.72946"
-     y="458.11478"
+     x="362.72946"
+     y="435.86902"
      class="label"
      id="text23">EggNOGmapper</text>
   <text
-     x="367.33359"
-     y="380.02649"
+     x="357.33359"
+     y="357.78073"
      class="label"
      id="text23-0"
      style="font-size:14px;font-family:Helvetica, Arial, sans-serif">EggNOG db download</text>
   <text
-     x="456.23221"
-     y="411.62006"
+     x="444.23221"
+     y="389.3743"
      class="label"
      id="text23-0-6"
      style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
        sodipodi:role="line"
        id="tspan35"
-       x="456.23221"
-       y="411.62006">EggNOG db</tspan><tspan
+       x="444.23221"
+       y="389.3743">EggNOG db</tspan><tspan
        sodipodi:role="line"
        id="tspan36"
-       x="456.23221"
-       y="429.12006">provided</tspan></text>
+       x="444.23221"
+       y="406.8743">provided</tspan></text>
   <text
-     x="370.1395"
-     y="493.61652"
+     x="360.1395"
+     y="471.37076"
      class="label"
      id="text23-3"
      style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
        sodipodi:role="line"
-       x="370.1395"
-       y="493.61652"
+       x="360.1395"
+       y="471.37076"
        id="tspan32">EggNOG to GO hash</tspan><tspan
        sodipodi:role="line"
-       x="370.1395"
-       y="511.11652"
+       x="360.1395"
+       y="488.87076"
        id="tspan33" /></text>
   <text
-     x="380.13943"
-     y="514.22162"
+     x="399.80045"
+     y="494.94196"
      class="label"
      id="text23-3-3"
      style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
        sodipodi:role="line"
-       x="380.13943"
-       y="514.22162"
+       x="399.80045"
+       y="494.94196"
        id="tspan32-9">OR</tspan><tspan
        sodipodi:role="line"
-       x="380.13943"
-       y="531.72162"
+       x="399.80045"
+       y="512.44196"
        id="tspan33-6" /></text>
+  <text
+     x="398.88956"
+     y="385.50186"
+     class="label"
+     id="text23-3-3-7"
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif"><tspan
+       sodipodi:role="line"
+       x="398.88956"
+       y="385.50186"
+       id="tspan32-9-5">OR</tspan><tspan
+       sodipodi:role="line"
+       x="398.88956"
+       y="403.00186"
+       id="tspan33-6-7" /></text>
   <!-- Chromosome GO -->
   <!-- ================= STATS BRANCH ================= -->
   <circle
-     cx="-356.73959"
-     cy="-295.21414"
+     cx="-346.73959"
+     cy="-272.96838"
      r="7"
      class="station"
      id="circle24"
      transform="scale(-1)" />
   <circle
-     cx="-356.73959"
-     cy="-254.77774"
+     cx="-346.73959"
+     cy="-232.53198"
      r="7"
      class="station"
      id="circle24-3"
      transform="scale(-1)"
      style="fill:#ffffff;stroke:#000000;stroke-width:3" />
   <circle
-     cx="-356.73959"
-     cy="-334.47275"
+     cx="-346.73959"
+     cy="-312.22699"
      r="7"
      class="station"
      id="circle24-3-2"
      transform="scale(-1)"
      style="fill:#ffffff;stroke:#000000;stroke-width:3" />
   <text
-     x="368.05704"
-     y="217.11241"
+     x="358.05704"
+     y="194.86665"
      class="label"
      id="text25">BUSCO</text>
   <circle
-     cx="-356.73959"
-     cy="-215.21411"
+     cx="-346.73959"
+     cy="-192.96835"
      r="7"
      class="station"
      id="circle25"
      transform="scale(-1)" />
   <text
-     x="366.57394"
-     y="298.59549"
+     x="356.57394"
+     y="276.34973"
      class="label"
      id="text26">AGAT stats</text>
   <text
-     x="365.44058"
-     y="339.37619"
+     x="355.44058"
+     y="317.13043"
      class="label"
      id="text26-6"
-     style="font-size:14px;font-family:Helvetica, Arial, sans-serif">ChromosomeGO*</text>
+     style="font-size:14px;font-family:Helvetica, Arial, sans-serif">ChromosomeGO<tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:16px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan41">*</tspan></text>
   <text
-     x="367.82889"
-     y="258.22595"
+     x="357.82889"
+     y="235.98019"
      class="label"
      id="text26-9"
      style="font-size:14px;font-family:Helvetica, Arial, sans-serif">QUAST</text>
@@ -516,7 +570,7 @@
      inkscape:rounded="0"
      inkscape:randomized="0"
      d="m 240.27737,139.3669 -8.92144,0 -8.92145,0 4.46072,-7.72621 4.46073,-7.7262 4.46072,7.7262 z"
-     transform="matrix(-0.65566913,0,0,-0.65566913,413.77701,160.30705)"
+     transform="matrix(-0.65566913,0,0,-0.65566913,403.77701,138.06129)"
      inkscape:transform-center-x="-1.8751775e-06"
      inkscape:transform-center-y="1.6886092" />
   <path
@@ -534,7 +588,7 @@
      inkscape:rounded="0"
      inkscape:randomized="0"
      d="m 240.27737,139.3669 -8.92144,0 -8.92145,0 4.46072,-7.72621 4.46073,-7.7262 4.46072,7.7262 z"
-     transform="matrix(0,0.65566913,-0.65566913,0,198.66593,45.215988)"
+     transform="matrix(0,0.65566913,-0.65566913,0,198.66593,24.970225)"
      inkscape:transform-center-x="-1.688611"
      inkscape:transform-center-y="-1.8751774e-06" />
   <path
@@ -552,7 +606,7 @@
      inkscape:rounded="0"
      inkscape:randomized="0"
      d="m 240.27737,139.3669 -8.92144,0 -8.92145,0 4.46072,-7.72621 4.46073,-7.7262 4.46072,7.7262 z"
-     transform="matrix(0,-0.65566913,0.65566913,0,357.71316,567.48159)"
+     transform="matrix(0,-0.65566913,0.65566913,0,347.71316,545.23583)"
      inkscape:transform-center-x="1.6886092" />
   <path
      sodipodi:type="star"
@@ -569,7 +623,7 @@
      inkscape:rounded="0"
      inkscape:randomized="0"
      d="m 240.27737,139.3669 -8.92144,0 -8.92145,0 4.46072,-7.72621 4.46073,-7.7262 4.46072,7.7262 z"
-     transform="matrix(0,-0.65566913,0.65566913,0,357.71316,676.25406)"
+     transform="matrix(0,-0.65566913,0.65566913,0,347.71316,654.0083)"
      inkscape:transform-center-x="1.6886092" />
   <path
      sodipodi:type="star"
@@ -586,27 +640,37 @@
      inkscape:rounded="0"
      inkscape:randomized="0"
      d="m 240.27737,139.3669 -8.92144,0 -8.92145,0 4.46072,-7.72621 4.46073,-7.7262 4.46072,7.7262 z"
-     transform="matrix(0,0.65566913,-0.65566913,0,194.4396,485.53555)"
+     transform="matrix(0,0.65566913,-0.65566913,0,190.4396,463.28979)"
      inkscape:transform-center-x="-1.688611"
      inkscape:transform-center-y="-1.8751774e-06" />
   <text
      xml:space="preserve"
      style="font-weight:bold;font-size:16px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Bold';letter-spacing:0px"
      x="462.53232"
-     y="431.64191"
+     y="409.39615"
      id="text34"><tspan
        sodipodi:role="line"
        id="tspan34"
        x="462.53232"
-       y="431.64191"></tspan></text>
+       y="409.39615"></tspan></text>
   <text
      xml:space="preserve"
      style="font-weight:bold;font-size:16px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Bold';letter-spacing:0px"
-     x="350.73502"
-     y="573.48163"
+     x="340.73502"
+     y="551.23584"
      id="text37"><tspan
        sodipodi:role="line"
        id="tspan37"
-       x="350.73502"
-       y="573.48163">*</tspan></text>
+       x="340.73502"
+       y="551.23584">*</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-weight:bold;font-size:16px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Bold';letter-spacing:0px"
+     x="526.48303"
+     y="256.56781"
+     id="text40"><tspan
+       sodipodi:role="line"
+       id="tspan40"
+       x="526.48303"
+       y="256.56781" /></text>
 </svg>
