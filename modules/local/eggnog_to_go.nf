@@ -22,7 +22,12 @@ process EGGNOG_TO_GO {
     tran_to_gene = {}
     gene_to_tran = {}
 
-    with open("${gff}") as f:
+    import gzip
+
+    def open_any(fname):
+        return gzip.open(fname, "rt") if fname.endswith(".gz") else open(fname)
+
+    with open_any("${gff}") as f:
         for line in f:
             if line.startswith("#"):
                 continue
