@@ -289,15 +289,7 @@ workflow {
             CAFE_RUN_BEST.out.results
         )
 
-        ch_best_results = CAFE_MODEL_COMPARE.out.best_model
-            .map { f -> f.text.trim() }
-            .combine(
-                ch_best_uniform.map       { dir -> [ 'uniform', dir ] }
-                .mix( CAFE_RUN_BEST.out.results.map { dir -> [ 'poisson', dir ] } )
-            )
-            .filter { best, model, dir -> best == model }
-            .map    { best, model, dir -> dir }
-
+        ch_best_results = CAFE_MODEL_COMPARE.out.best_results
 
         CAFE_PLOT ( ch_best_results )
 

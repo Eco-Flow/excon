@@ -335,6 +335,7 @@ results/
 │   │   ├── hog_gene_counts.tsv      # Filtered gene count input to CAFE
 │   │   ├── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
 │   │   └── SpeciesTree_rooted_ultra.txt  # Ultrametric tree used by CAFE5
+│   ├── best/                        # Full CAFE5 results for the winning model (uniform or Poisson)
 │   ├── large_families/              # CAFE run on high-differential families (retry path only)
 │   └── model_comparison/
 │       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
