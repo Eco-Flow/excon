@@ -17,6 +17,11 @@
 
 ### Changed
 - `EGGNOG_TO_OG_GO` label changed from `process_single` to `process_high` (8 CPUs) to support parallel GO file reading.
+- Pipeline version banner now reads dynamically from `manifest.version` in `nextflow.config` instead of being hardcoded in `main.nf`.
+- `cafe_max_k` and `eggnog_rep_species` added to `nextflow_schema.json` (were defined in `nextflow.config` but missing from the schema, causing validation warnings).
+
+### Fixed
+- `OG_ANNOTATION_SUMMARY` was incorrectly triggered when `--run_eggnog` was false (condition was `run_eggnog || !skip_cafe`), causing a "No such variable: ch_annot_files" error. The process now only runs when `--run_eggnog` is set.
 
 ## [v2.2.0] - 2026-04-06
 
