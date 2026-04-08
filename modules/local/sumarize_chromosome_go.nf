@@ -15,7 +15,7 @@ process SUMMARIZE_CHROMO_GO {
 
     script:
     """
-    n_files=\$(find ${res_dir} -name "*_res.tab" 2>/dev/null | wc -l)
+    n_files=\$(find -L ${res_dir} -name "*_res.tab" 2>/dev/null | wc -l)
     if [ "\$n_files" -eq 0 ]; then
         echo "No *_res.tab files found in ${res_dir} — skipping summarization (no significant GO terms)."
     else
