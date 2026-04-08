@@ -18,7 +18,7 @@ process EGGNOG_TO_OG_GO {
     """
     python3 <<'EOF'
 import glob, os, sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 CPUS = ${task.cpus}
 
@@ -76,7 +76,7 @@ go_files = glob.glob("*.go.txt")
 print(f"Reading {len(go_files)} GO files with {CPUS} workers...", flush=True)
 
 gene_go = {}
-with ProcessPoolExecutor(max_workers=CPUS) as pool:
+with ThreadPoolExecutor(max_workers=CPUS) as pool:
     futures = {pool.submit(read_go_file, f): f for f in go_files}
     for i, fut in enumerate(as_completed(futures), 1):
         for key, gos in fut.result().items():

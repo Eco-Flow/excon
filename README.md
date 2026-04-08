@@ -1,4 +1,4 @@
-# EXCON (v2.2.0)
+# EXCON (v2.3.0)
 
 A Nextflow pipeline for gene family **EX**pansion and **CON**traction analysis 
 across multiple species using CAFE5.
@@ -194,6 +194,7 @@ GO enrichment requires gene-to-GO mappings. Choose one of the two approaches bel
 | `--eggnog_pident` | Minimum percent identity (%) | `null` |
 | `--eggnog_query_cover` | Minimum query coverage (%) | `null` |
 | `--eggnog_subject_cover` | Minimum subject coverage (%) | `null` |
+| `--eggnog_rep_species` | Species to use as the representative for the OG annotation summary (must match a species name in the input CSV). Auto-selects the most-annotated species when unset. | `null` (auto) |
 
 > **Note:** The EggNOG database is ~45 GB. We strongly recommend downloading it once and passing `--eggnog_data_dir /path/to/eggnog_data` to avoid re-downloading on every run.
 
@@ -221,7 +222,7 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 | `--go_cutoff` | P-value cutoff for GO enrichment | `0.05` |
 | `--go_type` | GO test type (e.g. `none`) | `none` |
 | `--go_max_plot` | Maximum number of GO terms to plot | `10` |
-| `--go_algo` | topGO algorithm and statistic (`classic_fisher`, `weight01_t`, `elim_ks`, `weight_ks`) | `classic_fisher` |
+| `--go_algo` | topGO algorithm and statistic (`classic_fisher`, `weight01_t`, `elim_ks`, `weight_ks`). Results are written to a subfolder named after all three GO settings (e.g. `cafe_go/weight01_t_cutoff0.05_typenone/`), so running with different values preserves all results. | `classic_fisher` |
 
 ### Resource limits
 
@@ -334,26 +335,31 @@ results/
 │   │   ├── hog_gene_counts.tsv      # Filtered gene count input to CAFE
 │   │   ├── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
 │   │   └── SpeciesTree_rooted_ultra.txt  # Ultrametric tree used by CAFE5
+│   ├── best/                        # Full CAFE5 results for the winning model (uniform or Poisson)
 │   ├── large_families/              # CAFE run on high-differential families (retry path only)
 │   └── model_comparison/
 │       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
 │       └── best_model.txt            # "uniform" or "poisson"
 ├── cafe_plot/
 │   └── cafe_plotter/                # Expansion/contraction plots for best model
-├── cafe_go/                         # GO enrichment (one job per species/node x direction)
-│   ├── CAFE_summary.txt             # Summary of expansions/contractions per branch
-│   ├── *_TopGo_results_ALL.tab      # TopGO results per target
-│   ├── TopGO_barplot_*.pdf          # Bar chart per target (ggplot2, full GO names)
-│   ├── TopGO_dotplot_*.pdf          # Dot plot per target (fold enrichment x significance)
-│   ├── TopGO_Pval_barplot_*.pdf     # Legacy barplots (base R)
-│   ├── Go_summary_pos.pdf           # Summary plot across all expansions
-│   ├── Go_summary_neg.pdf           # Summary plot across all contractions
-│   ├── Go_summary_pos_noNode.pdf    # As above, terminal branches only
-│   └── Go_summary_neg_noNode.pdf
-├── chromo_go/                       # [optional] GO enrichment by chromosome
-│   ├── *.pdf                        # Per-chromosome GO plots
-│   └── summary/                     # Summarized results across chromosomes
+├── cafe_go/
+│   └── <algo>_cutoff<val>_type<val>/  # One subfolder per GO parameter combination
+│       ├── CAFE_summary.txt           # Summary of expansions/contractions per branch
+│       ├── *_TopGo_results_ALL.tab    # TopGO results per target
+│       ├── TopGO_barplot_*.pdf        # Bar chart per target (ggplot2, full GO names)
+│       ├── TopGO_dotplot_*.pdf        # Dot plot per target (fold enrichment x significance)
+│       ├── TopGO_Pval_barplot_*.pdf   # Legacy barplots (base R)
+│       ├── Go_summary_pos.pdf         # Summary plot across all expansions
+│       ├── Go_summary_neg.pdf         # Summary plot across all contractions
+│       ├── Go_summary_pos_noNode.pdf  # As above, terminal branches only
+│       └── Go_summary_neg_noNode.pdf
+├── chromo_go/                         # [optional] GO enrichment by chromosome
+│   └── <algo>_cutoff<val>_type<val>/  # One subfolder per GO parameter combination
+│       ├── *.pdf                      # Per-chromosome GO plots
+│       └── summary/                   # Summarized results across chromosomes
 ├── eggnogmapper/
+│   ├── *.emapper.annotations        # Raw EggNOG-mapper annotation files (one per species)
+│   ├── OG_annotation_summary.tsv    # Per-orthogroup functional summary (description, COG, KEGG, PFAM)
 │   └── go_files/                    # Per-species GO annotation files
 ├── gffread/
 │   └── *.fasta                      # Protein sequences per species
@@ -380,7 +386,7 @@ results/
 This pipeline is published on Workflowhub using the nf-core template. If you use this pipeline in you work, the following citations are essential:
 
 excon:
-Wyatt, C. (2026). Gene EXpansion and CONtraction analysis pipeline. WorkflowHub. https://doi.org/10.48546/WORKFLOWHUB.WORKFLOW.2141.4
+Wyatt, C. (2026). Gene EXpansion and CONtraction analysis pipeline. WorkflowHub. https://doi.org/10.48546/WORKFLOWHUB.WORKFLOW.2141.7
 
 nf-core:
 Philip Ewels, Alexander Peltzer, Sven Fillinger, Harshil Patel, Johannes Alneberg, Andreas Wilm, Maxime Ulysse Garcia, Paolo Di Tommaso & Sven Nahnsen.

@@ -10,6 +10,7 @@ process CAFE_MODEL_COMPARE {
     output:
     path "cafe_model_comparison.tsv", emit: comparison_table
     path "best_model.txt",            emit: best_model
+    path "best_cafe_results/",        emit: best_results
     tuple val("${task.process}"), val('cafe'), val('4.2.1'), emit: versions_cafe, topic: versions
 
     script:
@@ -48,6 +49,13 @@ process CAFE_MODEL_COMPARE {
     [ "\$best" = "poisson" ] && printf "BEST\n" >> cafe_model_comparison.tsv || printf "\n" >> cafe_model_comparison.tsv
 
     echo "Model comparison complete — best model: \$best (-lnL: uniform=\$uniform_score, poisson=\$poisson_score)" >&2
+
+    # Copy the winning model's results directory for publishing
+    if [ "\$best" = "uniform" ]; then
+        cp -rL ${uniform_results} best_cafe_results
+    else
+        cp -rL ${poisson_results} best_cafe_results
+    fi
     """
 
     stub:
@@ -56,5 +64,7 @@ process CAFE_MODEL_COMPARE {
     echo -e "uniform\tOut_cafe_k3\t195812.3\tBEST"  >> cafe_model_comparison.tsv
     echo -e "poisson\tOut_cafe_k3_poisson\t196100.1\t" >> cafe_model_comparison.tsv
     echo "uniform" > best_model.txt
+    mkdir -p best_cafe_results
+    touch best_cafe_results/Base_results.txt
     """
 }

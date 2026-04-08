@@ -3,7 +3,7 @@
 log.info """\
 =========================================
 
- EXCON v2.2.0
+ EXCON v${workflow.manifest.version}
 
  -----------------------------------------
 
@@ -50,6 +50,7 @@ include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
 include { CAFE_PLOT as CAFE_PLOT_LARGE } from './modules/local/cafe_plot.nf'
 include { CAFE_GO_PREP as CAFE_GO_PREP_LARGE } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN  as CAFE_GO_RUN_LARGE  } from './modules/local/cafe_go_run.nf'
+include { OG_ANNOTATION_SUMMARY } from './modules/local/og_annotation_summary.nf'
 
 workflow {
 
@@ -165,6 +166,11 @@ workflow {
     	.map { meta, go -> go }
     	.collect()
 
+      // OG functional annotation summary — one row per OG with representative gene description
+      ch_annot_files = EGGNOGMAPPER.out.annotations
+          .map { meta, annot -> annot }
+          .collect()
+
    } else if (params.predownloaded_gofiles) {
 
       // User-provided gene-to-GO files (one *.go.txt per species, tab-separated gene_id<TAB>GO:term)
@@ -173,6 +179,8 @@ workflow {
       ch_go_files = ch_go_file_meta
          .map { meta, go -> go }
          .collect()
+
+      ch_annot_files = Channel.empty()
 
    }
 
@@ -283,15 +291,7 @@ workflow {
             CAFE_RUN_BEST.out.results
         )
 
-        ch_best_results = CAFE_MODEL_COMPARE.out.best_model
-            .map { f -> f.text.trim() }
-            .combine(
-                ch_best_uniform.map       { dir -> [ 'uniform', dir ] }
-                .mix( CAFE_RUN_BEST.out.results.map { dir -> [ 'poisson', dir ] } )
-            )
-            .filter { best, model, dir -> best == model }
-            .map    { best, model, dir -> dir }
-
+        ch_best_results = CAFE_MODEL_COMPARE.out.best_results
 
         CAFE_PLOT ( ch_best_results )
 
@@ -305,7 +305,15 @@ workflow {
         CAFE_PLOT_LARGE ( ch_large_results_ok )
 
 
-        // --- CAFE GO enrichment (requires eggnog) ---
+        if (params.run_eggnog) {
+        OG_ANNOTATION_SUMMARY (
+          ch_annot_files,
+          ch_orthologues,
+          params.eggnog_rep_species ?: ""
+        )
+        }
+
+        // --- CAFE GO enrichment ---
 
         if (params.run_eggnog || params.predownloaded_gofiles) {
 

@@ -252,6 +252,15 @@
   "eggnog_subject_cover": {
     "type": "number",
     "description": "eggNOG-mapper minimum subject coverage percent"
+  },
+  "eggnog_rep_species": {
+    "type": "string",
+    "description": "Species ID to use as the representative when building the OG annotation summary. If unset, the species with the most annotated genes is chosen automatically."
+  },
+  "cafe_max_k": {
+    "type": "integer",
+    "default": 6,
+    "description": "Maximum number of gamma rate categories (k) to test in CAFE5 model selection."
   }
 
 
