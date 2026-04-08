@@ -3,6 +3,10 @@
 ## [v2.3.0] - 2026-04-07
 
 ### Added
+- GO enrichment results (`CAFE_GO_RUN`, `CAFE_GO_PREP_LARGE`, `CAFE_GO_RUN_LARGE`, `CHROMO_GO`, `SUMMARIZE_CHROMO_GO`) are now published to subfolders named after the active GO settings (e.g. `cafe_go/weight01_t_cutoff0.05_typenone/`). Re-running with different `--go_algo`, `--go_cutoff`, or `--go_type` values will write to a separate subfolder, preserving results from all parameter combinations.
+- `SUMMARIZE_CHROMO_GO` now handles the case where no significant GO terms are found (no `*_res.tab` files produced by `CHROMO_GO`). The process exits cleanly with a message instead of erroring, and its outputs are marked optional so the pipeline continues.
+
+### Added
 - New `OG_ANNOTATION_SUMMARY` module: when `--run_eggnog` is set, produces `OG_annotation_summary.tsv` with one row per orthogroup containing the representative gene ID, description, preferred name, COG category, KEGG KO, and PFAM domains from EggNOG-mapper annotations. Output is written to `results/eggnogmapper/OG_annotation_summary.tsv`.
 - New `--eggnog_rep_species` parameter to force the representative species used for orthogroup annotation. When unset, the species with the most annotated genes is chosen automatically.
 - `EGGNOGMAPPER` output (`.emapper.annotations` files) is now published to `results/eggnogmapper/`.

@@ -1,4 +1,4 @@
-# EXCON (v2.2.0)
+# EXCON (v2.3.0)
 
 A Nextflow pipeline for gene family **EX**pansion and **CON**traction analysis 
 across multiple species using CAFE5.
@@ -222,7 +222,7 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 | `--go_cutoff` | P-value cutoff for GO enrichment | `0.05` |
 | `--go_type` | GO test type (e.g. `none`) | `none` |
 | `--go_max_plot` | Maximum number of GO terms to plot | `10` |
-| `--go_algo` | topGO algorithm and statistic (`classic_fisher`, `weight01_t`, `elim_ks`, `weight_ks`) | `classic_fisher` |
+| `--go_algo` | topGO algorithm and statistic (`classic_fisher`, `weight01_t`, `elim_ks`, `weight_ks`). Results are written to a subfolder named after all three GO settings (e.g. `cafe_go/weight01_t_cutoff0.05_typenone/`), so running with different values preserves all results. | `classic_fisher` |
 
 ### Resource limits
 
@@ -341,19 +341,21 @@ results/
 │       └── best_model.txt            # "uniform" or "poisson"
 ├── cafe_plot/
 │   └── cafe_plotter/                # Expansion/contraction plots for best model
-├── cafe_go/                         # GO enrichment (one job per species/node x direction)
-│   ├── CAFE_summary.txt             # Summary of expansions/contractions per branch
-│   ├── *_TopGo_results_ALL.tab      # TopGO results per target
-│   ├── TopGO_barplot_*.pdf          # Bar chart per target (ggplot2, full GO names)
-│   ├── TopGO_dotplot_*.pdf          # Dot plot per target (fold enrichment x significance)
-│   ├── TopGO_Pval_barplot_*.pdf     # Legacy barplots (base R)
-│   ├── Go_summary_pos.pdf           # Summary plot across all expansions
-│   ├── Go_summary_neg.pdf           # Summary plot across all contractions
-│   ├── Go_summary_pos_noNode.pdf    # As above, terminal branches only
-│   └── Go_summary_neg_noNode.pdf
-├── chromo_go/                       # [optional] GO enrichment by chromosome
-│   ├── *.pdf                        # Per-chromosome GO plots
-│   └── summary/                     # Summarized results across chromosomes
+├── cafe_go/
+│   └── <algo>_cutoff<val>_type<val>/  # One subfolder per GO parameter combination
+│       ├── CAFE_summary.txt           # Summary of expansions/contractions per branch
+│       ├── *_TopGo_results_ALL.tab    # TopGO results per target
+│       ├── TopGO_barplot_*.pdf        # Bar chart per target (ggplot2, full GO names)
+│       ├── TopGO_dotplot_*.pdf        # Dot plot per target (fold enrichment x significance)
+│       ├── TopGO_Pval_barplot_*.pdf   # Legacy barplots (base R)
+│       ├── Go_summary_pos.pdf         # Summary plot across all expansions
+│       ├── Go_summary_neg.pdf         # Summary plot across all contractions
+│       ├── Go_summary_pos_noNode.pdf  # As above, terminal branches only
+│       └── Go_summary_neg_noNode.pdf
+├── chromo_go/                         # [optional] GO enrichment by chromosome
+│   └── <algo>_cutoff<val>_type<val>/  # One subfolder per GO parameter combination
+│       ├── *.pdf                      # Per-chromosome GO plots
+│       └── summary/                   # Summarized results across chromosomes
 ├── eggnogmapper/
 │   ├── *.emapper.annotations        # Raw EggNOG-mapper annotation files (one per species)
 │   ├── OG_annotation_summary.tsv    # Per-orthogroup functional summary (description, COG, KEGG, PFAM)
