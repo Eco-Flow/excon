@@ -1,6 +1,6 @@
 # Changelog
 
-## [v2.3.0] - 2026-04-07
+## [v2.3.0] - 2026-04-08
 
 ### Added
 - GO enrichment results (`CAFE_GO_RUN`, `CAFE_GO_PREP_LARGE`, `CAFE_GO_RUN_LARGE`, `CHROMO_GO`, `SUMMARIZE_CHROMO_GO`) are now published to subfolders named after the active GO settings (e.g. `cafe_go/weight01_t_cutoff0.05_typenone/`). Re-running with different `--go_algo`, `--go_cutoff`, or `--go_type` values will write to a separate subfolder, preserving results from all parameter combinations.
