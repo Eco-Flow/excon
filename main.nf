@@ -3,7 +3,7 @@
 log.info """\
 =========================================
 
- EXCON v2.3.0
+ EXCON v${workflow.manifest.version}
 
  -----------------------------------------
 
@@ -180,6 +180,8 @@ workflow {
          .map { meta, go -> go }
          .collect()
 
+      ch_annot_files = Channel.empty()
+
    }
 
    // --- Quality stats --- 
@@ -303,8 +305,7 @@ workflow {
         CAFE_PLOT_LARGE ( ch_large_results_ok )
 
 
-        // 
-        if (params.run_eggnog || !params.skip_cafe) {
+        if (params.run_eggnog) {
         OG_ANNOTATION_SUMMARY (
           ch_annot_files,
           ch_orthologues,
