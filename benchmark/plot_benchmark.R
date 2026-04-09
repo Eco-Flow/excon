@@ -117,11 +117,21 @@ message("Saved: fig1_overall_scaling")
 
 # Key pipeline stages in display order
 stage_order <- c(
-  "NCBIGENOMEDOWNLOAD", "AGAT_SPKEEPLONGESTISOFORM",
+  # Genome acquisition
+  "NCBIGENOMEDOWNLOAD",
+  # Annotation preparation
+  "AGAT_SPKEEPLONGESTISOFORM", "GFFREAD", "RENAME_FASTA",
+  # Orthology
   "ORTHOFINDER_CAFE", "ORTHOFINDER_V2_CAFE",
-  "RESCALE_TREE", "CAFE_PREP",
-  "CAFE_RUN_K", "CAFE_SELECT_K",
-  "CAFE_RUN_BEST", "CAFE_MODEL_COMPARE", "CAFE_PLOT"
+  # Tree
+  "RESCALE_TREE",
+  # CAFE
+  "CAFE_PREP", "CAFE_RUN_K", "CAFE_SELECT_K",
+  "CAFE_RUN_BEST", "CAFE_MODEL_COMPARE", "CAFE_PLOT",
+  # EggNOG / GO (only present when --run_eggnog used)
+  "EGGNOG_DOWNLOAD", "EGGNOGMAPPER",
+  "EGGNOG_TO_GO", "EGGNOG_TO_OG_GO", "OG_ANNOTATION_SUMMARY",
+  "CAFE_GO_PREP", "CAFE_GO_RUN"
 )
 
 perproc_key <- perproc |>
@@ -210,18 +220,61 @@ stacked <- perproc_key |>
     run_label = paste0(genome_size, "\n", phylogeny, " / ", quality)
   )
 
-# Colour palette for stages
-n_stages   <- length(stage_order)
-stage_cols <- setNames(
-  colorRampPalette(c("#e6f2ff", "#084594"))(n_stages),
-  stage_order
+# Distinct, colourblind-friendly palette for pipeline stages
+# (Okabe-Ito extended with a few extras)
+stage_cols <- c(
+  # Genome acquisition — blues
+  "NCBIGENOMEDOWNLOAD"        = "#56B4E9",  # sky blue
+  "GUNZIP"                    = "#0072B2",  # dark blue
+  # Annotation preparation — greens
+  "AGAT_SPKEEPLONGESTISOFORM" = "#009E73",  # teal
+  "GFFREAD"                   = "#44AA99",  # green-teal
+  "RENAME_FASTA"              = "#117733",  # dark green
+  # Orthology — oranges
+  "ORTHOFINDER_CAFE"          = "#E69F00",  # orange
+  "ORTHOFINDER_V2_CAFE"       = "#D55E00",  # vermillion
+  # Tree
+  "RESCALE_TREE"              = "#999999",  # grey
+  # CAFE — purples
+  "CAFE_PREP"                 = "#CC79A7",  # pink
+  "CAFE_RUN_K"                = "#882255",  # wine
+  "CAFE_SELECT_K"             = "#AA4499",  # mauve
+  "CAFE_RUN_BEST"             = "#332288",  # dark purple
+  "CAFE_MODEL_COMPARE"        = "#6666AA",  # mid purple
+  "CAFE_PLOT"                 = "#BBBBDD",  # pale purple
+  # EggNOG / GO — yellows/browns
+  "EGGNOG_DOWNLOAD"           = "#F0E442",  # yellow
+  "EGGNOGMAPPER"              = "#DDCC77",  # sand
+  "EGGNOG_TO_GO"              = "#AA8800",  # dark gold
+  "EGGNOG_TO_OG_GO"           = "#886600",  # brown-gold
+  "OG_ANNOTATION_SUMMARY"     = "#664400",  # dark brown
+  "CAFE_GO_PREP"              = "#CC6677",  # rose
+  "CAFE_GO_RUN"               = "#AA2233"   # dark red
 )
 
-p_stack <- ggplot(stacked,
+# Label segments that are >= 5% of their bar total (so tiny slivers stay clean)
+stacked_labelled <- stacked |>
+  group_by(run_label, genome_size) |>
+  mutate(
+    bar_total  = sum(wall_time_min),
+    pct        = wall_time_min / bar_total,
+    seg_label  = ifelse(pct >= 0.05,
+                        gsub("_", "\n", process),
+                        NA_character_),
+    # position label in the middle of its segment
+    label_y    = cumsum(wall_time_min) - wall_time_min / 2
+  ) |>
+  ungroup()
+
+p_stack <- ggplot(stacked_labelled,
     aes(x = run_label, y = wall_time_min, fill = process)) +
-  geom_col(width = 0.7) +
+  geom_col(width = 0.7, colour = "white", linewidth = 0.3) +
+  geom_text(aes(y = label_y, label = seg_label),
+            size = 2.2, lineheight = 0.85, colour = "black",
+            na.rm = TRUE) +
   facet_wrap(~genome_size, scales = "free_x") +
-  scale_fill_manual(values = stage_cols, name = "Module") +
+  scale_fill_manual(values = stage_cols, name = "Module",
+                    drop = TRUE) +
   labs(
     x = NULL,
     y = paste0("Wall time (min)  [n = ", max_n, " genomes]"),
@@ -229,14 +282,124 @@ p_stack <- ggplot(stacked,
   ) +
   theme_bench() +
   theme(
-    axis.text.x  = element_text(size = 8, angle = 20, hjust = 1),
-    legend.key.size = unit(0.4, "cm")
+    axis.text.x     = element_text(size = 8, angle = 20, hjust = 1),
+    legend.key.size = unit(0.4, "cm"),
+    legend.text     = element_text(size = 8)
   )
 
 ggsave(file.path(outdir, "fig4_time_composition.pdf"), p_stack,
-       width = 10, height = 5, useDingbats = FALSE)
+       width = 11, height = 6, useDingbats = FALSE)
 ggsave(file.path(outdir, "fig4_time_composition.png"), p_stack,
-       width = 10, height = 5, dpi = 300)
+       width = 11, height = 6, dpi = 300)
 message("Saved: fig4_time_composition")
+
+# =============================================================================
+# Figure 5 — User guidance: will the pipeline work for my data?
+#
+# Shows the benchmark conditions in genome-size × assembly-quality space,
+# coloured by wall time per genome and marked by CAFE convergence success.
+# Reference zones for common taxa help users locate their own data.
+# =============================================================================
+
+# Approximate median genome sizes (Mb) for each benchmark category
+genome_size_mb <- c(bacteria = 4, insect = 350, mammal = 3000)
+
+# Approximate median scaffold N50 (kb) for each quality band per genome size
+# (based on the N50 cutoffs used to build the input CSVs)
+n50_kb_approx <- tribble(
+  ~genome_size, ~quality,      ~n50_kb_approx,
+  "bacteria",   "contiguous",  1000,
+  "bacteria",   "fragmented",  40,
+  "insect",     "contiguous",  5000,
+  "insect",     "fragmented",  300,
+  "mammal",     "contiguous",  120000,
+  "mammal",     "fragmented",  15000
+)
+
+# Add convergence success flag — CAFE_RUN_BEST absent from per-process means
+# CAFE did not converge for that run
+converged_runs <- perproc |>
+  group_by(run_id) |>
+  summarise(cafe_converged = any(process == "CAFE_RUN_BEST"), .groups = "drop")
+
+guidance <- metrics |>
+  left_join(converged_runs, by = "run_id") |>
+  left_join(n50_kb_approx, by = c("genome_size", "quality")) |>
+  mutate(
+    genome_mb       = genome_size_mb[as.character(genome_size)],
+    min_per_genome  = total_wall_time_min / n_species,
+    cafe_converged  = replace_na(cafe_converged, FALSE)
+  )
+
+# Reference zones: typical genome size and N50 ranges for common taxa
+# (approximate — for orientation only)
+ref_zones <- tribble(
+  ~label,           ~xmin,  ~xmax,   ~ymin,    ~ymax,
+  "Fungi",           8,      60,      10,       5000,
+  "Plants\n(small)", 100,    500,     500,      50000,
+  "Plants\n(large)", 1000,   20000,   50,       10000,
+  "Fish",            400,    1500,    1000,     100000,
+  "Birds",           1000,   2000,    10000,    500000
+)
+
+p_guidance <- ggplot() +
+  # Reference zones (behind data)
+  geom_rect(data = ref_zones,
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+            fill = "grey90", colour = "grey70", linewidth = 0.4, alpha = 0.6,
+            inherit.aes = FALSE) +
+  geom_text(data = ref_zones,
+            aes(x = sqrt(xmin * xmax), y = sqrt(ymin * ymax), label = label),
+            size = 2.8, colour = "grey45", fontface = "italic", lineheight = 0.85,
+            inherit.aes = FALSE) +
+  # Benchmark data points
+  geom_point(data = guidance,
+             aes(x = genome_mb, y = n50_kb_approx,
+                 colour = min_per_genome,
+                 shape  = cafe_converged),
+             size = 5, stroke = 1.2) +
+  # Genome-size category labels
+  geom_text(data = guidance |> distinct(genome_size, genome_mb),
+            aes(x = genome_mb, y = 0.8, label = genome_size),
+            size = 3, fontface = "bold", colour = "grey30",
+            inherit.aes = FALSE) +
+  scale_x_log10(
+    name   = "Genome size (Mb)",
+    labels = label_comma(),
+    breaks = c(1, 4, 10, 100, 350, 1000, 3000, 10000)
+  ) +
+  scale_y_log10(
+    name   = "Assembly scaffold N50 (kb)",
+    labels = label_comma(),
+    breaks = c(1, 10, 40, 100, 300, 1000, 5000, 15000, 50000, 120000)
+  ) +
+  scale_colour_gradient(
+    low  = "#2166ac", high = "#d73027",
+    name = "Wall time\nper genome (min)",
+    labels = comma
+  ) +
+  scale_shape_manual(
+    values = c("TRUE" = 16, "FALSE" = 4),
+    name   = "CAFE converged",
+    labels = c("TRUE" = "Yes", "FALSE" = "No")
+  ) +
+  facet_wrap(~phylogeny, labeller = label_both) +
+  labs(
+    title    = "Will the pipeline work for your data?",
+    subtitle = paste0(
+      "Benchmark points use representative median genome size and scaffold N50 for each category ",
+      "(bacteria ~4 Mb, insect ~350 Mb, mammal ~3,000 Mb).\n",
+      "These are approximate — locate your organism relative to the benchmark points ",
+      "to estimate expected run time and likelihood of CAFE convergence."
+    )
+  ) +
+  theme_bench() +
+  theme(legend.box = "horizontal")
+
+ggsave(file.path(outdir, "fig5_user_guidance.pdf"), p_guidance,
+       width = 10, height = 6, useDingbats = FALSE)
+ggsave(file.path(outdir, "fig5_user_guidance.png"), p_guidance,
+       width = 10, height = 6, dpi = 300)
+message("Saved: fig5_user_guidance")
 
 message("\nAll figures written to: ", outdir)
