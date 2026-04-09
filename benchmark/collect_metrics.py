@@ -16,13 +16,13 @@ Outputs:
 
 import argparse
 import csv
-import math
 import os
 import re
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Time / size parsers — handle Nextflow's human-readable trace format
@@ -69,7 +69,7 @@ def parse_cpu_pct(s: str) -> float:
     return float(s.strip('%')) / 100.0
 
 
-def parse_datetime(s: str) -> datetime | None:
+def parse_datetime(s: str) -> Optional[datetime]:
     """Parse '2026-04-08 21:32:49.530' → datetime."""
     if not s or s.strip() in ('-', ''):
         return None

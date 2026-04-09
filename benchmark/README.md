@@ -19,76 +19,57 @@ Each combination runs **CAFE only** — no GO enrichment, no genome quality stat
 
 ### Running on HPC
 
-The benchmark script calls `nextflow run` sequentially for each factor
-combination — the full suite could run for days, so it should not be left in
-a plain terminal session. Two options:
+Nextflow acts as a lightweight orchestrator — it must run on the **login node**
+so it can call `qsub`/`sbatch` to submit child jobs to the scheduler. The
+actual compute (genome downloads, OrthoFinder, CAFE) all runs on worker nodes.
 
-**Option A — submit as a job (recommended)**
+The full suite can take days, so the script must not be left in a plain
+terminal that might disconnect. Use `nohup` or `screen`/`tmux`.
 
-The benchmark script itself uses almost no resources (it just submits child
-jobs via your scheduler). Give it a long walltime and minimal memory:
+**Option A — nohup (recommended, simplest)**
 
 ```bash
-# submit_benchmark.sh
-#!/usr/bin/env bash
-#$ -N excon_benchmark
-#$ -l h_rt=240:00:00   # long walltime — full suite can take days
-#$ -l h_vmem=4G        # low memory — just coordinates job submission
-#$ -pe smp 1
-#$ -cwd
-#$ -j y
-#$ -o benchmark_runner.log
+# Make sure nextflow is on your PATH first, e.g.:
+export PATH="$HOME/bin:$PATH"
 
-./benchmark/run_benchmark.sh \
+nohup ./benchmark/run_benchmark.sh \
     --profile singularity \
-    --custom-config /path/to/your_hpc.config
+    --custom-config /path/to/your_hpc.config \
+    --parallel \
+    > benchmark_runner.log 2>&1 &
+
+echo "PID: $!"          # save this in case you need to kill it later
+tail -f benchmark_runner.log    # follow progress; Ctrl+C to stop tailing (job keeps running)
 ```
 
-```bash
-qsub submit_benchmark.sh
+`--parallel` launches all runs simultaneously — strongly recommended on HPC,
+since each run submits its own jobs independently and they can all proceed at
+once.
+
+The process hierarchy looks like:
+```
+login node: nohup ./run_benchmark.sh    ← lightweight, stays on login node
+  └─ nextflow run main.nf               ← Nextflow driver (lightweight)
+       ├─ qsub NCBIGENOMEDOWNLOAD       ← actual compute on worker nodes
+       ├─ qsub ORTHOFINDER
+       ├─ qsub CAFE_PREP
+       └─ ...
 ```
 
-Add `--parallel` to launch all runs simultaneously rather than one after the
-other — on HPC this is strongly recommended, as each run submits its own jobs
-to the scheduler independently:
+**Option B — screen/tmux**
 
 ```bash
-#$ ...
+screen -S benchmark
+export PATH="$HOME/bin:$PATH"
 ./benchmark/run_benchmark.sh \
     --profile singularity \
     --custom-config /path/to/your_hpc.config \
     --parallel
-```
-
-Nextflow running inside a compute job can still call `qsub` to submit its own
-child jobs — this is standard practice and schedulers allow it. The process
-hierarchy looks like:
-
-```
-qsub submit_benchmark.sh        ← low-resource, long-walltime job
-  └─ nextflow run main.nf        ← Nextflow driver (lightweight)
-       ├─ qsub NCBIGENOMEDOWNLOAD
-       ├─ qsub ORTHOFINDER
-       ├─ qsub CAFE_PREP
-       └─ ...                    ← actual compute on worker nodes
-```
-
-**Option B — screen/tmux on the head node**
-
-If your HPC allows long-running head node processes (Nextflow itself is
-lightweight, so many sysadmins permit this):
-
-```bash
-screen -S benchmark
-./benchmark/run_benchmark.sh \
-    --profile singularity \
-    --custom-config /path/to/your_hpc.config
 # Ctrl+A D to detach; screen -r benchmark to reattach
 ```
 
-Either way, because completed runs are logged in `run_log.tsv` and Nextflow
-uses `-resume`, any interruption can be recovered by simply re-running the
-same command.
+Because completed runs are logged in `run_log.tsv` and Nextflow uses `-resume`,
+any interruption can be recovered by simply re-running the same command.
 
 ### Subset runs and dry run
 
@@ -199,20 +180,22 @@ grep -v "FAILED" benchmark/results/run_log.tsv > /tmp/log_clean.tsv \
 
 ### Nextflow session lock errors
 
-If you see `Unable to acquire lock on session` when starting a run:
+If you see `Unable to acquire lock on session` when starting a run, a previous
+run was interrupted and left a stale lock. Clear it with:
 
 ```bash
-# Check if a previous Nextflow process is still running
-lsof /Users/cwyatt/Downloads/excon-1/.nextflow/cache/*/db/LOCK
+# Replace RUN_ID with the run that is failing, e.g. bacteria_close_contiguous_n10
+RUN_ID=bacteria_close_contiguous_n10
+lsof benchmark/results/${RUN_ID}_cache/cache/*/db/LOCK   # should be empty
 
-# If a Java PID is listed, kill it (replace 12345 with actual PID)
-kill 12345
+# Delete the stale cache and remove the FAILED log entry so it retries
+rm -rf benchmark/results/${RUN_ID}_cache
+grep -v "^${RUN_ID}" benchmark/results/run_log.tsv > /tmp/log_clean.tsv \
+    && mv /tmp/log_clean.tsv benchmark/results/run_log.tsv
 ```
 
 Each benchmark run uses its own isolated cache directory
 (`benchmark/results/{run_id}_cache/`) so runs can never lock each other out.
-The lock error only occurs if a separate Nextflow process from outside the
-benchmark script is still active.
 
 ### Species selection criteria and N50 cutoffs
 
