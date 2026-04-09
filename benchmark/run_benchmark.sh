@@ -21,6 +21,7 @@
 #   --max-cpus        CPU cap per job                               [default: 16]
 #   --no-resume       Disable -resume (forces fresh reruns)
 #   --dry-run         Print commands without running them
+#   --nf-args         Extra Nextflow/pipeline args (quoted), e.g. "--orthofinder_v2"
 # =============================================================================
 
 set -euo pipefail
@@ -41,6 +42,7 @@ MAX_MEMORY="128.GB"
 MAX_CPUS=16
 RESUME=true
 DRY_RUN=false
+NF_EXTRA_ARGS=""
 NXF_VER="${NXF_VER:-25.10.0}"
 
 # --- Argument parsing ---
@@ -56,6 +58,7 @@ while [[ $# -gt 0 ]]; do
         --max-cpus)      MAX_CPUS="$2";     shift 2 ;;
         --no-resume)     RESUME=false;      shift ;;
         --dry-run)       DRY_RUN=true;      shift ;;
+        --nf-args)       NF_EXTRA_ARGS="$2"; shift 2 ;;
         --help|-h)
             sed -n '/^# Usage/,/^# ===/{ /^# ===/d; s/^# \?//; p }' "$0"
             exit 0 ;;
@@ -154,6 +157,8 @@ for genome_size in "${GENOME_SIZES_ARR[@]}"; do
                 )
                 # Pass custom config (HPC scheduler, singularity cache, queue names, etc.)
                 [[ -n "$CUSTOM_CONFIG" ]] && NF_CMD+=(--custom_config "${CUSTOM_CONFIG}")
+                # Pass any extra Nextflow/pipeline args (e.g. --orthofinder_v2)
+                [[ -n "$NF_EXTRA_ARGS" ]] && read -ra _extra <<< "$NF_EXTRA_ARGS" && NF_CMD+=("${_extra[@]}")
                 # Append resume flag if set
                 [[ -n "$RESUME_FLAG" ]] && NF_CMD+=("$RESUME_FLAG")
 

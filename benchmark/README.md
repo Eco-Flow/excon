@@ -42,8 +42,10 @@ cd excon-1/
     --custom-config /path/to/your_hpc.config \
     --dry-run
 
-# Local Docker (laptop/workstation, no HPC)
-./benchmark/run_benchmark.sh --profile docker
+# Local Docker on Mac (requires --orthofinder_v2 and mac profile)
+./benchmark/run_benchmark.sh \
+    --profile docker,mac \
+    --nf-args "--orthofinder_v2"
 ```
 
 The `--custom-config` value is passed straight through as `--custom_config` to
@@ -70,6 +72,7 @@ each run.
 | `--max-cpus` | `16` | CPU cap passed to Nextflow |
 | `--no-resume` | off | Disable `-resume` (force fresh runs) |
 | `--dry-run` | off | Print commands without running |
+| `--nf-args` | _(none)_ | Extra pipeline flags passed through verbatim (quoted), e.g. `"--orthofinder_v2"` |
 
 ---
 
