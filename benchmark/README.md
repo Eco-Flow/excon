@@ -322,6 +322,9 @@ After all runs complete, the runner calls `collect_metrics.py` automatically.
 | `fig2_per_module_scaling.pdf` | One panel per pipeline stage; wall time vs n_species |
 | `fig3_efficiency.pdf` | CPU efficiency % + genomes/hour vs n_species |
 | `fig4_time_composition.pdf` | Stacked bar of module time at the largest N |
+| `fig5_user_guidance.pdf` | Genome size × assembly N50 space showing benchmark conditions, coloured by wall time per genome, with CAFE convergence marked and reference zones for common taxa |
+
+**Note on Fig 5 coordinates:** the genome size (Mb) and scaffold N50 (kb) values plotted for each benchmark category are representative medians — `bacteria ~4 Mb`, `insect ~350 Mb`, `mammal ~3,000 Mb` — not values measured from the actual downloaded assemblies. They are defined in `plot_benchmark.R` in the `genome_size_mb` and `n50_kb_approx` tables and can be updated with more precise values if assembly stats are measured externally.
 
 R packages required: `ggplot2`, `dplyr`, `tidyr`, `scales`, `patchwork`
 
