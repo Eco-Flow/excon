@@ -19,6 +19,7 @@
 #   --custom-config   Path to your HPC config file (SGE/SLURM etc) [default: none]
 #   --max-memory      Memory cap per job                            [default: 128.GB]
 #   --max-cpus        CPU cap per job                               [default: 16]
+#   --parallel        Launch all runs simultaneously (recommended on HPC)
 #   --no-resume       Disable -resume (forces fresh reruns)
 #   --dry-run         Print commands without running them
 #   --nf-args         Extra Nextflow/pipeline args (quoted), e.g. "--orthofinder_v2"
@@ -40,6 +41,7 @@ PROFILE="singularity"
 CUSTOM_CONFIG=""
 MAX_MEMORY="128.GB"
 MAX_CPUS=16
+PARALLEL=false
 RESUME=true
 DRY_RUN=false
 NF_EXTRA_ARGS=""
@@ -52,12 +54,13 @@ while [[ $# -gt 0 ]]; do
         --dataset-sizes) IFS=',' read -ra DATASET_SIZES_ARR  <<< "$2"; shift 2 ;;
         --qualities)     IFS=',' read -ra QUALITIES_ARR       <<< "$2"; shift 2 ;;
         --phylogenies)   IFS=',' read -ra PHYLOGENIES_ARR     <<< "$2"; shift 2 ;;
-        --profile)       PROFILE="$2";      shift 2 ;;
+        --profile)       PROFILE="$2";       shift 2 ;;
         --custom-config) CUSTOM_CONFIG="$2"; shift 2 ;;
-        --max-memory)    MAX_MEMORY="$2";   shift 2 ;;
-        --max-cpus)      MAX_CPUS="$2";     shift 2 ;;
-        --no-resume)     RESUME=false;      shift ;;
-        --dry-run)       DRY_RUN=true;      shift ;;
+        --max-memory)    MAX_MEMORY="$2";    shift 2 ;;
+        --max-cpus)      MAX_CPUS="$2";      shift 2 ;;
+        --parallel)      PARALLEL=true;      shift ;;
+        --no-resume)     RESUME=false;       shift ;;
+        --dry-run)       DRY_RUN=true;       shift ;;
         --nf-args)       NF_EXTRA_ARGS="$2"; shift 2 ;;
         --help|-h)
             sed -n '/^# Usage/,/^# ===/{ /^# ===/d; s/^# \?//; p }' "$0"
@@ -69,6 +72,7 @@ done
 # --- Setup ---
 mkdir -p "$RESULTS_DIR"
 LOG="${RESULTS_DIR}/run_log.tsv"
+LOG_LOCK="${RESULTS_DIR}/.run_log.lock"
 
 if [[ ! -f "$LOG" ]]; then
     printf 'run_id\tgenome_size\tphylogeny\tquality\tn_species\tstatus\tstart_time\tend_time\ttrace_file\n' > "$LOG"
@@ -77,23 +81,79 @@ fi
 RESUME_FLAG=""
 [[ "$RESUME" == true ]] && RESUME_FLAG="-resume"
 
-# --- Helper: parse "1m 18s" or "24h" or "892ms" → integer seconds ---
-# (used only for pre-run estimation; actual timing comes from trace)
-
+# --- Log helper (flock-protected so parallel writes don't corrupt the TSV) ---
 log_run() {
     local run_id="$1" genome_size="$2" phylogeny="$3" quality="$4"
     local n_species="$5" status="$6" start="$7" end="$8" trace="$9"
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$run_id" "$genome_size" "$phylogeny" "$quality" \
-        "$n_species" "$status" "$start" "$end" "$trace" >> "$LOG"
+    (
+        flock 200
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            "$run_id" "$genome_size" "$phylogeny" "$quality" \
+            "$n_species" "$status" "$start" "$end" "$trace" >> "$LOG"
+    ) 200>"$LOG_LOCK"
 }
 
 # =============================================================================
-# Main loop
+# execute_run — runs one Nextflow benchmark and logs the result.
+# Called directly (sequential) or as a background job (parallel).
+# =============================================================================
+execute_run() {
+    local run_id="$1" genome_size="$2" phylogeny="$3" quality="$4"
+    local n_species="$5" subset_csv="$6" outdir="$7" workdir="$8" cachedir="$9"
+
+    echo ""
+    echo "════════════════════════════════════════"
+    echo " Run: ${run_id}  (${n_species} species)"
+    echo "════════════════════════════════════════"
+
+    local NF_CMD=(
+        env NXF_VER="${NXF_VER}"
+        NXF_CACHE_DIR="${cachedir}"
+        nextflow run "${EXCON_DIR}/main.nf"
+        -profile "${PROFILE}"
+        --input "${subset_csv}"
+        --outdir "${outdir}"
+        --max_memory "${MAX_MEMORY}"
+        --max_cpus "${MAX_CPUS}"
+        -work-dir "${workdir}"
+        -with-trace "${outdir}/pipeline_info/execution_trace.tsv"
+        -with-timeline "${outdir}/pipeline_info/execution_timeline.html"
+        -with-report "${outdir}/pipeline_info/execution_report.html"
+    )
+    [[ -n "$CUSTOM_CONFIG" ]]  && NF_CMD+=(--custom_config "${CUSTOM_CONFIG}")
+    [[ -n "$NF_EXTRA_ARGS" ]]  && read -ra _extra <<< "$NF_EXTRA_ARGS" && NF_CMD+=("${_extra[@]}")
+    [[ -n "$RESUME_FLAG" ]]    && NF_CMD+=("$RESUME_FLAG")
+
+    local start_time exit_status=0
+    start_time=$(date -Iseconds)
+
+    "${NF_CMD[@]}" 2>&1 | tee "${RESULTS_DIR}/${run_id}.log" || exit_status=$?
+
+    local end_time run_status trace_file
+    end_time=$(date -Iseconds)
+
+    trace_file="${outdir}/pipeline_info/execution_trace.tsv"
+    [[ ! -f "$trace_file" ]] && \
+        trace_file=$(ls "${outdir}/pipeline_info/execution_trace"*.txt 2>/dev/null | head -1 || echo "")
+
+    if [[ $exit_status -eq 0 ]]; then
+        run_status="COMPLETED"
+        echo "OK  [${run_id}] completed"
+    else
+        run_status="FAILED"
+        echo "ERR [${run_id}] failed — check ${RESULTS_DIR}/${run_id}.log"
+    fi
+
+    log_run "$run_id" "$genome_size" "$phylogeny" "$quality" \
+            "$n_species" "$run_status" "$start_time" "$end_time" "$trace_file"
+}
+
+# =============================================================================
+# Main loop — build the list of runs, then execute sequentially or in parallel
 # =============================================================================
 
+declare -a PIDS=()
 total_runs=0
-planned_runs=0
 
 for genome_size in "${GENOME_SIZES_ARR[@]}"; do
     for phylogeny in "${PHYLOGENIES_ARR[@]}"; do
@@ -106,7 +166,6 @@ for genome_size in "${GENOME_SIZES_ARR[@]}"; do
                 continue
             fi
 
-            # Count non-empty lines (each is a species)
             total_species=$(grep -c '[^[:space:]]' "$full_csv" || true)
 
             for n_species in "${DATASET_SIZES_ARR[@]}"; do
@@ -117,8 +176,6 @@ for genome_size in "${GENOME_SIZES_ARR[@]}"; do
                 cachedir="${RESULTS_DIR}/${run_id}_cache"
                 subset_csv="${RESULTS_DIR}/${run_id}_input.csv"
 
-                ((planned_runs++)) || true
-
                 if [[ $n_species -gt $total_species ]]; then
                     echo "SKIP [${run_id}]: need ${n_species} species but only ${total_species} in CSV"
                     log_run "$run_id" "$genome_size" "$phylogeny" "$quality" \
@@ -126,81 +183,52 @@ for genome_size in "${GENOME_SIZES_ARR[@]}"; do
                     continue
                 fi
 
-                # Check if already successfully completed
                 if grep -q "^${run_id}	.*	COMPLETED	" "$LOG" 2>/dev/null; then
-                    echo "SKIP [${run_id}]: already logged as COMPLETED (use --no-resume to force rerun)"
+                    echo "SKIP [${run_id}]: already COMPLETED"
                     continue
                 fi
 
-                echo ""
-                echo "════════════════════════════════════════"
-                echo " Run: ${run_id}  (${n_species}/${total_species} species)"
-                echo "════════════════════════════════════════"
-
-                # Subset the CSV to first n_species rows
+                # Prepare subset CSV (safe to do before backgrounding)
                 head -n "$n_species" "$full_csv" > "$subset_csv"
 
-                # ---- Nextflow command ----
-                NF_CMD=(
-                    env NXF_VER="${NXF_VER}"
-                    NXF_CACHE_DIR="${cachedir}"
-                    nextflow run "${EXCON_DIR}/main.nf"
-                    -profile "${PROFILE}"
-                    --input "${subset_csv}"
-                    --outdir "${outdir}"
-                    --max_memory "${MAX_MEMORY}"
-                    --max_cpus "${MAX_CPUS}"
-                    -work-dir "${workdir}"
-                    -with-trace "${outdir}/pipeline_info/execution_trace.tsv"
-                    -with-timeline "${outdir}/pipeline_info/execution_timeline.html"
-                    -with-report "${outdir}/pipeline_info/execution_report.html"
-                )
-                # Pass custom config (HPC scheduler, singularity cache, queue names, etc.)
-                [[ -n "$CUSTOM_CONFIG" ]] && NF_CMD+=(--custom_config "${CUSTOM_CONFIG}")
-                # Pass any extra Nextflow/pipeline args (e.g. --orthofinder_v2)
-                [[ -n "$NF_EXTRA_ARGS" ]] && read -ra _extra <<< "$NF_EXTRA_ARGS" && NF_CMD+=("${_extra[@]}")
-                # Append resume flag if set
-                [[ -n "$RESUME_FLAG" ]] && NF_CMD+=("$RESUME_FLAG")
-
                 if [[ "$DRY_RUN" == true ]]; then
-                    echo "  [DRY RUN] ${NF_CMD[*]}"
+                    echo "  [DRY RUN] ${run_id}"
                     ((total_runs++)) || true
                     continue
                 fi
 
-                start_time=$(date -Iseconds)
-                exit_status=0
-
-                "${NF_CMD[@]}" 2>&1 | tee "${RESULTS_DIR}/${run_id}.log" || exit_status=$?
-
-                end_time=$(date -Iseconds)
-
-                # Find trace file
-                trace_file="${outdir}/pipeline_info/execution_trace.tsv"
-                if [[ ! -f "$trace_file" ]]; then
-                    trace_file=$(ls "${outdir}/pipeline_info/execution_trace"*.txt 2>/dev/null | head -1 || echo "")
-                fi
-
-                if [[ $exit_status -eq 0 ]]; then
-                    run_status="COMPLETED"
-                    echo "OK  [${run_id}] completed successfully"
-                else
-                    run_status="FAILED"
-                    echo "ERR [${run_id}] failed with exit ${exit_status} — check ${RESULTS_DIR}/${run_id}.log"
-                fi
-
-                log_run "$run_id" "$genome_size" "$phylogeny" "$quality" \
-                        "$n_species" "$run_status" "$start_time" "$end_time" "$trace_file"
-
                 ((total_runs++)) || true
+
+                if [[ "$PARALLEL" == true ]]; then
+                    # Launch in background; stdout/stderr goes to per-run log
+                    execute_run \
+                        "$run_id" "$genome_size" "$phylogeny" "$quality" \
+                        "$n_species" "$subset_csv" "$outdir" "$workdir" "$cachedir" \
+                        >> "${RESULTS_DIR}/${run_id}.log" 2>&1 &
+                    PIDS+=($!)
+                    echo "LAUNCHED [${run_id}] — PID $!"
+                else
+                    execute_run \
+                        "$run_id" "$genome_size" "$phylogeny" "$quality" \
+                        "$n_species" "$subset_csv" "$outdir" "$workdir" "$cachedir"
+                fi
             done
         done
     done
 done
 
+# --- Wait for all background jobs (parallel mode) ---
+if [[ "$PARALLEL" == true && ${#PIDS[@]} -gt 0 ]]; then
+    echo ""
+    echo "Waiting for ${#PIDS[@]} parallel runs to complete..."
+    for pid in "${PIDS[@]}"; do
+        wait "$pid" || true   # errors are logged per-run; don't abort here
+    done
+fi
+
 echo ""
 echo "════════════════════════════════════════"
-echo " All runs finished (${total_runs} executed)"
+echo " All runs finished (${total_runs} launched)"
 echo "════════════════════════════════════════"
 
 if [[ "$DRY_RUN" == false && $total_runs -gt 0 ]]; then

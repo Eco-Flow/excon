@@ -17,18 +17,82 @@ Each combination runs **CAFE only** — no GO enrichment, no genome quality stat
 
 ## Quick start
 
-The benchmark script runs on the **head/login node** exactly like any `nextflow run`
-call — it submits jobs to the cluster via your scheduler. Just pass your usual
-`--custom_config` and `-profile singularity`.
+### Running on HPC
+
+The benchmark script calls `nextflow run` sequentially for each factor
+combination — the full suite could run for days, so it should not be left in
+a plain terminal session. Two options:
+
+**Option A — submit as a job (recommended)**
+
+The benchmark script itself uses almost no resources (it just submits child
+jobs via your scheduler). Give it a long walltime and minimal memory:
 
 ```bash
-cd excon-1/
+# submit_benchmark.sh
+#!/usr/bin/env bash
+#$ -N excon_benchmark
+#$ -l h_rt=240:00:00   # long walltime — full suite can take days
+#$ -l h_vmem=4G        # low memory — just coordinates job submission
+#$ -pe smp 1
+#$ -cwd
+#$ -j y
+#$ -o benchmark_runner.log
 
-# HPC with SGE + Singularity (typical usage)
 ./benchmark/run_benchmark.sh \
     --profile singularity \
     --custom-config /path/to/your_hpc.config
+```
 
+```bash
+qsub submit_benchmark.sh
+```
+
+Add `--parallel` to launch all runs simultaneously rather than one after the
+other — on HPC this is strongly recommended, as each run submits its own jobs
+to the scheduler independently:
+
+```bash
+#$ ...
+./benchmark/run_benchmark.sh \
+    --profile singularity \
+    --custom-config /path/to/your_hpc.config \
+    --parallel
+```
+
+Nextflow running inside a compute job can still call `qsub` to submit its own
+child jobs — this is standard practice and schedulers allow it. The process
+hierarchy looks like:
+
+```
+qsub submit_benchmark.sh        ← low-resource, long-walltime job
+  └─ nextflow run main.nf        ← Nextflow driver (lightweight)
+       ├─ qsub NCBIGENOMEDOWNLOAD
+       ├─ qsub ORTHOFINDER
+       ├─ qsub CAFE_PREP
+       └─ ...                    ← actual compute on worker nodes
+```
+
+**Option B — screen/tmux on the head node**
+
+If your HPC allows long-running head node processes (Nextflow itself is
+lightweight, so many sysadmins permit this):
+
+```bash
+screen -S benchmark
+./benchmark/run_benchmark.sh \
+    --profile singularity \
+    --custom-config /path/to/your_hpc.config
+# Ctrl+A D to detach; screen -r benchmark to reattach
+```
+
+Either way, because completed runs are logged in `run_log.tsv` and Nextflow
+uses `-resume`, any interruption can be recovered by simply re-running the
+same command.
+
+### Subset runs and dry run
+
+```bash
 # Subset for a quick sanity-check (bacteria n=10 only)
 ./benchmark/run_benchmark.sh \
     --profile singularity \
@@ -70,6 +134,7 @@ each run.
 | `--custom-config` | _(none)_ | Path to your HPC config file (sets executor, queues, cache dirs etc.) |
 | `--max-memory` | `128.GB` | Memory cap passed to Nextflow |
 | `--max-cpus` | `16` | CPU cap passed to Nextflow |
+| `--parallel` | off | Launch all runs simultaneously (recommended on HPC) |
 | `--no-resume` | off | Disable `-resume` (force fresh runs) |
 | `--dry-run` | off | Print commands without running |
 | `--nf-args` | _(none)_ | Extra pipeline flags passed through verbatim (quoted), e.g. `"--orthofinder_v2"` |
