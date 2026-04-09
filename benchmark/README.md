@@ -212,7 +212,7 @@ from the NCBI Assembly web interface (**Send to → File → ID Table**).
 
 
 Mammals, close:Primates, diverse:Mammals
-Insects, close:Drosophilidae, diverse:Diptera
+Insects, close:Apidae, diverse:Hymenoptera
 Bacteria, close:Streptococcus, diverse:Alphaproteobacteria
 
 e.g.:
