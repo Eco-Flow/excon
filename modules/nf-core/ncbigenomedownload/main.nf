@@ -46,5 +46,17 @@ process NCBIGENOMEDOWNLOAD {
         --parallel $task.cpus \\
         $groups
 
+    # Verify every downloaded .gz file is valid gzip.
+    # If NCBI FTP was down, the file will contain an HTML error page instead
+    # of genome data — gzip -t catches this and fails the process so Nextflow
+    # retries rather than passing corrupt files downstream.
+    for f in *.gz; do
+        if ! gzip -t "\$f" 2>/dev/null; then
+            echo "ERROR: '\$f' is not valid gzip — NCBI may have returned an error page:" >&2
+            head -c 500 "\$f" >&2
+            exit 1
+        fi
+    done
+
     """
 }
