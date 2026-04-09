@@ -46,12 +46,32 @@ failed_list=()
 
 check_accession_datasets() {
     local acc="$1"
-    # datasets summary returns JSON; non-zero exit or empty total means not found
+    # datasets summary returns JSON — check accession exists AND has annotation
     local result
     result=$(datasets summary genome accession "$acc" 2>/dev/null)
-    local count
-    count=$(echo "$result" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('total_count',0))" 2>/dev/null || echo 0)
-    [[ "$count" -gt 0 ]]
+    local count has_annotation
+    count=$(echo "$result" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print(d.get('total_count', 0))
+" 2>/dev/null || echo 0)
+    [[ "$count" -gt 0 ]] || return 1
+
+    # Check annotation_info is present (means GFF exists on NCBI)
+    has_annotation=$(echo "$result" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+reports = d.get('reports', [])
+has = any(r.get('annotation_info') for r in reports)
+print('yes' if has else 'no')
+" 2>/dev/null || echo "unknown")
+
+    if [[ "$has_annotation" == "no" ]]; then
+        # Annotate the failure reason for the caller
+        FAIL_REASON="no annotation (GFF) on NCBI"
+        return 1
+    fi
+    return 0
 }
 
 check_accession_ngd() {
@@ -67,6 +87,7 @@ for csv in "${CSV_FILES[@]}"; do
         accession="${accession//[$'\r\n']}"   # strip Windows line endings
         ((total++)) || true
 
+        FAIL_REASON=""
         if [[ "$TOOL" == "datasets" ]]; then
             ok=$(check_accession_datasets "$accession" && echo yes || echo no)
         else
@@ -76,9 +97,10 @@ for csv in "${CSV_FILES[@]}"; do
         if [[ "$ok" == "yes" ]]; then
             printf "  OK   %-45s %s\n" "$species" "$accession"
         else
-            printf "  FAIL %-45s %s\n" "$species" "$accession"
+            reason="${FAIL_REASON:-not found on NCBI}"
+            printf "  FAIL %-45s %s  [%s]\n" "$species" "$accession" "$reason"
             ((failed++)) || true
-            failed_list+=("$(basename "$csv"): ${species},${accession}")
+            failed_list+=("$(basename "$csv"): ${species},${accession}  [${reason}]")
         fi
     done < "$csv"
     echo ""
