@@ -111,6 +111,7 @@ for genome_size in "${GENOME_SIZES_ARR[@]}"; do
                 run_id="${genome_size}_${phylogeny}_${quality}_n${n_species}"
                 outdir="${RESULTS_DIR}/${run_id}"
                 workdir="${RESULTS_DIR}/${run_id}_work"
+                cachedir="${RESULTS_DIR}/${run_id}_cache"
                 subset_csv="${RESULTS_DIR}/${run_id}_input.csv"
 
                 ((planned_runs++)) || true
@@ -139,6 +140,7 @@ for genome_size in "${GENOME_SIZES_ARR[@]}"; do
                 # ---- Nextflow command ----
                 NF_CMD=(
                     env NXF_VER="${NXF_VER}"
+                    NXF_CACHE_DIR="${cachedir}"
                     nextflow run "${EXCON_DIR}/main.nf"
                     -profile "${PROFILE}"
                     --input "${subset_csv}"

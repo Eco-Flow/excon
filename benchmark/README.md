@@ -77,27 +77,173 @@ each run.
 
 Each CSV in `inputs/` is named `{genome_size}_{phylogeny}_{quality}.csv`.
 They contain 20 species each — **the runner takes the first N rows** for
-each dataset-size level.
+each dataset-size level, so ordering matters:
 
-**Important:** Check that all accession numbers are current before running.
-NCBI accessions occasionally get superseded. Verify with:
+- **contiguous** files: best-quality assemblies at the top
+- **fragmented** files: most-fragmented assemblies at the top
+
+For n=50 and n=100 you will need to add more rows. See [species selection criteria](#species-selection-criteria) below.
+
+### Validating accessions before running
+
+The provided CSVs are a starting point but **some accessions may be wrong or
+withdrawn** — NCBI accessions can be superseded, and version numbers (`.1`,
+`.2`) change over time. Run the validator before your first benchmark run:
 
 ```bash
-# Check one accession resolves
-ncbi-genome-download --dry-run --assembly-accessions GCF_000006885.1 bacteria
+# Requires 'datasets' (NCBI CLI) or 'ncbi-genome-download' in your environment
+./benchmark/validate_inputs.sh
+
+# Or check one file at a time
+./benchmark/validate_inputs.sh benchmark/inputs/bacteria_close_contiguous.csv
 ```
 
-### Species selection criteria
+This prints `OK` / `FAIL` for every accession and lists all broken ones at the
+end. Fix any `FAIL` entries before running — a bad accession causes the whole
+Nextflow run to abort with:
 
-| Factor | Contiguous | Fragmented |
-|--------|-----------|------------|
-| Bacteria | Complete chromosome assemblies; typically 1–3 sequences, N50 ≥ 500 kb | WGS assemblies; >50 scaffolds, N50 < 100 kb |
-| Insect | Chromosome-level (scaffold N50 > 1 Mb) | Contig/scaffold assemblies (N50 < 100 kb) |
-| Mammal | Chromosome-level RefSeq reference genomes | Contig or scaffold assemblies |
+```
+ERROR: No downloads matched your filter. Please check your options.
+```
 
-For 50 and 100 species you will need to add more rows to each CSV —
-just append `species_name,GCF_XXXXXXXXX.X` lines, preserving the ordering
-(contiguous = better assemblies at the top, fragmented = worse at the top).
+To find the correct accession for a species, use the NCBI datasets CLI:
+
+```bash
+datasets summary genome taxon "Streptococcus pyogenes" \
+    --assembly-level chromosome \
+    --as-json-lines | \
+    dataformat tsv genome --fields accession,organism-name
+```
+
+### Recovering from a bad accession mid-run
+
+If a run fails due to a bad accession:
+
+1. Fix the accession in the relevant CSV
+2. Remove the `FAILED` entry from `benchmark/results/run_log.tsv` so the runner retries it
+3. Rerun — Nextflow `-resume` will skip already-completed tasks
+
+```bash
+# Remove failed entries from the log
+grep -v "FAILED" benchmark/results/run_log.tsv > /tmp/log_clean.tsv \
+    && mv /tmp/log_clean.tsv benchmark/results/run_log.tsv
+```
+
+### Nextflow session lock errors
+
+If you see `Unable to acquire lock on session` when starting a run:
+
+```bash
+# Check if a previous Nextflow process is still running
+lsof /Users/cwyatt/Downloads/excon-1/.nextflow/cache/*/db/LOCK
+
+# If a Java PID is listed, kill it (replace 12345 with actual PID)
+kill 12345
+```
+
+Each benchmark run uses its own isolated cache directory
+(`benchmark/results/{run_id}_cache/`) so runs can never lock each other out.
+The lock error only occurs if a separate Nextflow process from outside the
+benchmark script is still active.
+
+### Species selection criteria and N50 cutoffs
+
+N50 is used to define the quality band for each CSV. The `--min-n50` and
+`--max-n50` flags in `ncbi_table_to_csv.py` filter by the Scaffold N50 column
+from the NCBI Assembly table.
+
+| Factor | Contiguous (`--min-n50`) | Fragmented (`--min-n50` / `--max-n50`) |
+|--------|--------------------------|----------------------------------------|
+| Bacteria | `--min-n50 500000` (≥500 kb) | `--min-n50 10000 --max-n50 100000` |
+| Insect | `--min-n50 2000000` (≥1 Mb) | `--min-n50 1000 --max-n50 1500000` |
+| Mammal | `--min-n50 90000000` (≥90 Mb) | `--min-n50 3000000 --max-n50 50000000` |
+
+The floor on the fragmented band (`--min-n50`) is important — without it you
+include completely broken assemblies (thousands of tiny contigs) that cause
+OrthoFinder or CAFE to fail.
+
+### How the current CSVs were generated
+
+The commands below document exactly how each input file was built, so the
+species selection is reproducible. In each case the source TSV was downloaded
+from the NCBI Assembly web interface (**Send to → File → ID Table**).
+
+
+Mammals, close:Primates, diverse:Mammals
+Insects, close:Drosophilidae, diverse:Diptera
+Bacteria, close:Streptococcus, diverse:Alphaproteobacteria
+
+e.g.:
+
+**Mammal — diverse — contiguous** (`mammal_diverse_contiguous.csv`)
+```bash
+# Source: all Mammalia genomes from NCBI Assembly
+python3 benchmark/ncbi_table_to_csv.py "ncbi_dataset (5).tsv" \
+    --min-n50 90000000 \
+    --output benchmark/inputs/mammal_diverse_contiguous.csv
+```
+
+**Mammal — diverse — fragmented** (`mammal_diverse_fragmented.csv`)
+```bash
+# Source: all Mammalia genomes from NCBI Assembly
+python3 benchmark/ncbi_table_to_csv.py "ncbi_dataset (5).tsv" \
+    --min-n50 3000000 --max-n50 50000000 \
+    --output benchmark/inputs/mammal_diverse_fragmented.csv
+```
+
+**Primates — close — contiguous** (`mammal_close_contiguous.csv`)
+```bash
+# Source: all Mammalia genomes from NCBI Assembly
+python3 benchmark/ncbi_table_to_csv.py "ncbi_dataset (4).tsv" \
+    --min-n50 90000000 \
+    --output benchmark/inputs/mammal_close_contiguous.csv
+```
+
+**Primates — close — fragmented** (`mammal_close_fragmented.csv`)
+```bash
+# Source: all Mammalia genomes from NCBI Assembly
+python3 benchmark/ncbi_table_to_csv.py "ncbi_dataset (4).tsv" \
+    --min-n50 3000000 --max-n50 50000000 \
+    --output benchmark/inputs/mammal_close_fragmented.csv
+```
+
+
+### Building or extending a species list
+
+1. Go to [https://www.ncbi.nlm.nih.gov/assembly](https://www.ncbi.nlm.nih.gov/assembly)
+2. Search for your taxonomic group, e.g.:
+   - `Streptococcus[Organism]` — all Streptococcus assemblies
+   - `Mammalia[Organism]` — all mammals
+   - `Proteobacteria[Organism]` — for diverse bacteria (combine multiple phyla)
+3. Click **Send to** → **File** → Format: **ID Table (text)** → **Create File**
+4. Convert with N50 filtering:
+
+```bash
+# Contiguous — one representative per species, high N50
+python3 benchmark/ncbi_table_to_csv.py ncbi_table.tsv \
+    --min-n50 500000 \
+    --output benchmark/inputs/bacteria_close_contiguous.csv
+
+# Fragmented — quality band with floor and ceiling
+python3 benchmark/ncbi_table_to_csv.py ncbi_table.tsv \
+    --min-n50 10000 --max-n50 100000 \
+    --output benchmark/inputs/bacteria_close_fragmented.csv
+
+# Append more species to an existing file
+python3 benchmark/ncbi_table_to_csv.py more_taxa.tsv \
+    --min-n50 500000 \
+    --append --output benchmark/inputs/bacteria_diverse_contiguous.csv
+```
+
+The script keeps only `GCF_` (RefSeq) entries, picks the highest accession
+number per species binomial (proxy for most recent), removes duplicates, and
+converts organism names to underscore format.
+
+Then validate before running:
+
+```bash
+./benchmark/validate_inputs.sh benchmark/inputs/bacteria_close_contiguous.csv
+```
 
 ---
 
