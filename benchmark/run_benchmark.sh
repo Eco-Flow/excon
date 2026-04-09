@@ -188,6 +188,10 @@ for genome_size in "${GENOME_SIZES_ARR[@]}"; do
                     continue
                 fi
 
+                # Remove pipeline_info from any previous failed run — Nextflow refuses
+                # to start if execution_trace.tsv / execution_report.html already exist
+                rm -rf "${outdir}/pipeline_info"
+
                 # Prepare subset CSV (safe to do before backgrounding)
                 head -n "$n_species" "$full_csv" > "$subset_csv"
 
