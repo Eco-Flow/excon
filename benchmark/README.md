@@ -55,23 +55,23 @@ scheduler). Run `run.sh` however you like — each run is fully isolated so you
 can run multiple simultaneously.
 
 ```bash
-# One run interactively
+# Foreground (interactive)
 cd benchmark/results/bacteria_close_contiguous_n10
 ./run.sh
+
+# Background — keeps terminal free, Nextflow writes to .nextflow.log
+cd benchmark/results/bacteria_close_contiguous_n10
+./run.sh -bg
+tail -f .nextflow.log    # follow progress; Ctrl+C stops tailing, run continues
 
 # Resume after interruption
 ./run.sh -resume
 
-# Two runs in parallel — nohup keeps them alive after you disconnect
-nohup benchmark/results/bacteria_close_contiguous_n10/run.sh \
-    > benchmark/results/bacteria_close_contiguous_n10/nextflow.log 2>&1 &
+# Multiple runs in parallel — start each in background from its own directory
+cd benchmark/results/bacteria_close_contiguous_n10 && ./run.sh -bg
+cd benchmark/results/bacteria_close_fragmented_n10 && ./run.sh -bg
 
-nohup benchmark/results/bacteria_close_fragmented_n10/run.sh \
-    > benchmark/results/bacteria_close_fragmented_n10/nextflow.log 2>&1 &
-
-# Follow progress
-tail -f benchmark/results/bacteria_close_contiguous_n10/nextflow.log
-qstat   # see child jobs on the scheduler
+qstat   # see all child jobs on the scheduler
 ```
 
 The process hierarchy for each run:
