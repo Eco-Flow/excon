@@ -17,89 +17,85 @@ Each combination runs **CAFE only** — no GO enrichment, no genome quality stat
 
 ## Quick start
 
-### Running on HPC
+### Step 1 — create run directories
 
-Nextflow acts as a lightweight orchestrator — it must run on the **login node**
-so it can call `qsub`/`sbatch` to submit child jobs to the scheduler. The
-actual compute (genome downloads, OrthoFinder, CAFE) all runs on worker nodes.
-
-The full suite can take days, so the script must not be left in a plain
-terminal that might disconnect. Use `nohup` or `screen`/`tmux`.
-
-**Option A — nohup (recommended, simplest)**
+`run_benchmark.sh` prepares a self-contained directory for each factor
+combination. It does not run Nextflow itself.
 
 ```bash
-# Make sure nextflow is on your PATH first, e.g.:
-export PATH="$HOME/bin:$PATH"
-
-nohup ./benchmark/run_benchmark.sh \
-    --profile singularity \
-    --custom-config /path/to/your_hpc.config \
-    --parallel \
-    > benchmark_runner.log 2>&1 &
-
-echo "PID: $!"          # save this in case you need to kill it later
-tail -f benchmark_runner.log    # follow progress; Ctrl+C to stop tailing (job keeps running)
-```
-
-`--parallel` launches all runs simultaneously — strongly recommended on HPC,
-since each run submits its own jobs independently and they can all proceed at
-once.
-
-The process hierarchy looks like:
-```
-login node: nohup ./run_benchmark.sh    ← lightweight, stays on login node
-  └─ nextflow run main.nf               ← Nextflow driver (lightweight)
-       ├─ qsub NCBIGENOMEDOWNLOAD       ← actual compute on worker nodes
-       ├─ qsub ORTHOFINDER
-       ├─ qsub CAFE_PREP
-       └─ ...
-```
-
-**Option B — screen/tmux**
-
-```bash
-screen -S benchmark
-export PATH="$HOME/bin:$PATH"
+# HPC — creates run dirs with your profile and config baked in
 ./benchmark/run_benchmark.sh \
     --profile singularity \
-    --custom-config /path/to/your_hpc.config \
-    --parallel
-# Ctrl+A D to detach; screen -r benchmark to reattach
-```
+    --custom-config /path/to/your_hpc.config
 
-Because completed runs are logged in `run_log.tsv` and Nextflow uses `-resume`,
-any interruption can be recovered by simply re-running the same command.
-
-### Subset runs and dry run
-
-```bash
-# Subset for a quick sanity-check (bacteria n=10 only)
+# Subset — bacteria n=10 only
 ./benchmark/run_benchmark.sh \
     --profile singularity \
     --custom-config /path/to/your_hpc.config \
     --genome-sizes bacteria \
     --dataset-sizes 10
 
-# Dry run — prints every Nextflow command without executing
-./benchmark/run_benchmark.sh \
-    --profile singularity \
-    --custom-config /path/to/your_hpc.config \
-    --dry-run
-
-# Local Docker on Mac (requires --orthofinder_v2 and mac profile)
+# Local Mac with Docker
 ./benchmark/run_benchmark.sh \
     --profile docker,mac \
     --nf-args "--orthofinder_v2"
 ```
 
-The `--custom-config` value is passed straight through as `--custom_config` to
-every Nextflow invocation, so it works exactly the same as your normal runs.
+Each combination produces `benchmark/results/{run_id}/`:
+```
+benchmark/results/bacteria_close_contiguous_n10/
+    input.csv   ← 10-species samplesheet
+    run.sh      ← nextflow command, ready to execute
+```
 
-Completed runs are recorded in `benchmark/results/run_log.tsv`. The script
-skips any run already marked `COMPLETED`, so it is safe to re-run after a
-crash — Nextflow `-resume` will also pick up from the last cached step within
-each run.
+### Step 2 — run
+
+Nextflow must run on the **login node** (so it can submit child jobs to the
+scheduler). Run `run.sh` however you like — each run is fully isolated so you
+can run multiple simultaneously.
+
+```bash
+# One run interactively
+cd benchmark/results/bacteria_close_contiguous_n10
+./run.sh
+
+# Resume after interruption
+./run.sh -resume
+
+# Two runs in parallel — nohup keeps them alive after you disconnect
+nohup benchmark/results/bacteria_close_contiguous_n10/run.sh \
+    > benchmark/results/bacteria_close_contiguous_n10/nextflow.log 2>&1 &
+
+nohup benchmark/results/bacteria_close_fragmented_n10/run.sh \
+    > benchmark/results/bacteria_close_fragmented_n10/nextflow.log 2>&1 &
+
+# Follow progress
+tail -f benchmark/results/bacteria_close_contiguous_n10/nextflow.log
+qstat   # see child jobs on the scheduler
+```
+
+The process hierarchy for each run:
+```
+login node: nohup run.sh             ← lightweight, stays on login node
+  └─ nextflow run main.nf            ← Nextflow driver (lightweight)
+       ├─ qsub NCBIGENOMEDOWNLOAD    ← actual compute on worker nodes
+       ├─ qsub ORTHOFINDER
+       └─ ...
+```
+
+### Step 3 — collect metrics
+
+Once any runs have completed:
+
+```bash
+python3 benchmark/collect_metrics.py \
+    --results-dir benchmark/results \
+    --output      benchmark/results/benchmark_metrics.tsv
+```
+
+The collector scans for completed runs automatically (any directory containing
+`output/pipeline_info/execution_trace.tsv`). Run it at any point — it picks up
+whatever has finished so far.
 
 ---
 
@@ -112,13 +108,11 @@ each run.
 | `--phylogenies` | `close,diverse` | Subset |
 | `--qualities` | `contiguous,fragmented` | Subset |
 | `--profile` | `singularity` | Nextflow `-profile` (e.g. `singularity`, `docker`) |
-| `--custom-config` | _(none)_ | Path to your HPC config file (sets executor, queues, cache dirs etc.) |
+| `--custom-config` | _(none)_ | Path to your HPC config file |
 | `--max-memory` | `128.GB` | Memory cap passed to Nextflow |
 | `--max-cpus` | `16` | CPU cap passed to Nextflow |
-| `--parallel` | off | Launch all runs simultaneously (recommended on HPC) |
-| `--no-resume` | off | Disable `-resume` (force fresh runs) |
-| `--dry-run` | off | Print commands without running |
-| `--nf-args` | _(none)_ | Extra pipeline flags passed through verbatim (quoted), e.g. `"--orthofinder_v2"` |
+| `--nf-args` | _(none)_ | Extra pipeline flags, e.g. `"--orthofinder_v2"` |
+| `--force` | off | Overwrite existing `run.sh` files |
 
 ---
 
@@ -168,34 +162,31 @@ datasets summary genome taxon "Streptococcus pyogenes" \
 
 If a run fails due to a bad accession:
 
-1. Fix the accession in the relevant CSV
-2. Remove the `FAILED` entry from `benchmark/results/run_log.tsv` so the runner retries it
-3. Rerun — Nextflow `-resume` will skip already-completed tasks
-
-```bash
-# Remove failed entries from the log
-grep -v "FAILED" benchmark/results/run_log.tsv > /tmp/log_clean.tsv \
-    && mv /tmp/log_clean.tsv benchmark/results/run_log.tsv
-```
+1. Fix the accession in `benchmark/inputs/{genome_size}_{phylogeny}_{quality}.csv`
+2. Regenerate the run directory: `./benchmark/run_benchmark.sh ... --force`
+3. Re-run with `-resume` — Nextflow skips already-completed tasks:
+   ```bash
+   cd benchmark/results/bacteria_close_contiguous_n10 && ./run.sh -resume
+   ```
 
 ### Nextflow session lock errors
 
-If you see `Unable to acquire lock on session` when starting a run, a previous
-run was interrupted and left a stale lock. Clear it with:
+If you see `Unable to acquire lock on session`, a previous run was interrupted
+and left a stale lock. Clear it with:
 
 ```bash
-# Replace RUN_ID with the run that is failing, e.g. bacteria_close_contiguous_n10
 RUN_ID=bacteria_close_contiguous_n10
-lsof benchmark/results/${RUN_ID}_cache/cache/*/db/LOCK   # should be empty
+# Check what's holding the lock (should be empty if nothing is running)
+lsof benchmark/results/${RUN_ID}/cache/cache/*/db/LOCK
 
-# Delete the stale cache and remove the FAILED log entry so it retries
-rm -rf benchmark/results/${RUN_ID}_cache
-grep -v "^${RUN_ID}" benchmark/results/run_log.tsv > /tmp/log_clean.tsv \
-    && mv /tmp/log_clean.tsv benchmark/results/run_log.tsv
+# Delete the stale cache
+rm -rf benchmark/results/${RUN_ID}/cache
+
+# Re-run fresh (no -resume)
+cd benchmark/results/${RUN_ID} && ./run.sh
 ```
 
-Each benchmark run uses its own isolated cache directory
-(`benchmark/results/{run_id}_cache/`) so runs can never lock each other out.
+Each run directory has its own `cache/` folder so runs can never lock each other out.
 
 ### Species selection criteria and N50 cutoffs
 
