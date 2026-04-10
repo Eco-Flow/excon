@@ -204,6 +204,50 @@ The floor on the fragmented band (`--min-n50`) is important — without it you
 include completely broken assemblies (thousands of tiny contigs) that cause
 OrthoFinder or CAFE to fail.
 
+### Adding a new taxonomic group
+
+To add a new genome-size category (e.g. `bird` or `reptile`):
+
+1. **Create input CSVs** — one file per phylogeny × quality combination:
+   ```
+   benchmark/inputs/bird_close_contiguous.csv
+   benchmark/inputs/bird_close_fragmented.csv
+   benchmark/inputs/bird_diverse_contiguous.csv
+   benchmark/inputs/bird_diverse_fragmented.csv
+   ```
+   Use `ncbi_table_to_csv.py` with appropriate `--min-n50` / `--max-n50` cutoffs
+   (see N50 table above). Aim for ≥20 species per file.
+
+2. **Add rows to `benchmark/inputs/metadata.tsv`** — one row per file, with the
+   specific clade, a representative genome size (Mb), and typical scaffold N50
+   (kb) for contiguous and fragmented bands. These appear as labelled points in
+   Fig 5.
+
+3. **Add a colour in `plot_benchmark.R`** — find `genome_colours_defined` near
+   the top of the file and add an entry for the new category name:
+   ```r
+   bird = "#FF7F00",
+   ```
+   If you skip this step the new category will plot in grey rather than failing.
+
+4. **Optionally extend the display order** — find `genome_size_levels` in
+   `plot_benchmark.R` and add the new name in the position you want it to appear
+   on plot axes.
+
+5. **Run the benchmark** — the script picks up new CSV files automatically:
+   ```bash
+   ./benchmark/run_benchmark.sh \
+       --profile singularity \
+       --custom-config myriad.config \
+       --genome-sizes bird \
+       --dataset-sizes 10,30,70
+   ```
+
+Nothing else needs changing — `collect_metrics.py` and `run_benchmark.sh` are
+not hardcoded to specific category names.
+
+---
+
 ### How the current CSVs were generated
 
 The commands below document exactly how each input file was built, so the

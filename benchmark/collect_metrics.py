@@ -104,7 +104,7 @@ def normalise_process(name: str) -> str:
 # ---------------------------------------------------------------------------
 
 _RUN_ID_RE = re.compile(
-    r'^(bacteria|insect|mammal)_(close|diverse)_(contiguous|fragmented)_n(\d+)$'
+    r'^(\w+)_(close|diverse)_(contiguous|fragmented)_n(\d+)$'
 )
 
 def parse_run_id(run_id: str) -> Optional[dict]:
