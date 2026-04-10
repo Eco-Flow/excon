@@ -102,7 +102,7 @@ genome_colours_defined <- c(
   fungi    = "#FFD700"
 )
 # Keep only categories present in the data; add grey for any unknown category
-genome_size_present <- levels(metrics$genome_size)
+genome_size_present <- unique(as.character(metrics$genome_size))
 auto_grey <- setdiff(genome_size_present, names(genome_colours_defined))
 genome_colours <- c(
   genome_colours_defined[intersect(names(genome_colours_defined),
