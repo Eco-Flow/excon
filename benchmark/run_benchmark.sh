@@ -126,6 +126,7 @@ for genome_size in "${GENOME_SIZES_ARR[@]}"; do
                     printf '\n'
                     printf 'NXF_VER="%s" NXF_CACHE_DIR=./cache \\\n' "$NXF_VER"
                     printf '    nextflow run "%s/main.nf" \\\n'       "$EXCON_DIR"
+                    printf '    -c "%s/benchmark.config" \\\n'        "$SCRIPT_DIR"
                     printf '    -profile "%s" \\\n'                   "$PROFILE"
                     printf '    --input ./input.csv \\\n'
                     printf '    --outdir ./output \\\n'
