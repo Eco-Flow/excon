@@ -52,9 +52,15 @@ if (file.exists(metadata_file)) {
 }
 
 # ---- Load data --------------------------------------------------------------
+## Genome size display order — add new categories here to control plot order
+genome_size_levels <- c("bacteria", "insect", "mammal", "bird", "reptile",
+                        "fish", "plant", "fungi")
+
 metrics <- read.delim(metrics_file, stringsAsFactors = FALSE) |>
   mutate(
-    genome_size = factor(genome_size, levels = c("bacteria", "insect", "mammal")),
+    genome_size = factor(genome_size,
+                         levels = intersect(genome_size_levels,
+                                            unique(genome_size))),
     quality     = factor(quality,     levels = c("contiguous", "fragmented")),
     phylogeny   = factor(phylogeny,   levels = c("close", "diverse")),
     n_species   = as.integer(n_species)
@@ -63,7 +69,9 @@ metrics <- read.delim(metrics_file, stringsAsFactors = FALSE) |>
 
 perproc <- read.delim(perproc_file, stringsAsFactors = FALSE) |>
   mutate(
-    genome_size = factor(genome_size, levels = c("bacteria", "insect", "mammal")),
+    genome_size = factor(genome_size,
+                         levels = intersect(genome_size_levels,
+                                            unique(genome_size))),
     quality     = factor(quality,     levels = c("contiguous", "fragmented")),
     phylogeny   = factor(phylogeny,   levels = c("close", "diverse")),
     n_species   = as.integer(n_species),
@@ -81,7 +89,26 @@ theme_bench <- function() {
   )
 }
 
-genome_colours <- c(bacteria = "#4DAF4A", insect = "#377EB8", mammal = "#E41A1C")
+## Colours per genome-size category — add a new entry here for each new group.
+## Any category not listed gets an auto-assigned grey as a fallback.
+genome_colours_defined <- c(
+  bacteria = "#4DAF4A",
+  insect   = "#377EB8",
+  mammal   = "#E41A1C",
+  bird     = "#FF7F00",
+  reptile  = "#984EA3",
+  fish     = "#A65628",
+  plant    = "#00CED1",
+  fungi    = "#FFD700"
+)
+# Keep only categories present in the data; add grey for any unknown category
+genome_size_present <- levels(metrics$genome_size)
+auto_grey <- setdiff(genome_size_present, names(genome_colours_defined))
+genome_colours <- c(
+  genome_colours_defined[intersect(names(genome_colours_defined),
+                                   genome_size_present)],
+  setNames(rep("grey50", length(auto_grey)), auto_grey)
+)
 quality_ltypes  <- c(contiguous = "solid", fragmented = "dashed")
 
 # =============================================================================
@@ -338,9 +365,7 @@ guidance <- metrics |>
     # Fall back to generic label if metadata not supplied
     clade          = ifelse(is.na(clade) | clade == "",
                             paste(genome_size, phylogeny, sep = "\n"), clade),
-    genome_mb      = ifelse(is.na(genome_mb),
-                            c(bacteria = 4, insect = 350, mammal = 3000)[
-                              as.character(genome_size)], genome_mb),
+    genome_mb      = ifelse(is.na(genome_mb), NA_real_, genome_mb),
     n50_kb         = ifelse(is.na(n50_kb),
                             c(contiguous = 1000, fragmented = 100)[
                               as.character(quality)], n50_kb),
