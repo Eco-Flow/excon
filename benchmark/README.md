@@ -324,7 +324,18 @@ After all runs complete, the runner calls `collect_metrics.py` automatically.
 | `fig4_time_composition.pdf` | Stacked bar of module time at the largest N |
 | `fig5_user_guidance.pdf` | Genome size × assembly N50 space showing benchmark conditions, coloured by wall time per genome, with CAFE convergence marked and reference zones for common taxa |
 
-**Note on Fig 5 coordinates:** the genome size (Mb) and scaffold N50 (kb) values plotted for each benchmark category are representative medians — `bacteria ~4 Mb`, `insect ~350 Mb`, `mammal ~3,000 Mb` — not values measured from the actual downloaded assemblies. They are defined in `plot_benchmark.R` in the `genome_size_mb` and `n50_kb_approx` tables and can be updated with more precise values if assembly stats are measured externally.
+**Note on Fig 5 coordinates:** the genome size (Mb) and scaffold N50 (kb) values plotted are representative values defined in `benchmark/inputs/metadata.tsv`, not measured from the actual downloaded assemblies. Each row maps a (genome_size × phylogeny × quality) combination to the specific clade used, an approximate genome size, and a typical scaffold N50 based on the N50 cutoffs applied when building the input CSVs. Edit `metadata.tsv` to update these values or add new benchmark datasets — `plot_benchmark.R` reads it automatically at runtime and falls back to generic category labels if the file is missing.
+
+The current clade assignments are:
+
+| genome_size | phylogeny | quality | clade | genome_mb | n50_kb |
+|---|---|---|---|---|---|
+| bacteria | close | contiguous/fragmented | Streptococcus | 2 | 1000 / 40 |
+| bacteria | diverse | contiguous/fragmented | Alphaproteobacteria | 4 | 1000 / 40 |
+| insect | close | contiguous/fragmented | Apidae | 250 | 5000 / 300 |
+| insect | diverse | contiguous/fragmented | Hymenoptera | 300 | 5000 / 300 |
+| mammal | close | contiguous/fragmented | Primates | 3000 | 120000 / 15000 |
+| mammal | diverse | contiguous/fragmented | Mammalia | 3000 | 120000 / 15000 |
 
 R packages required: `ggplot2`, `dplyr`, `tidyr`, `scales`, `patchwork`
 

@@ -27,13 +27,29 @@ get_arg <- function(flag, default = NULL) {
   if (length(i) && length(args) >= i + 1) args[i + 1] else default
 }
 
-metrics_file <- get_arg("--metrics", "benchmark/results/benchmark_metrics.tsv")
-perproc_file <- get_arg("--perproc", "benchmark/results/benchmark_per_process.tsv")
-outdir       <- get_arg("--outdir",  "benchmark/results/figures")
+metrics_file  <- get_arg("--metrics",  "benchmark/results/benchmark_metrics.tsv")
+perproc_file  <- get_arg("--perproc",  "benchmark/results/benchmark_per_process.tsv")
+outdir        <- get_arg("--outdir",   "benchmark/results/figures")
+metadata_file <- get_arg("--metadata", "benchmark/inputs/metadata.tsv")
 
 if (!file.exists(metrics_file)) stop("Cannot find --metrics file: ", metrics_file)
 if (!file.exists(perproc_file)) stop("Cannot find --perproc file: ", perproc_file)
 dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
+
+# ---- Load metadata ----------------------------------------------------------
+# metadata.tsv maps each (genome_size, phylogeny, quality) combination to a
+# specific clade name and representative genome size / N50 for Fig 5.
+# Edit benchmark/inputs/metadata.tsv to update these values.
+if (file.exists(metadata_file)) {
+  metadata <- read.delim(metadata_file, stringsAsFactors = FALSE)
+} else {
+  warning("metadata.tsv not found — clade labels and genome/N50 values will ",
+          "fall back to generic category names. Expected: ", metadata_file)
+  metadata <- data.frame(
+    genome_size = character(), phylogeny = character(), quality = character(),
+    clade = character(), genome_mb = numeric(), n50_kb = numeric()
+  )
+}
 
 # ---- Load data --------------------------------------------------------------
 metrics <- read.delim(metrics_file, stringsAsFactors = FALSE) |>
@@ -42,7 +58,8 @@ metrics <- read.delim(metrics_file, stringsAsFactors = FALSE) |>
     quality     = factor(quality,     levels = c("contiguous", "fragmented")),
     phylogeny   = factor(phylogeny,   levels = c("close", "diverse")),
     n_species   = as.integer(n_species)
-  )
+  ) |>
+  left_join(metadata, by = c("genome_size", "quality", "phylogeny"))
 
 perproc <- read.delim(perproc_file, stringsAsFactors = FALSE) |>
   mutate(
@@ -210,14 +227,21 @@ message("Saved: fig3_efficiency")
 # Figure 4 — Stacked bar: time composition at maximum dataset size
 # (which modules dominate at scale?)
 # =============================================================================
-max_n <- max(perproc_key$n_species)
-
+# Use each condition's own maximum available N, not a single global max.
+# This ensures all conditions appear even when dataset sizes are uneven.
 stacked <- perproc_key |>
-  filter(n_species == max_n) |>
+  group_by(genome_size, phylogeny, quality) |>
+  filter(n_species == max(n_species)) |>
+  ungroup() |>
   group_by(genome_size, phylogeny, quality, process) |>
-  summarise(wall_time_min = mean(wall_time_min), .groups = "drop") |>
+  summarise(
+    wall_time_min = mean(wall_time_min),
+    n_used        = first(n_species),
+    .groups = "drop"
+  ) |>
   mutate(
-    run_label = paste0(genome_size, "\n", phylogeny, " / ", quality)
+    run_label = paste0(genome_size, "\n", phylogeny, " / ", quality,
+                       "\n(n=", n_used, ")")
   )
 
 # Distinct, colourblind-friendly palette for pipeline stages
@@ -276,9 +300,10 @@ p_stack <- ggplot(stacked_labelled,
   scale_fill_manual(values = stage_cols, name = "Module",
                     drop = TRUE) +
   labs(
-    x = NULL,
-    y = paste0("Wall time (min)  [n = ", max_n, " genomes]"),
-    title = paste0("Time composition at n = ", max_n, " genomes")
+    x        = NULL,
+    y        = "Wall time (min)",
+    title    = "Time composition at maximum available dataset size",
+    subtitle = "n shown in each bar label — varies by category depending on available species"
   ) +
   theme_bench() +
   theme(
@@ -301,34 +326,26 @@ message("Saved: fig4_time_composition")
 # Reference zones for common taxa help users locate their own data.
 # =============================================================================
 
-# Approximate median genome sizes (Mb) for each benchmark category
-genome_size_mb <- c(bacteria = 4, insect = 350, mammal = 3000)
-
-# Approximate median scaffold N50 (kb) for each quality band per genome size
-# (based on the N50 cutoffs used to build the input CSVs)
-n50_kb_approx <- tribble(
-  ~genome_size, ~quality,      ~n50_kb_approx,
-  "bacteria",   "contiguous",  1000,
-  "bacteria",   "fragmented",  40,
-  "insect",     "contiguous",  5000,
-  "insect",     "fragmented",  300,
-  "mammal",     "contiguous",  120000,
-  "mammal",     "fragmented",  15000
-)
-
-# Add convergence success flag — CAFE_RUN_BEST absent from per-process means
-# CAFE did not converge for that run
+# Convergence flag — CAFE_RUN_BEST absent means CAFE did not converge
 converged_runs <- perproc |>
   group_by(run_id) |>
   summarise(cafe_converged = any(process == "CAFE_RUN_BEST"), .groups = "drop")
 
+# metrics already has genome_mb, n50_kb, clade joined from metadata above
 guidance <- metrics |>
   left_join(converged_runs, by = "run_id") |>
-  left_join(n50_kb_approx, by = c("genome_size", "quality")) |>
   mutate(
-    genome_mb       = genome_size_mb[as.character(genome_size)],
-    min_per_genome  = total_wall_time_min / n_species,
-    cafe_converged  = replace_na(cafe_converged, FALSE)
+    # Fall back to generic label if metadata not supplied
+    clade          = ifelse(is.na(clade) | clade == "",
+                            paste(genome_size, phylogeny, sep = "\n"), clade),
+    genome_mb      = ifelse(is.na(genome_mb),
+                            c(bacteria = 4, insect = 350, mammal = 3000)[
+                              as.character(genome_size)], genome_mb),
+    n50_kb         = ifelse(is.na(n50_kb),
+                            c(contiguous = 1000, fragmented = 100)[
+                              as.character(quality)], n50_kb),
+    min_per_genome = total_wall_time_min / n_species,
+    cafe_converged = replace_na(cafe_converged, FALSE)
   )
 
 # Reference zones: typical genome size and N50 ranges for common taxa
@@ -354,14 +371,15 @@ p_guidance <- ggplot() +
             inherit.aes = FALSE) +
   # Benchmark data points
   geom_point(data = guidance,
-             aes(x = genome_mb, y = n50_kb_approx,
+             aes(x = genome_mb, y = n50_kb,
                  colour = min_per_genome,
                  shape  = cafe_converged),
              size = 5, stroke = 1.2) +
-  # Genome-size category labels
-  geom_text(data = guidance |> distinct(genome_size, genome_mb),
-            aes(x = genome_mb, y = 0.8, label = genome_size),
-            size = 3, fontface = "bold", colour = "grey30",
+  # Clade labels next to each point
+  geom_text(data = guidance |> distinct(genome_mb, n50_kb, clade),
+            aes(x = genome_mb, y = n50_kb, label = clade),
+            size = 2.5, hjust = -0.15, vjust = 0.5,
+            lineheight = 0.85, colour = "grey20",
             inherit.aes = FALSE) +
   scale_x_log10(
     name   = "Genome size (Mb)",
@@ -387,10 +405,10 @@ p_guidance <- ggplot() +
   labs(
     title    = "Will the pipeline work for your data?",
     subtitle = paste0(
-      "Benchmark points use representative median genome size and scaffold N50 for each category ",
-      "(bacteria ~4 Mb, insect ~350 Mb, mammal ~3,000 Mb).\n",
-      "These are approximate — locate your organism relative to the benchmark points ",
-      "to estimate expected run time and likelihood of CAFE convergence."
+      "Genome size and scaffold N50 are representative values defined in ",
+      "benchmark/inputs/metadata.tsv — not measured from assemblies.\n",
+      "Locate your organism relative to the labelled benchmark clades to ",
+      "estimate run time and likelihood of CAFE convergence."
     )
   ) +
   theme_bench() +
