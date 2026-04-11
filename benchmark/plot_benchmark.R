@@ -359,10 +359,10 @@ converged_runs <- perproc |>
   summarise(cafe_converged = any(process == "CAFE_RUN_BEST"), .groups = "drop")
 
 # metrics already has genome_mb, n50_kb, clade joined from metadata above.
-# One point per (genome_size, phylogeny, quality): use the largest complete n
-# so the colour (min/genome) reflects a real, finished run at meaningful scale.
-# All runs of the same condition share identical genome_mb/n50_kb, so stacking
-# them would just produce invisible duplicates.
+# Show all complete runs — different n values for the same condition will share
+# identical genome_mb/n50_kb, so jitter them on the log x-axis by spreading
+# evenly ±0.12 log10 units around the true genome_mb. This keeps points
+# visually near their true x position while revealing convergence per n.
 guidance <- metrics |>
   left_join(converged_runs, by = "run_id") |>
   mutate(
@@ -377,6 +377,20 @@ guidance <- metrics |>
   ) |>
   filter(!is.na(genome_mb)) |>
   group_by(genome_size, phylogeny, quality) |>
+  arrange(n_species, .by_group = TRUE) |>
+  mutate(
+    n_rank    = row_number(),
+    n_total   = n(),
+    # Spread ±0.12 log10 units around true genome_mb.
+    # Formula: rank / (total+1) centres symmetrically; single point → 0 shift.
+    log_shift     = (n_rank / (n_total + 1) - 0.5) * 0.24,
+    genome_mb_pos = genome_mb * 10^log_shift
+  ) |>
+  ungroup()
+
+# Clade label positioned at the rightmost (largest n) point for each condition
+guidance_labels <- guidance |>
+  group_by(genome_size, phylogeny, quality, clade, genome_mb, n50_kb) |>
   slice_max(n_species, n = 1, with_ties = FALSE) |>
   ungroup()
 
@@ -401,22 +415,22 @@ p_guidance <- ggplot() +
             aes(x = sqrt(xmin * xmax), y = sqrt(ymin * ymax), label = label),
             size = 2.8, colour = "grey45", fontface = "italic", lineheight = 0.85,
             inherit.aes = FALSE) +
-  # Benchmark data points — one per condition at largest complete n
+  # One point per complete run; x is jittered on log scale so different n
+  # values for the same condition separate visually
   geom_point(data = guidance,
-             aes(x = genome_mb, y = n50_kb,
+             aes(x = genome_mb_pos, y = n50_kb,
                  colour = min_per_genome,
                  shape  = cafe_converged,
                  size   = n_species),
              stroke = 1.2) +
-  # Clade + n label next to each point
-  geom_text(data = guidance,
-            aes(x = genome_mb, y = n50_kb,
-                label = paste0(clade, "\n(n=", n_species, ")")),
+  # Clade label once per condition, anchored at the largest-n point
+  geom_text(data = guidance_labels,
+            aes(x = genome_mb_pos, y = n50_kb, label = clade),
             size = 2.5, hjust = -0.1, vjust = 0.5,
             lineheight = 0.85, colour = "grey20",
             inherit.aes = FALSE) +
   scale_size_continuous(name = "n species", range = c(3, 8),
-                        breaks = c(10, 30, 70)) +
+                        breaks = c(10, 30, 70, 100)) +
   scale_x_log10(
     name   = "Genome size (Mb)",
     labels = label_comma(),
