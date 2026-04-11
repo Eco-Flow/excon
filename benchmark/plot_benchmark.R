@@ -358,11 +358,14 @@ converged_runs <- perproc |>
   group_by(run_id) |>
   summarise(cafe_converged = any(process == "CAFE_RUN_BEST"), .groups = "drop")
 
-# metrics already has genome_mb, n50_kb, clade joined from metadata above
+# metrics already has genome_mb, n50_kb, clade joined from metadata above.
+# One point per (genome_size, phylogeny, quality): use the largest complete n
+# so the colour (min/genome) reflects a real, finished run at meaningful scale.
+# All runs of the same condition share identical genome_mb/n50_kb, so stacking
+# them would just produce invisible duplicates.
 guidance <- metrics |>
   left_join(converged_runs, by = "run_id") |>
   mutate(
-    # Fall back to generic label if metadata not supplied
     clade          = ifelse(is.na(clade) | clade == "",
                             paste(genome_size, phylogeny, sep = "\n"), clade),
     genome_mb      = ifelse(is.na(genome_mb), NA_real_, genome_mb),
@@ -371,7 +374,11 @@ guidance <- metrics |>
                               as.character(quality)], n50_kb),
     min_per_genome = total_wall_time_min / n_species,
     cafe_converged = replace_na(cafe_converged, FALSE)
-  )
+  ) |>
+  filter(!is.na(genome_mb)) |>
+  group_by(genome_size, phylogeny, quality) |>
+  slice_max(n_species, n = 1, with_ties = FALSE) |>
+  ungroup()
 
 # Reference zones: typical genome size and N50 ranges for common taxa
 # (approximate — for orientation only)
@@ -394,18 +401,22 @@ p_guidance <- ggplot() +
             aes(x = sqrt(xmin * xmax), y = sqrt(ymin * ymax), label = label),
             size = 2.8, colour = "grey45", fontface = "italic", lineheight = 0.85,
             inherit.aes = FALSE) +
-  # Benchmark data points
+  # Benchmark data points — one per condition at largest complete n
   geom_point(data = guidance,
              aes(x = genome_mb, y = n50_kb,
                  colour = min_per_genome,
-                 shape  = cafe_converged),
-             size = 5, stroke = 1.2) +
-  # Clade labels next to each point
-  geom_text(data = guidance |> distinct(genome_mb, n50_kb, clade),
-            aes(x = genome_mb, y = n50_kb, label = clade),
-            size = 2.5, hjust = -0.15, vjust = 0.5,
+                 shape  = cafe_converged,
+                 size   = n_species),
+             stroke = 1.2) +
+  # Clade + n label next to each point
+  geom_text(data = guidance,
+            aes(x = genome_mb, y = n50_kb,
+                label = paste0(clade, "\n(n=", n_species, ")")),
+            size = 2.5, hjust = -0.1, vjust = 0.5,
             lineheight = 0.85, colour = "grey20",
             inherit.aes = FALSE) +
+  scale_size_continuous(name = "n species", range = c(3, 8),
+                        breaks = c(10, 30, 70)) +
   scale_x_log10(
     name   = "Genome size (Mb)",
     labels = label_comma(),
