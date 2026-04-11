@@ -267,11 +267,23 @@ def main():
     summary_path = Path(args.output)
     per_proc_path = summary_path.with_name('benchmark_per_process.tsv')
 
-    # Find all completed run directories
-    trace_files = sorted(results_dir.glob('*/output/pipeline_info/execution_trace.tsv'))
+    # Find the latest trace file per run directory.
+    # benchmark.config writes timestamped filenames (execution_trace_YYYY-MM-DD_HH-mm-ss.tsv)
+    # so each resume produces a new file; we take the most recent one per run.
+    trace_files = []
+    for run_dir in sorted(results_dir.iterdir()):
+        if not run_dir.is_dir():
+            continue
+        pipeline_info = run_dir / 'output' / 'pipeline_info'
+        if not pipeline_info.is_dir():
+            continue
+        candidates = sorted(pipeline_info.glob('execution_trace*.tsv'))
+        if candidates:
+            trace_files.append(candidates[-1])  # alphabetical = chronological for ISO timestamps
+
     if not trace_files:
-        print("No completed runs found (no execution_trace.tsv files).", file=sys.stderr)
-        print(f"Expected path pattern: {results_dir}/<run_id>/output/pipeline_info/execution_trace.tsv",
+        print("No completed runs found (no execution_trace*.tsv files).", file=sys.stderr)
+        print(f"Expected pattern: {results_dir}/<run_id>/output/pipeline_info/execution_trace*.tsv",
               file=sys.stderr)
         sys.exit(0)
 

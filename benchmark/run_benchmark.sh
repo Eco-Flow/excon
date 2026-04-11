@@ -133,9 +133,6 @@ for genome_size in "${GENOME_SIZES_ARR[@]}"; do
                     printf '    --max_memory "%s" \\\n'               "$MAX_MEMORY"
                     printf '    --max_cpus "%s" \\\n'                 "$MAX_CPUS"
                     printf '    -work-dir ./work \\\n'
-                    printf '    -with-trace  ./output/pipeline_info/execution_trace.tsv \\\n'
-                    printf '    -with-timeline ./output/pipeline_info/execution_timeline.html \\\n'
-                    printf '    -with-report   ./output/pipeline_info/execution_report.html \\\n'
                     if [[ -n "$CUSTOM_CONFIG_ABS" ]]; then
                         printf '    --custom_config "%s" \\\n' "$CUSTOM_CONFIG_ABS"
                     fi
