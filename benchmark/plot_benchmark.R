@@ -74,8 +74,9 @@ perproc <- read.delim(perproc_file, stringsAsFactors = FALSE) |>
                                             unique(genome_size))),
     quality     = factor(quality,     levels = c("contiguous", "fragmented")),
     phylogeny   = factor(phylogeny,   levels = c("close", "diverse")),
-    n_species   = as.integer(n_species),
-    wall_time_min = wall_time_s / 60
+    n_species        = as.integer(n_species),
+    wall_time_min    = wall_time_s / 60,
+    max_duration_min = max_duration_s / 60
   )
 
 # ---- Shared theme -----------------------------------------------------------
@@ -251,24 +252,33 @@ ggsave(file.path(outdir, "fig3_efficiency.png"), fig3,
 message("Saved: fig3_efficiency")
 
 # =============================================================================
-# Figure 4 — Stacked bar: time composition at maximum dataset size
-# (which modules dominate at scale?)
+# Figure 4 — Stacked bar: time composition across ALL complete dataset sizes
+# (which modules dominate, and how does composition change with N?)
 # =============================================================================
-# Use each condition's own maximum available N, not a single global max.
-# This ensures all conditions appear even when dataset sizes are uneven.
-stacked <- perproc_key |>
-  group_by(genome_size, phylogeny, quality) |>
-  filter(n_species == max(n_species)) |>
-  ungroup() |>
-  group_by(genome_size, phylogeny, quality, process) |>
+# A run is "complete" if it includes at least one ORTHOFINDER step.
+# Incomplete runs (only per-species steps) are excluded entirely to avoid
+# showing misleadingly short or uniformly-segmented bars.
+complete_run_ids <- perproc_key |>
+  group_by(run_id, genome_size, phylogeny, quality, n_species) |>
   summarise(
-    wall_time_min = mean(wall_time_min),
-    n_used        = first(n_species),
+    is_complete = any(process %in% c("ORTHOFINDER_CAFE", "ORTHOFINDER_V2_CAFE")),
     .groups = "drop"
   ) |>
+  filter(is_complete)
+
+message(sprintf("Fig 4: %d complete runs found (out of %d unique run×n combinations)",
+                nrow(complete_run_ids),
+                n_distinct(perproc_key[, c("run_id", "n_species")])))
+
+stacked <- perproc_key |>
+  semi_join(complete_run_ids,
+            by = c("run_id", "genome_size", "phylogeny", "quality", "n_species")) |>
   mutate(
-    run_label = paste0(genome_size, "\n", phylogeny, " / ", quality,
-                       "\n(n=", n_used, ")")
+    run_label = paste0(
+      ifelse(phylogeny == "diverse", "div", phylogeny), "\n",
+      ifelse(quality == "contiguous", "cont", "frag"), "\n",
+      "n=", n_species
+    )
   )
 
 # Distinct, colourblind-friendly palette for pipeline stages
@@ -303,34 +313,24 @@ stage_cols <- c(
   "CAFE_GO_RUN"               = "#AA2233"   # dark red
 )
 
-# Label segments that are >= 5% of their bar total (so tiny slivers stay clean)
-stacked_labelled <- stacked |>
-  group_by(run_label, genome_size) |>
-  mutate(
-    bar_total  = sum(wall_time_min),
-    pct        = wall_time_min / bar_total,
-    seg_label  = ifelse(pct >= 0.05,
-                        gsub("_", "\n", process),
-                        NA_character_),
-    # position label in the middle of its segment
-    label_y    = cumsum(wall_time_min) - wall_time_min / 2
-  ) |>
-  ungroup()
+# max_duration_min = slowest individual task for that stage.
+# For single-task stages (ORTHOFINDER, CAFE) this equals the task duration.
+# For parallel per-species stages (AGAT, GFFREAD, RENAME_FASTA) this is the
+# slowest genome through that step — far more meaningful than the calendar
+# wall_time_s, which spans the entire streaming window across all species.
 
-p_stack <- ggplot(stacked_labelled,
-    aes(x = run_label, y = wall_time_min, fill = process)) +
+p_stack <- ggplot(stacked,
+    aes(x = run_label, y = max_duration_min, fill = process)) +
   geom_col(width = 0.7, colour = "white", linewidth = 0.3) +
-  geom_text(aes(y = label_y, label = seg_label),
-            size = 2.2, lineheight = 0.85, colour = "black",
-            na.rm = TRUE) +
-  facet_wrap(~genome_size, scales = "free_x") +
+  facet_grid(. ~ genome_size, scales = "free", space = "free_x") +
   scale_fill_manual(values = stage_cols, name = "Module",
                     drop = TRUE) +
   labs(
     x        = NULL,
-    y        = "Wall time (min)",
-    title    = "Time composition at maximum available dataset size",
-    subtitle = "n shown in each bar label — varies by category depending on available species"
+    y        = "Slowest task duration (min)",
+    title    = "Pipeline time composition across all complete runs",
+    subtitle = paste0("Each segment = slowest individual task for that stage",
+                      " (single-task stages show full duration)")
   ) +
   theme_bench() +
   theme(

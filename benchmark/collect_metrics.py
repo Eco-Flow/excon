@@ -233,6 +233,12 @@ def compute_per_process(tasks: list) -> dict:
             (max(end_times) - min(submits)).total_seconds()
             if submits else sum(t['duration_s'] for t in ts)
         )
+        # max_duration_s: the slowest individual task duration.
+        # For parallel per-species stages this is the stage bottleneck time
+        # (far more meaningful for stacked bars than calendar wall_time_s,
+        # which spans the whole streaming window across species).
+        max_duration_s = max(t['duration_s'] for t in ts)
+        sum_duration_s = sum(t['duration_s'] for t in ts)
         cpu_seconds = sum(t['realtime_s'] * t['cpu_frac'] for t in ts)
         peak_rss_gb = max(t['peak_rss_b'] for t in ts) / (1024 ** 3)
         mean_cpu_pct = (
@@ -240,11 +246,13 @@ def compute_per_process(tasks: list) -> dict:
             if realtime_total > 0 else 0.0
         )
         result[proc] = {
-            'n_tasks':      len(ts),
-            'wall_time_s':  round(wall_s, 1),
-            'cpu_hours':    round(cpu_seconds / 3600, 4),
-            'peak_ram_gb':  round(peak_rss_gb, 3),
-            'mean_cpu_pct': round(mean_cpu_pct, 1),
+            'n_tasks':         len(ts),
+            'wall_time_s':     round(wall_s, 1),
+            'max_duration_s':  round(max_duration_s, 1),
+            'sum_duration_s':  round(sum_duration_s, 1),
+            'cpu_hours':       round(cpu_seconds / 3600, 4),
+            'peak_ram_gb':     round(peak_rss_gb, 3),
+            'mean_cpu_pct':    round(mean_cpu_pct, 1),
         }
     return result
 
