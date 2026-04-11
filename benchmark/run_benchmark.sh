@@ -124,7 +124,7 @@ for genome_size in "${GENOME_SIZES_ARR[@]}"; do
                     printf 'cd "$(dirname "${BASH_SOURCE[0]}")"\n'
                     printf 'export PATH="$HOME/bin:$PATH"\n'
                     printf '\n'
-                    printf 'NXF_VER="%s" NXF_CACHE_DIR=./cache \\\n' "$NXF_VER"
+                    printf 'NXF_VER="%s" \\\n' "$NXF_VER"
                     printf '    nextflow run "%s/main.nf" \\\n'       "$EXCON_DIR"
                     printf '    -c "%s/benchmark.config" \\\n'        "$SCRIPT_DIR"
                     printf '    -profile "%s" \\\n'                   "$PROFILE"
