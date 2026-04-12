@@ -1,4 +1,4 @@
-# EXCON (v2.3.0)
+# EXCON (v2.3.1)
 
 A Nextflow pipeline for gene family **EX**pansion and **CON**traction analysis 
 across multiple species using CAFE5.
@@ -386,7 +386,7 @@ results/
 This pipeline is published on Workflowhub using the nf-core template. If you use this pipeline in you work, the following citations are essential:
 
 excon:
-Wyatt, C. (2026). Gene EXpansion and CONtraction analysis pipeline. WorkflowHub. https://doi.org/10.48546/WORKFLOWHUB.WORKFLOW.2141.7
+Wyatt, C. (2026). Gene EXpansion and CONtraction analysis pipeline. WorkflowHub. https://doi.org/10.48546/WORKFLOWHUB.WORKFLOW.2141.8
 
 nf-core:
 Philip Ewels, Alexander Peltzer, Sven Fillinger, Harshil Patel, Johannes Alneberg, Andreas Wilm, Maxime Ulysse Garcia, Paolo Di Tommaso & Sven Nahnsen.
