@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.3.1] - 2026-04-12
+
+### Added
+- New benchmarking directory, to test out the pipeline with bacterial, insect and mammalian input, and create various plots to demonstrate time and sucess metrics.
+- Working example input datasets for the benchmarking
+
+### Changed
+- Improved the ncbi genome download module to better handle issues in the input spreadsheet like trailing whitespace that was causing errors.
+- Reduced the allowed forks of ncbi genome download to help prevent throttling.
+
+
 ## [v2.3.0] - 2026-04-08
 
 ### Added

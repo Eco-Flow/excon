@@ -20,3 +20,8 @@ input.csv
 *.config
 !nextflow.config
 !conf/*.config
+!benchmark/benchmark.config
+!benchmark/example_test_data/traces_only2/benchmark/results/**
+benchmark_metrics.tsv
+benchmark_per_process.tsv
+benchmark/example_test_data/traces_only2/figures
