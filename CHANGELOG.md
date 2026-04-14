@@ -1,5 +1,10 @@
 # Changelog
 
+## [v2.3.2] -
+
+### Added
+- Add primate test data to the config.
+
 ## [v2.3.1] - 2026-04-12
 
 ### Added
