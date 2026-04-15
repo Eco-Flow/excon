@@ -34,7 +34,7 @@ process ORTHOFINDER_BLAST {
 
     # Run diamond commands in parallel (up to task.cpus at once).
     # Paths are relative to the current work directory.
-    grep "^diamond blastp" orthofinder_prep.log | xargs -P $task.cpus -d '\\n' bash -c
+    grep "^diamond blastp" orthofinder_prep.log | xargs -P $task.cpus -I {} bash -c '{}'
 
     # Move the WorkingDirectory (now containing Blast*.txt.gz) to the output location.
     # Because blast_commands.txt was never written, orthofinder -b will skip re-running
