@@ -27,9 +27,10 @@ process ORTHOFINDER_PHYLO {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    # Copy WorkingDirectory locally so OrthoFinder can write results alongside it
-    # (avoids writing into a staged symlink that may point to the blast process work dir)
-    cp -rL $blast_wd local_blast_wd
+    # Copy WorkingDirectory locally so OrthoFinder can write results alongside it.
+    # Without -L, symlinks inside (e.g. dependencies/ binaries) are preserved as symlinks
+    # rather than being dereferenced and fully copied, which avoids copying large binaries.
+    cp -r $blast_wd local_blast_wd
 
     orthofinder \\
         -t $task.cpus \\
