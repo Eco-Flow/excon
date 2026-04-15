@@ -24,22 +24,22 @@ process ORTHOFINDER_BLAST {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    # Prepare DIAMOND databases and blast_commands.txt (-op stops before running searches)
+    # -op prepares DIAMOND databases and prints commands to stdout (v3 does not write
+    # blast_commands.txt — commands appear on stdout after "diamond commands that must be run")
     orthofinder \\
         -f input \\
         -n $prefix \\
         $args \\
-        -op
+        -op > orthofinder_prep.log
 
+    # Extract and run the diamond commands from stdout.
+    # Paths in the commands are relative to the current work directory, so run from here.
+    grep "^diamond blastp" orthofinder_prep.log | bash
+
+    # Move the WorkingDirectory (now containing Blast*.txt.gz) to the output location.
+    # Because blast_commands.txt was never written, orthofinder -b will skip re-running
+    # searches and proceed directly to orthogroup inference.
     mv input/OrthoFinder/Results_${prefix}/WorkingDirectory ${meta.id}_blast_wd
-
-    # Run the DIAMOND searches prepared by OrthoFinder
-    # Each command writes its Blast*.txt.gz output into the WorkingDirectory
-    ( cd ${meta.id}_blast_wd && bash blast_commands.txt )
-
-    # Remove blast_commands.txt so orthofinder -b knows searches are complete
-    # (orthofinder -b only re-runs searches if this file is present)
-    rm ${meta.id}_blast_wd/blast_commands.txt
     """
 
     stub:
