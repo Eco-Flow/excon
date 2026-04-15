@@ -27,10 +27,18 @@ process ORTHOFINDER_PHYLO {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    # Copy WorkingDirectory locally so OrthoFinder can write results alongside it.
-    # Without -L, symlinks inside (e.g. dependencies/ binaries) are preserved as symlinks
-    # rather than being dereferenced and fully copied, which avoids copying large binaries.
-    cp -r $blast_wd local_blast_wd
+    # Build a local working directory from symlinks to the blast results.
+    # This avoids any data copy (critical on Lustre/NFS where cp of many files is slow).
+    # OrthoFinder writes new results (OrthoFinder/ subdir) into this local dir, so it
+    # never touches the original blast work directory.
+    # Any OrthoFinder/ dir from a previous run is explicitly excluded.
+    mkdir local_blast_wd
+    blast_abs=\$(readlink -f $blast_wd)
+    for item in "\$blast_abs"/*; do
+        name=\$(basename "\$item")
+        [ "\$name" = "OrthoFinder" ] && continue
+        ln -s "\$item" "local_blast_wd/\$name"
+    done
 
     orthofinder \\
         -t $task.cpus \\
