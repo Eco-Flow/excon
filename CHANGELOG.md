@@ -4,6 +4,8 @@
 
 ### Added
 - Add primate test data to the config.
+- OrthoFinder v3 is now split into two separate Nextflow processes with independent resource profiles. `ORTHOFINDER_BLAST_CAFE` runs the reciprocal DIAMOND searches (`-op` + `blast_commands.txt`) and publishes the blast WorkingDirectory to `results/orthofinder_blast/`. `ORTHOFINDER_PHYLO_CAFE` picks up from those results (`-b`) and runs orthogroup inference, MSA, and species tree inference, publishing final results to `results/orthofinder_cafe/` as before.
+- New `--orthofinder_blast_results` parameter: provide the path to a previously saved blast WorkingDirectory to skip the DIAMOND step entirely and run only the phylogeny stage. Useful for resuming after a failed phylogeny run or re-running with different `--orthofinder_tree` / `--orthofinder_method` options without repeating the expensive all-vs-all search.
 
 ## [v2.3.1] - 2026-04-12
 

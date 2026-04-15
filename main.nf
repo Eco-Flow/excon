@@ -38,7 +38,8 @@ include { AGAT_SPSTATISTICS } from './modules/nf-core/agat/spstatistics/main.nf'
 include { AGAT_SPKEEPLONGESTISOFORM } from './modules/nf-core/agat/spkeeplongestisoform/main.nf'
 include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
-include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
+include { ORTHOFINDER_BLAST as ORTHOFINDER_BLAST_CAFE } from './modules/local/orthofinder_blast.nf'
+include { ORTHOFINDER_PHYLO as ORTHOFINDER_PHYLO_CAFE } from './modules/local/orthofinder_phylo.nf'
 include { ORTHOFINDER_V2 as ORTHOFINDER_V2_CAFE } from './modules/local/orthofinder_v2.nf'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
 
@@ -65,7 +66,7 @@ workflow {
    // Whether to skip genome processing (download → AGAT → GFFREAD → RENAME_FASTA → OrthoFinder)
    // Only possible when a pre-computed tree and orthogroups are supplied, AND the user
    // is not requesting EggNOG annotation or genome quality stats (which need the proteins/assemblies).
-   def use_precomputed = params.input_tree && params.input_orthogroups
+   def use_precomputed = (params.input_tree && params.input_orthogroups) || params.orthofinder_blast_results
    def needs_genomes   = !use_precomputed || params.run_eggnog || params.stats
 
    if (needs_genomes && !params.input) {
@@ -226,15 +227,25 @@ workflow {
             ch_speciestree = ORTHOFINDER_V2_CAFE.out.speciestree
             ch_orthologues = ORTHOFINDER_V2_CAFE.out.orthologues
         } else {
-            ORTHOFINDER_CAFE (
-                merge_ch
-                    .map { meta, fasta -> fasta }
-                    .collect()
-                    .map { files -> [ [id: "ortho_cafe"], files ] },
-                [[],[]]
-            )
-            ch_speciestree = ORTHOFINDER_CAFE.out.speciestree
-            ch_orthologues = ORTHOFINDER_CAFE.out.orthologues
+            // Stage 1: reciprocal DIAMOND blast (CPU-heavy, parallelisable)
+            // Stage 2: orthogroup inference + phylogeny (different resource profile)
+            if (params.orthofinder_blast_results) {
+                // Resume from a pre-computed blast WorkingDirectory (e.g. from a previous run)
+                ch_blast_wd = Channel.fromPath(params.orthofinder_blast_results, checkIfExists: true)
+                    .map { d -> [ [id: "ortho_cafe"], d ] }
+            } else {
+                ORTHOFINDER_BLAST_CAFE (
+                    merge_ch
+                        .map { meta, fasta -> fasta }
+                        .collect()
+                        .map { files -> [ [id: "ortho_cafe"], files ] }
+                )
+                ch_blast_wd = ORTHOFINDER_BLAST_CAFE.out.working_dir
+            }
+
+            ORTHOFINDER_PHYLO_CAFE ( ch_blast_wd )
+            ch_speciestree = ORTHOFINDER_PHYLO_CAFE.out.speciestree
+            ch_orthologues = ORTHOFINDER_PHYLO_CAFE.out.orthologues
         }
 
         RESCALE_TREE ( ch_speciestree )
