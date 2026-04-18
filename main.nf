@@ -51,6 +51,8 @@ include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
 include { CAFE_PLOT as CAFE_PLOT_LARGE } from './modules/local/cafe_plot.nf'
 include { CAFE_GO_PREP as CAFE_GO_PREP_LARGE } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN  as CAFE_GO_RUN_LARGE  } from './modules/local/cafe_go_run.nf'
+include { SUMMARIZE_CAFE_GO }                  from './modules/local/summarize_cafe_go.nf'
+include { SUMMARIZE_CAFE_GO as SUMMARIZE_CAFE_GO_LARGE } from './modules/local/summarize_cafe_go.nf'
 include { OG_ANNOTATION_SUMMARY } from './modules/local/og_annotation_summary.nf'
 
 workflow {
@@ -377,6 +379,12 @@ workflow {
 
             CAFE_GO_RUN ( ch_go_run_input )
 
+            SUMMARIZE_CAFE_GO (
+                CAFE_GO_RUN.out.topgo_results
+                    .map { meta, f -> f }
+                    .collect()
+                    .map { files -> tuple( "cafe_go", files ) }
+            )
 
             // --- GO enrichment on high-differential (large) families ---
             // Only fires when CAFE_RUN_LARGE ran (i.e. large_counts was non-empty).
@@ -419,6 +427,13 @@ workflow {
                 }
 
             CAFE_GO_RUN_LARGE ( ch_large_go_run_input )
+
+            SUMMARIZE_CAFE_GO_LARGE (
+                CAFE_GO_RUN_LARGE.out.topgo_results
+                    .map { meta, f -> f }
+                    .collect()
+                    .map { files -> tuple( "cafe_go_large", files ) }
+            )
 
         } // end if run_eggnog / predownloaded_gofiles (CAFE GO)
 
