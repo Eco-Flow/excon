@@ -148,6 +148,12 @@
           "exists": true,
           "description": "Path to a pre-computed Orthogroups.tsv from a previous OrthoFinder run. Must be provided together with --input_tree to skip OrthoFinder."
         },
+        "orthofinder_blast_results": {
+          "type": "string",
+          "format": "directory-path",
+          "exists": true,
+          "description": "Path to a pre-computed blast WorkingDirectory produced by a previous ORTHOFINDER_BLAST run (saved to results/orthofinder_blast/). Skips the DIAMOND search step and runs only orthogroup inference and phylogeny. Useful for resuming after a failed phylogeny stage or re-running with different tree-inference options."
+        },
         "groups": {
           "type": "string",
           "default": "all",
