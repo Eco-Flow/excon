@@ -83,7 +83,7 @@ make_heatmap <- function(tsv_file, outfile, title, exclude_nodes = FALSE) {
             x = NULL, y = NULL
         )
 
-    ggsave(outfile, p, width = plot_w, height = plot_h)
+    ggsave(outfile, p, width = plot_w, height = plot_h, limitsize = FALSE)
     message(sprintf("Saved: %s  (%d terms x %d species)", outfile, n_terms, n_species))
 }
 
