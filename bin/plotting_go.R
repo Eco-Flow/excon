@@ -89,18 +89,18 @@ make_heatmap <- function(tsv_file, outfile, title, exclude_nodes = FALSE) {
 
 make_heatmap("Go_summary_pos.tsv",
              "Go_summary_pos.pdf",
-             "Gene Family Expansions — Shared GO Terms")
+             "Gene Family Expansions - Shared GO Terms")
 
 make_heatmap("Go_summary_pos.tsv",
              "Go_summary_pos_noNode.pdf",
-             "Gene Family Expansions — Shared GO Terms (species only)",
+             "Gene Family Expansions - Shared GO Terms (species only)",
              exclude_nodes = TRUE)
 
 make_heatmap("Go_summary_neg.tsv",
              "Go_summary_neg.pdf",
-             "Gene Family Contractions — Shared GO Terms")
+             "Gene Family Contractions - Shared GO Terms")
 
 make_heatmap("Go_summary_neg.tsv",
              "Go_summary_neg_noNode.pdf",
-             "Gene Family Contractions — Shared GO Terms (species only)",
+             "Gene Family Contractions - Shared GO Terms (species only)",
              exclude_nodes = TRUE)
