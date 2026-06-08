@@ -34,6 +34,12 @@ sig_terms <- dat %>%
   summarise(n_sig = n_distinct(species), .groups = "drop") %>%
   filter(n_sig >= MIN_SPECIES)
 
+if (nrow(sig_terms) == 0) {
+  cat("\nNo GO terms meet the criteria (p <", PVAL_CUTOFF, ", min", MIN_SPECIES,
+      "species) — skipping summary plots.\n")
+  quit(status = 0)
+}
+
 plot_dat <- dat %>%
   semi_join(sig_terms, by = c("GO_ID", "GO_term", "direction")) %>%
   filter(!is.na(pvalue)) %>%
