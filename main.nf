@@ -25,6 +25,7 @@ include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN } from './modules/local/cafe_go_run.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
+include { CAFE_NODE_GUIDE } from './modules/local/cafe_node_guide.nf'
 include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
 include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
 include { EGGNOG_TO_GO } from './modules/local/eggnog_to_go.nf'
@@ -308,6 +309,7 @@ workflow {
         ch_best_results = CAFE_MODEL_COMPARE.out.best_results
 
         CAFE_PLOT ( ch_best_results )
+        CAFE_NODE_GUIDE ( ch_best_results )
 
         // Plot high-differential families — only runs when CAFE_RUN_LARGE converged
         // (converged.txt is an optional output; if absent the channel is empty and
