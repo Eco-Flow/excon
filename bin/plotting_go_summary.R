@@ -11,6 +11,16 @@ MIN_SPECIES <- 2
 POS_FILE    <- "Go_summary_pos.tsv"
 NEG_FILE    <- "Go_summary_neg.tsv"
 
+# ── Helper: save PDF + SVG + PNG ──────────────────────────────────────────────
+save_plot <- function(p, stem, width, height) {
+  ggsave(paste0(stem, ".pdf"), p, width = width, height = height,
+         device = cairo_pdf, limitsize = FALSE)
+  ggsave(paste0(stem, ".svg"), p, width = width, height = height,
+         device = svglite::svglite, limitsize = FALSE)
+  ggsave(paste0(stem, ".png"), p, width = width, height = height,
+         dpi = 150, limitsize = FALSE)
+}
+
 # ── Load & reshape ─────────────────────────────────────────────────────────────
 read_go <- function(file, direction) {
   read_tsv(file, show_col_types = FALSE) %>%
@@ -97,9 +107,8 @@ p <- ggplot(plot_dat, aes(x = species, y = GO_label, fill = neg_log10_p)) +
     panel.grid      = element_blank()
   )
 
-ggsave("go_enrichment_heatmap.pdf", p, width = 16, height = 8, limitsize = FALSE)
-ggsave("go_enrichment_heatmap.png", p, width = 16, height = 8, dpi = 150, limitsize = FALSE)
-cat("Heatmap saved to go_enrichment_heatmap.pdf / .png\n")
+save_plot(p, "go_enrichment_heatmap", 16, 8)
+cat("Heatmap saved\n")
 
 # ── Dot plot ───────────────────────────────────────────────────────────────────
 dot_dat <- sig_terms %>%
@@ -118,9 +127,8 @@ p2 <- ggplot(dot_dat, aes(x = n_sig, y = GO_label, colour = direction, size = n_
   theme_minimal(base_size = 9) +
   theme(axis.text.y = element_text(size = 7))
 
-ggsave("go_enrichment_dotplot.pdf", p2, width = 10, height = 6, limitsize = FALSE)
-ggsave("go_enrichment_dotplot.png", p2, width = 10, height = 6, dpi = 150, limitsize = FALSE)
-cat("Dot plot saved to go_enrichment_dotplot.pdf / .png\n")
+save_plot(p2, "go_enrichment_dotplot", 10, 6)
+cat("Dot plot saved\n")
 
 # ── Aligned figures ────────────────────────────────────────────────────────────
 all_sig_ids <- sig_terms %>% distinct(GO_ID, GO_term)
@@ -204,8 +212,7 @@ make_aligned_heatmap <- function(data, title_suffix = "") {
 # All terms
 p3 <- make_aligned_heatmap(aligned_plot_dat, " (all terms)")
 h_all <- max(4, nrow(all_sig_ids) * 0.25 + 2)
-ggsave("go_enrichment_heatmap_aligned.pdf", p3, width = 18, height = h_all, limitsize = FALSE)
-ggsave("go_enrichment_heatmap_aligned.png", p3, width = 18, height = h_all, dpi = 150, limitsize = FALSE)
+save_plot(p3, "go_enrichment_heatmap_aligned", 18, h_all)
 cat("Aligned heatmap (all) saved\n")
 
 # Shared terms only
@@ -216,15 +223,15 @@ if (nrow(shared_ids) > 0) {
     " (shared terms only)"
   )
   h_shared <- max(4, nrow(shared_ids) * 0.25 + 2)
-  ggsave("go_enrichment_heatmap_aligned_shared.pdf", p3b, width = 18, height = h_shared, limitsize = FALSE)
-  ggsave("go_enrichment_heatmap_aligned_shared.png", p3b, width = 18, height = h_shared, dpi = 150, limitsize = FALSE)
+  save_plot(p3b, "go_enrichment_heatmap_aligned_shared", 18, h_shared)
   cat("Aligned heatmap (shared) saved\n")
 }
 
 # Expanding-only terms
 exp_only_ids <- term_class %>% filter(term_group == "expanding only") %>% distinct(GO_ID, GO_term)
 if (nrow(exp_only_ids) > 0) {
-  p_exp_only <- filter(aligned_plot_dat, GO_ID %in% exp_only_ids$GO_ID, direction == "expanding") %>%
+  p_exp_only <- filter(aligned_plot_dat, GO_ID %in% exp_only_ids$GO_ID,
+                       direction == "expanding") %>%
     ggplot(aes(x = species, y = GO_label, fill = neg_log10_p)) +
     geom_tile(colour = "white", linewidth = 0.3) +
     geom_point(data = ~ filter(.x, sig), aes(x = species, y = GO_label),
@@ -232,21 +239,22 @@ if (nrow(exp_only_ids) > 0) {
     scale_fill_gradient(low = "lightyellow", high = "#E64B35", na.value = "grey90",
                         name = expression(-log[10](p))) +
     labs(title    = "GO enrichment: expanding-only terms",
-         subtitle = paste0("Terms significant in expanding but not contracting; * p < ", PVAL_CUTOFF),
+         subtitle = paste0("Terms significant in expanding but not contracting; * p < ",
+                           PVAL_CUTOFF),
          x = NULL, y = NULL) +
     theme_minimal(base_size = 9) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7),
           axis.text.y = element_text(size = 7), panel.grid = element_blank())
   h_exp <- max(4, nrow(exp_only_ids) * 0.25 + 2)
-  ggsave("go_enrichment_heatmap_expanding_only.pdf", p_exp_only, width = 14, height = h_exp, limitsize = FALSE)
-  ggsave("go_enrichment_heatmap_expanding_only.png", p_exp_only, width = 14, height = h_exp, dpi = 150, limitsize = FALSE)
+  save_plot(p_exp_only, "go_enrichment_heatmap_expanding_only", 14, h_exp)
   cat("Expanding-only heatmap saved\n")
 }
 
 # Contracting-only terms
 cont_only_ids <- term_class %>% filter(term_group == "contracting only") %>% distinct(GO_ID, GO_term)
 if (nrow(cont_only_ids) > 0) {
-  p_cont_only <- filter(aligned_plot_dat, GO_ID %in% cont_only_ids$GO_ID, direction == "contracting") %>%
+  p_cont_only <- filter(aligned_plot_dat, GO_ID %in% cont_only_ids$GO_ID,
+                        direction == "contracting") %>%
     ggplot(aes(x = species, y = GO_label, fill = neg_log10_p)) +
     geom_tile(colour = "white", linewidth = 0.3) +
     geom_point(data = ~ filter(.x, sig), aes(x = species, y = GO_label),
@@ -254,14 +262,14 @@ if (nrow(cont_only_ids) > 0) {
     scale_fill_gradient(low = "lightyellow", high = "#4DBBD5", na.value = "grey90",
                         name = expression(-log[10](p))) +
     labs(title    = "GO enrichment: contracting-only terms",
-         subtitle = paste0("Terms significant in contracting but not expanding; * p < ", PVAL_CUTOFF),
+         subtitle = paste0("Terms significant in contracting but not expanding; * p < ",
+                           PVAL_CUTOFF),
          x = NULL, y = NULL) +
     theme_minimal(base_size = 9) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7),
           axis.text.y = element_text(size = 7), panel.grid = element_blank())
   h_cont <- max(4, nrow(cont_only_ids) * 0.25 + 2)
-  ggsave("go_enrichment_heatmap_contracting_only.pdf", p_cont_only, width = 14, height = h_cont, limitsize = FALSE)
-  ggsave("go_enrichment_heatmap_contracting_only.png", p_cont_only, width = 14, height = h_cont, dpi = 150, limitsize = FALSE)
+  save_plot(p_cont_only, "go_enrichment_heatmap_contracting_only", 14, h_cont)
   cat("Contracting-only heatmap saved\n")
 }
 
@@ -297,8 +305,7 @@ p4 <- ggplot(aligned_dot_dat, aes(x = n_sig, y = GO_label, colour = direction, s
   )
 
 h_dot <- max(4, nrow(all_sig_ids) * 0.2 + 2)
-ggsave("go_enrichment_dotplot_aligned.pdf", p4, width = 12, height = h_dot, limitsize = FALSE)
-ggsave("go_enrichment_dotplot_aligned.png", p4, width = 12, height = h_dot, dpi = 150, limitsize = FALSE)
+save_plot(p4, "go_enrichment_dotplot_aligned", 12, h_dot)
 cat("Aligned dot plot saved\n")
 
 cat("\n=== Term overlap summary ===\n")

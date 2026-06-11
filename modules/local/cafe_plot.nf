@@ -13,6 +13,7 @@ process CAFE_PLOT {
     """
     if compgen -G "${Cafe_dir}/*_asr.tre" > /dev/null 2>&1; then
         cafeplotter -i ${Cafe_dir} -o cafe_plotter --format 'pdf'
+        cafeplotter -i ${Cafe_dir} -o cafe_plotter --format 'svg'
     else
         echo "No *_asr.tre found in ${Cafe_dir} — CAFE5 did not converge, skipping plot."
         mkdir -p cafe_plotter
