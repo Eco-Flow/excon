@@ -52,9 +52,10 @@ include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
 include { CAFE_PLOT as CAFE_PLOT_LARGE } from './modules/local/cafe_plot.nf'
 include { CAFE_GO_PREP as CAFE_GO_PREP_LARGE } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN  as CAFE_GO_RUN_LARGE  } from './modules/local/cafe_go_run.nf'
-include { SUMMARIZE_CAFE_GO; PLOT_CAFE_GO }                                   from './modules/local/summarize_cafe_go.nf'
-include { SUMMARIZE_CAFE_GO as SUMMARIZE_CAFE_GO_LARGE;
-          PLOT_CAFE_GO      as PLOT_CAFE_GO_LARGE }                           from './modules/local/summarize_cafe_go.nf'
+include { SUMMARIZE_CAFE_GO }                                                  from './modules/local/summarize_cafe_go.nf'
+include { SUMMARIZE_CAFE_GO as SUMMARIZE_CAFE_GO_LARGE }                       from './modules/local/summarize_cafe_go.nf'
+include { PLOT_CAFE_GO }                                                        from './modules/local/plot_cafe_go.nf'
+include { PLOT_CAFE_GO      as PLOT_CAFE_GO_LARGE }                            from './modules/local/plot_cafe_go.nf'
 include { OG_ANNOTATION_SUMMARY } from './modules/local/og_annotation_summary.nf'
 
 workflow {
