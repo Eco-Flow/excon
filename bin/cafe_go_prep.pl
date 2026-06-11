@@ -361,8 +361,21 @@ foreach my $species6 (keys %Background_OGs){
 
 print "Print a summary table:\n";
 
-print $out1 
-"Total_HOGs_significant\tExpansion_HOGs_significant\tContraction_HOGs_significant\tExpansion_genes_significant\tContraction_genes_significant\tExpansion_HOGs_total\tContraction_HOGs_total\n";
+print $out1
+"# CAFE_summary.txt — per-species/node counts derived from CAFE5 output\n" .
+"# Sources: *_branch_probabilities.tab (p-values) and *_change.tab (gene count changes)\n" .
+"#\n" .
+"# Column definitions:\n" .
+"#   Species/Node                  : Leaf species or internal ancestral node (number matches cafe_node_label_guide.pdf)\n" .
+"#   Total_HOGs_significant        : Number of HOGs (gene families) with a significant branch p-value (p <= 0.05)\n" .
+"#   Expansion_HOGs_significant    : Significant HOGs (p <= 0.05) with a net positive gene count change (expansion)\n" .
+"#   Contraction_HOGs_significant  : Significant HOGs (p <= 0.05) with a net negative gene count change (contraction)\n" .
+"#   Expansion_genes_significant   : Sum of gene count changes across all significant expanding HOGs (total genes gained)\n" .
+"#   Contraction_genes_significant : Sum of gene count changes across all significant contracting HOGs (negative; total genes lost)\n" .
+"#   Expansion_HOGs_total          : HOGs with any positive gene count change, regardless of significance (no p-value filter)\n" .
+"#   Contraction_HOGs_total        : HOGs with any negative gene count change, regardless of significance (no p-value filter)\n" .
+"#\n" .
+"Species/Node\tTotal_HOGs_significant\tExpansion_HOGs_significant\tContraction_HOGs_significant\tExpansion_genes_significant\tContraction_genes_significant\tExpansion_HOGs_total\tContraction_HOGs_total\n";
 
 foreach my $species2 (sort keys %SPECIES_TOTAL){
     print $out1 "$species2\t$SPECIES_TOTAL{$species2}";
