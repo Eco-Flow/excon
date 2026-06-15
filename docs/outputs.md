@@ -28,15 +28,35 @@ results/
 
 ## CAFE Expansion/Contraction Plots (`results/cafe_plot/`)
 
-Produced by [CAFEPlotter](https://github.com/moshi4/CafePlotter) from the best-fitting CAFE5 model.
+All tree figures are published in PDF and SVG formats. SVG files are suitable for editing in Inkscape.
 
-### Summary Tree
+### Summary Tree (cafeplotter)
 
-Shows the total number of significantly expanded (+) and contracted (−) gene families mapped onto each branch of the species tree.
+Produced by [CAFEPlotter](https://github.com/moshi4/CafePlotter) from the best-fitting CAFE5 model. Shows the **total** number of expanded (+) and contracted (−) gene families per branch, **without a p-value filter**.
 
 ![CAFE summary tree](images/cafe_summary.png)
 
-*Example: four* Mycoplasmoides *species. Numbers on each branch show expanded/contracted gene family counts. Internal nodes represent ancestral lineages.*
+*Example: four* Mycoplasmoides *species. Numbers on each branch show all expanded/contracted gene family counts. Internal nodes represent ancestral lineages.*
+
+---
+
+### Significant HOG Tree (`cafe_sig_hog_tree.pdf/svg`)
+
+Same layout as the cafeplotter summary tree but restricted to **statistically significant** gene families only (branch p ≤ 0.05). Each leaf and internal node is annotated with `+expanded / −contracted` counts from `CAFE_summary.txt`. This is the figure to use when reporting how many families changed significantly on each lineage.
+
+---
+
+### Significant Gene Tree (`cafe_sig_gene_tree.pdf/svg`)
+
+Shows the **net number of genes** gained or lost on each branch, summed across the significant families only. A family that contracted from 10 to 7 genes contributes −3, regardless of how many other genes it still contains. Use this figure to compare the magnitude of gene gain/loss, not just family counts.
+
+> Note: both alternative tree figures are produced only when GO enrichment analysis is run (they depend on `CAFE_summary.txt` generated during that step).
+
+---
+
+### Node Number Guide (`cafe_node_label_guide.pdf/svg`)
+
+Maps the internal node numbers used in `CAFE_summary.txt` (e.g. node 14, 15) to their positions on the species tree. Useful for interpreting which ancestral lineage a node refers to.
 
 ---
 
@@ -85,18 +105,31 @@ The dot plot adds two extra dimensions: dot **size** encodes the number of signi
 
 ---
 
+## CAFE Summary Table (`results/cafe_go/.../CAFE_summary.txt`)
+
+A tab-separated table with one row per species (leaf) and per internal node, produced during the GO enrichment step. The file is self-documenting — the first lines are comment lines (`#`) that define each column.
+
+| Column | Description |
+|--------|-------------|
+| `Species/Node` | Leaf species name or ancestral node number (matches `cafe_node_label_guide.pdf`) |
+| `Total_HOGs_significant` | Gene families with a significant branch p-value (p ≤ 0.05) |
+| `Expansion_HOGs_significant` | Significant families with a net positive size change |
+| `Contraction_HOGs_significant` | Significant families with a net negative size change |
+| `Expansion_genes_significant` | Sum of gene count increases across all significant expanding families |
+| `Contraction_genes_significant` | Sum of gene count decreases across all significant contracting families (reported as negative) |
+| `Expansion_HOGs_total` | All families with any positive size change, regardless of significance |
+| `Contraction_HOGs_total` | All families with any negative size change, regardless of significance |
+
+> The `*_total` columns match what cafeplotter displays on the standard summary tree. The `*_significant` columns are what the alternative tree figures (`cafe_sig_hog_tree`, `cafe_sig_gene_tree`) use.
+
+---
+
 ## CAFE Model Selection (`results/cafe/model_comparison/`)
 
 | File | Description |
 |------|-------------|
 | `cafe_model_comparison.tsv` | AIC scores for k=1 through k=N rate categories |
 | `best_model.txt` | Selected model: `uniform` or `poisson` at best k |
-
----
-
-## Expansion/Contraction Plots (`results/cafe_plot/`)
-
-Produced by [CAFEPlotter](https://github.com/moshi4/CafePlotter). Visualises which gene families expanded or contracted on each branch of the species tree under the best-fitting CAFE model.
 
 ---
 

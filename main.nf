@@ -26,6 +26,7 @@ include { CAFE_GO_RUN } from './modules/local/cafe_go_run.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
 include { CAFE_NODE_GUIDE } from './modules/local/cafe_node_guide.nf'
+include { CAFE_PLOT_ALTVIZ } from './modules/local/cafe_plot_altviz.nf'
 include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
 include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
 include { EGGNOG_TO_GO } from './modules/local/eggnog_to_go.nf'
@@ -380,6 +381,11 @@ workflow {
                 .map { meta, target_file, bg_file, og_go ->
                     tuple( meta, target_file, bg_file, og_go )
                 }
+
+            CAFE_PLOT_ALTVIZ (
+                ch_best_results,
+                CAFE_GO_PREP.out.cafe_summary
+            )
 
             CAFE_GO_RUN ( ch_go_run_input )
 
