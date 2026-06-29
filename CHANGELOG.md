@@ -11,6 +11,7 @@
 - New `CAFE_PLOT_ALTVIZ` module: alternative species-tree figures restricted to statistically significant families — `cafe_sig_hog_tree` (significantly expanded/contracted family counts per branch) and `cafe_sig_gene_tree` (net genes gained/lost per branch). Produced only when GO enrichment runs, as they depend on `CAFE_summary.txt`.
 - New `CAFE_NODE_GUIDE` module: prints a node-label guide tree (`cafe_node_label_guide.pdf/svg`) so the numbered internal nodes in the CAFE figures can be matched to lineages.
 - New `docs/zenodo_cafe_readme.md` explaining the CAFE output files for archived/published datasets.
+- New `--go_algo weight01_fisher` option: runs topGO's hierarchy-aware `weight01` algorithm with the `fisher` statistic, giving less redundant enrichment than `classic_fisher` while remaining compatible with the gene-list input. Added to `ChopGO_VTS2.pl`, `ChopGO_ChromoGoatee.pl`, and the schema.
 
 ### Changed
 - GO plot figures now use the Cairo device and are output in both PDF and SVG (plus PNG), making them easier to edit in tools like Inkscape for journal publication.
@@ -21,6 +22,7 @@
 ### Fixed
 - `SUMMARIZE_CAFE_GO` / GO summary step no longer fails when there are no significant GO hits.
 - Fixed execute permissions (chmod) on the new R scripts and corrected the path to R in the summarize step.
+- Documented that `--go_algo` values using score-based statistics (`weight01_t`, `elim_ks`, `weight_ks`) silently produce empty GO tables, because the CAFE/chromosome GO input is a gene membership list (a 0/1 factor) and the `t`/`ks` statistics require per-gene numeric scores. The R error does not propagate (output is optional), so the pipeline completes "successfully" with no GO results. Use `classic_fisher` or the new `weight01_fisher` instead. Warning added to the `-go_algo` help text and schema.
 
 ## [v2.3.1] - 2026-04-12
 
