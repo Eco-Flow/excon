@@ -198,7 +198,8 @@
         },
         "go_algo": {
           "type": "string",
-          "description": "topGO algorithm and statistic combination (classic_fisher, weight01_t, elim_ks, weight_ks)",
+          "description": "topGO algorithm and statistic combination (classic_fisher, weight01_fisher, weight01_t, elim_ks, weight_ks). The GO input is a gene membership list, so only the Fisher-based options (classic_fisher, weight01_fisher) produce results; the score-based t/ks options require per-gene scores and yield empty tables with this input.",
+          "enum": ["classic_fisher", "weight01_fisher", "weight01_t", "elim_ks", "weight_ks"],
           "default": "classic_fisher"
         },
         "orthofinder_v2": {
