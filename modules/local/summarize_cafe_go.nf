@@ -14,6 +14,6 @@ process SUMMARIZE_CAFE_GO {
 
     script:
     """
-    sum_cafe.pl
+    sum_cafe.pl ${params.go_algo}
     """
 }

@@ -5,6 +5,18 @@ use strict;
 
 print "Please be in folder with all the Species Go Summarys\n";
 
+# Which p-value column of the *_TopGo_results_ALL.tab tables to summarise on.
+# The correct choice depends on the topGO algorithm, not on user preference:
+#   classic_fisher  -> each GO term is tested independently, so a multiple-testing
+#                      correction is appropriate. Use column 9 (bonferroni).
+#   weight01_*/elim/weight -> the algorithm already accounts for the GO hierarchy,
+#                      so adjusting on top is over-conservative. Use column 13
+#                      (raw "none" p-value).
+# Column indices (0-based): 5=topGOresult(raw) 9=bonferroni 10=BH 12=fdr 13=none
+my $go_algo = $ARGV[0] // "classic_fisher";
+my $pcol    = ($go_algo eq "classic_fisher") ? 9 : 13;
+print "Summarising on column $pcol for go_algo='$go_algo' "
+    . ($pcol == 9 ? "(bonferroni-adjusted)\n" : "(raw p-value)\n");
 
 my %go_key;
 my %go_names;
@@ -26,14 +38,11 @@ foreach my $sp (@gos){
         chomp $line;
         #print "$line\n";
         my @split2=split("\t", $line);
-        # Column 13 = raw topGO p-value ("none" = unadjusted), NOT column 9
-        # (bonferroni). The raw value is used deliberately: the weight01 algorithm
-        # already accounts for the GO hierarchy, so Bonferroni-adjusting on top is
-        # over-conservative and would make the cross-species summary/heatmaps
-        # near-empty. The raw p-value also feeds the Count_significant tally below.
-        $go_key{$split2[0]}{$subset}{$species}=$split2[13];
+        # $pcol is chosen by algorithm above (raw for hierarchy-aware algorithms,
+        # bonferroni for classic_fisher). This value also feeds Count_significant.
+        $go_key{$split2[0]}{$subset}{$species}=$split2[$pcol];
         $go_names{$split2[0]}=$split2[1];
-        #print "$split2[0] $subset $species $split2[13]\n";
+        #print "$split2[0] $subset $species $split2[$pcol]\n";
     }
 }
 
