@@ -6,6 +6,21 @@
 - Add primate test data to the config.
 - OrthoFinder v3 is now split into two separate Nextflow processes with independent resource profiles. `ORTHOFINDER_BLAST_CAFE` runs the reciprocal DIAMOND searches (`-op` + `blast_commands.txt`) and publishes the blast WorkingDirectory to `results/orthofinder_blast/`. `ORTHOFINDER_PHYLO_CAFE` picks up from those results (`-b`) and runs orthogroup inference, MSA, and species tree inference, publishing final results to `results/orthofinder_cafe/` as before.
 - New `--orthofinder_blast_results` parameter: provide the path to a previously saved blast WorkingDirectory to skip the DIAMOND step entirely and run only the phylogeny stage. Useful for resuming after a failed phylogeny run or re-running with different `--orthofinder_tree` / `--orthofinder_method` options without repeating the expensive all-vs-all search.
+- New `SUMMARIZE_CAFE_GO` module (and `SUMMARIZE_CAFE_GO_LARGE` for high-differential families): collects the per-species/per-node topGO results from `CAFE_GO_RUN` into combined tables across all species/nodes in one place (`Go_summary_pos.tsv`, `Go_summary_neg.tsv`, and the merged `Go_summary_posneg_merged.tsv`).
+- New `PLOT_CAFE_GO` module (and `PLOT_CAFE_GO_LARGE`): produces summary plots of GO enrichment across all species/nodes in a single figure. The raw plotting R scripts (`plotting_go.R`, `plotting_go_summary.R`) are copied into the output so users can edit the figures for publication. Runs in the `rocker/tidyverse:4.3.2` container.
+- New `CAFE_PLOT_ALTVIZ` module: alternative species-tree figures restricted to statistically significant families — `cafe_sig_hog_tree` (significantly expanded/contracted family counts per branch) and `cafe_sig_gene_tree` (net genes gained/lost per branch). Produced only when GO enrichment runs, as they depend on `CAFE_summary.txt`.
+- New `CAFE_NODE_GUIDE` module: prints a node-label guide tree (`cafe_node_label_guide.pdf/svg`) so the numbered internal nodes in the CAFE figures can be matched to lineages.
+- New `docs/zenodo_cafe_readme.md` explaining the CAFE output files for archived/published datasets.
+
+### Changed
+- GO plot figures now use the Cairo device and are output in both PDF and SVG (plus PNG), making them easier to edit in tools like Inkscape for journal publication.
+- The CAFE summary table and the input datasets used for the GO CAFE analysis are now published to the results directory alongside the GO results.
+- `docs/outputs.md` expanded to document the new significant-HOG, significant-gene, and node-guide tree figures, and to clarify the difference between the (unfiltered) cafeplotter summary tree and the p-value-filtered alternative figures.
+- `cafe_go_prep.pl` header comments clarified, noting which OrthoFinder version was used and what HOGs are.
+
+### Fixed
+- `SUMMARIZE_CAFE_GO` / GO summary step no longer fails when there are no significant GO hits.
+- Fixed execute permissions (chmod) on the new R scripts and corrected the path to R in the summarize step.
 
 ## [v2.3.1] - 2026-04-12
 
