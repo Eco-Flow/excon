@@ -15,8 +15,10 @@ make_heatmap <- function(tsv_file, outfile, title, exclude_nodes = FALSE) {
     return(invisible(NULL))
   }
 
+  # quote="" and comment.char="" are essential: GO term names contain apostrophes
+  # (e.g. "5'-3' exonuclease") and '#', which otherwise break field parsing.
   df <- read.table(tsv_file, header = TRUE, sep = "\t", check.names = FALSE,
-                   stringsAsFactors = FALSE)
+                   stringsAsFactors = FALSE, quote = "", comment.char = "")
 
   df_shared <- df[df$Count_significant >= shared_cutoff, ]
 

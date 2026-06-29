@@ -23,7 +23,7 @@ save_plot <- function(p, stem, width, height) {
 
 # ── Load & reshape ─────────────────────────────────────────────────────────────
 read_go <- function(file, direction) {
-  read_tsv(file, show_col_types = FALSE) %>%
+  read_tsv(file, show_col_types = FALSE, quote = "") %>%
     pivot_longer(
       cols      = -c(GO_ID, GO_term, Count_significant),
       names_to  = "species",
