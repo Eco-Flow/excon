@@ -26,9 +26,14 @@ foreach my $sp (@gos){
         chomp $line;
         #print "$line\n";
         my @split2=split("\t", $line);
-        $go_key{$split2[0]}{$subset}{$species}=$split2[9];
+        # Column 13 = raw topGO p-value ("none" = unadjusted), NOT column 9
+        # (bonferroni). The raw value is used deliberately: the weight01 algorithm
+        # already accounts for the GO hierarchy, so Bonferroni-adjusting on top is
+        # over-conservative and would make the cross-species summary/heatmaps
+        # near-empty. The raw p-value also feeds the Count_significant tally below.
+        $go_key{$split2[0]}{$subset}{$species}=$split2[13];
         $go_names{$split2[0]}=$split2[1];
-        #print "$split2[0] $subset $species $split2[9]\n";
+        #print "$split2[0] $subset $species $split2[13]\n";
     }
 }
 

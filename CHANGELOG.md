@@ -14,6 +14,7 @@
 - New `--go_algo weight01_fisher` option: runs topGO's hierarchy-aware `weight01` algorithm with the `fisher` statistic, giving less redundant enrichment than `classic_fisher` while remaining compatible with the gene-list input. Added to `ChopGO_VTS2.pl`, `ChopGO_ChromoGoatee.pl`, and the schema.
 
 ### Changed
+- `SUMMARIZE_CAFE_GO` (`sum_cafe.pl`) now keys the cross-species summary and heatmaps on the raw topGO p-value (`none` column) instead of the Bonferroni-adjusted column. Bonferroni on top of the hierarchy-aware `weight01` algorithm is over-conservative and left the summaries near-empty; the raw value also drives the `Count_significant` tally, so shared-term counts now reflect raw significance (≤ 0.05).
 - GO plot figures now use the Cairo device and are output in both PDF and SVG (plus PNG), making them easier to edit in tools like Inkscape for journal publication.
 - The CAFE summary table and the input datasets used for the GO CAFE analysis are now published to the results directory alongside the GO results.
 - `docs/outputs.md` expanded to document the new significant-HOG, significant-gene, and node-guide tree figures, and to clarify the difference between the (unfiltered) cafeplotter summary tree and the p-value-filtered alternative figures.
