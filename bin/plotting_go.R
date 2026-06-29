@@ -9,6 +9,22 @@ suppressPackageStartupMessages({
 p_threshold   <- 0.05
 shared_cutoff <- 2   # GO term must be significant in >= this many species
 
+# Write an SVG without hard-depending on the svglite package (which is absent
+# from some containers, e.g. rocker/tidyverse). Prefer svglite; otherwise fall
+# back to the cairo-based grDevices::svg(); if neither is available, skip the SVG
+# rather than aborting (PDF/PNG are still produced).
+save_svg <- function(plot, file, width, height) {
+  if (requireNamespace("svglite", quietly = TRUE)) {
+    ggsave(file, plot, width = width, height = height,
+           device = svglite::svglite, limitsize = FALSE)
+  } else if (capabilities("cairo")) {
+    grDevices::svg(file, width = width, height = height)
+    print(plot); dev.off()
+  } else {
+    message("svglite and cairo both unavailable — SVG skipped: ", file)
+  }
+}
+
 make_heatmap <- function(tsv_file, outfile, title, exclude_nodes = FALSE) {
   if (!file.exists(tsv_file)) {
     message(sprintf("File not found: %s — skipping", tsv_file))
@@ -91,8 +107,7 @@ make_heatmap <- function(tsv_file, outfile, title, exclude_nodes = FALSE) {
 
   ggsave(outfile, p, width = plot_w, height = plot_h,
          device = cairo_pdf, limitsize = FALSE)
-  ggsave(sub("\\.pdf$", ".svg", outfile), p, width = plot_w, height = plot_h,
-         device = svglite::svglite, limitsize = FALSE)
+  save_svg(p, sub("\\.pdf$", ".svg", outfile), plot_w, plot_h)
   message(sprintf("Saved: %s  (%d terms x %d species)", outfile, n_terms, n_species))
 }
 

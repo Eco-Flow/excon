@@ -36,7 +36,7 @@ if (!file.exists(summary_file)) {
   message("Not found: ", summary_file); quit(status = 0)
 }
 dat <- read.table(summary_file, header = TRUE, sep = "\t",
-                  comment.char = "#", stringsAsFactors = FALSE,
+                  comment.char = "#", quote = "", stringsAsFactors = FALSE,
                   check.names = FALSE)
 colnames(dat)[1] <- "node"
 

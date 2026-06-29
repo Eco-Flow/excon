@@ -62,6 +62,7 @@ dat <- read.table(input_file, header = TRUE, sep = "\t", quote = "",
 # Keeps only terms present in the inference file (column 2 = GO ID)
 if (!is.null(inferred_file) && file.exists(inferred_file)) {
   inf      <- read.table(inferred_file, sep = "\t", header = FALSE,
+                         quote = "", comment.char = "",
                          stringsAsFactors = FALSE, fill = TRUE)
   keep_ids <- inf[[2]]
   dat      <- dat[dat$GO.ID %in% keep_ids, ]
@@ -179,11 +180,24 @@ subtitle <- paste0(
   "  \u2022  fold enrichment\u202f\u2265\u202f", enrich_cutoff
 )
 
+# Write an SVG without hard-depending on svglite (absent from some containers).
+# Prefer svglite; else fall back to the cairo-based grDevices::svg(); else skip.
+save_svg <- function(plot, file, width, height) {
+  if (requireNamespace("svglite", quietly = TRUE)) {
+    ggsave(file, plot = plot, width = width, height = height,
+           device = svglite::svglite)
+  } else if (capabilities("cairo")) {
+    grDevices::svg(file, width = width, height = height)
+    print(plot); dev.off()
+  } else {
+    message("svglite and cairo both unavailable — SVG skipped: ", file)
+  }
+}
+
 # ── Helper: save PDF ──────────────────────────────────────────────────────────
 save_plot <- function(p, stem, w, h) {
   ggsave(paste0(stem, ".pdf"), plot = p, width = w, height = h, device = cairo_pdf)
-  ggsave(paste0(stem, ".svg"), plot = p, width = w, height = h,
-         device = svglite::svglite)
+  save_svg(p, paste0(stem, ".svg"), w, h)
   message("  Saved: ", stem, ".pdf / .svg")
 }
 
