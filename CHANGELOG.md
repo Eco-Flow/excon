@@ -23,6 +23,7 @@
 - `SUMMARIZE_CAFE_GO` / GO summary step no longer fails when there are no significant GO hits.
 - Fixed execute permissions (chmod) on the new R scripts and corrected the path to R in the summarize step.
 - Documented that `--go_algo` values using score-based statistics (`weight01_t`, `elim_ks`, `weight_ks`) silently produce empty GO tables, because the CAFE/chromosome GO input is a gene membership list (a 0/1 factor) and the `t`/`ks` statistics require per-gene numeric scores. The R error does not propagate (output is optional), so the pipeline completes "successfully" with no GO results. Use `classic_fisher` or the new `weight01_fisher` instead. Warning added to the `-go_algo` help text and schema.
+- `CAFE_PLOT_ALTVIZ` (`cafe_plot_altviz.R`) crashed the pipeline (`trying to assign an object not of class "phylo" into ... "multiPhylo"`) because CAFE5 `*_asr.tre` files contain one reconstructed tree per gene family, which `read.tree()` returns as a `multiPhylo`. The script now takes the first tree for the species-tree scaffold, and figure generation is wrapped so any plotting error skips gracefully (exit 0) instead of aborting the run — these supplementary figures are now never fatal.
 
 ## [v2.3.1] - 2026-04-12
 

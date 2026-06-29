@@ -22,6 +22,12 @@ if (length(tree_files) == 0) {
   quit(status = 0)
 }
 tree <- read.tree(tree_files[1])
+# CAFE5 *_asr.tre holds one reconstructed tree per gene family (a multiPhylo).
+# They all share the species topology, so use the first for the tree scaffold.
+if (inherits(tree, "multiPhylo")) {
+  message("asr file contains ", length(tree), " trees — using the first for topology")
+  tree <- tree[[1]]
+}
 # Strip angle brackets and leading 'm' that CAFE5 sometimes puts on node labels
 tree$node.label <- gsub("^[<m]|[<>]$", "", tree$node.label)
 
@@ -121,18 +127,27 @@ save_both <- function(stem, exp_v, contr_v, title) {
   }
 }
 
-# ── Figure 1: Significant HOGs ────────────────────────────────────────────────
-save_both(
-  "cafe_sig_hog_tree",
-  exp_hog, contr_hog,
-  "Significantly evolving gene families per branch (+expanded / −contracted, p ≤ 0.05)"
-)
+# Figures are supplementary — never let a plotting error abort the pipeline.
+ok <- tryCatch({
+  # ── Figure 1: Significant HOGs ──────────────────────────────────────────────
+  save_both(
+    "cafe_sig_hog_tree",
+    exp_hog, contr_hog,
+    "Significantly evolving gene families per branch (+expanded / −contracted, p ≤ 0.05)"
+  )
 
-# ── Figure 2: Net genes in significant families ────────────────────────────────
-save_both(
-  "cafe_sig_gene_tree",
-  exp_gene, contr_gene,
-  "Net genes in significant families per branch (+gained / −lost, p ≤ 0.05)"
-)
+  # ── Figure 2: Net genes in significant families ─────────────────────────────
+  save_both(
+    "cafe_sig_gene_tree",
+    exp_gene, contr_gene,
+    "Net genes in significant families per branch (+gained / −lost, p ≤ 0.05)"
+  )
+  TRUE
+}, error = function(e) {
+  message("cafe_plot_altviz: figure generation failed (", conditionMessage(e),
+          ") — skipping (non-fatal)")
+  FALSE
+})
 
-message("Done.")
+message(if (ok) "Done." else "Skipped alt-viz figures (non-fatal).")
+quit(status = 0)
