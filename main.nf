@@ -25,6 +25,8 @@ include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN } from './modules/local/cafe_go_run.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
+include { CAFE_NODE_GUIDE } from './modules/local/cafe_node_guide.nf'
+include { CAFE_PLOT_ALTVIZ } from './modules/local/cafe_plot_altviz.nf'
 include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
 include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
 include { EGGNOG_TO_GO } from './modules/local/eggnog_to_go.nf'
@@ -38,7 +40,8 @@ include { AGAT_SPSTATISTICS } from './modules/nf-core/agat/spstatistics/main.nf'
 include { AGAT_SPKEEPLONGESTISOFORM } from './modules/nf-core/agat/spkeeplongestisoform/main.nf'
 include { QUAST } from './modules/nf-core/quast/main.nf'
 include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
-include { ORTHOFINDER as ORTHOFINDER_CAFE } from './modules/nf-core/orthofinder/main.nf'
+include { ORTHOFINDER_BLAST as ORTHOFINDER_BLAST_CAFE } from './modules/local/orthofinder_blast.nf'
+include { ORTHOFINDER_PHYLO as ORTHOFINDER_PHYLO_CAFE } from './modules/local/orthofinder_phylo.nf'
 include { ORTHOFINDER_V2 as ORTHOFINDER_V2_CAFE } from './modules/local/orthofinder_v2.nf'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
 
@@ -50,6 +53,10 @@ include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
 include { CAFE_PLOT as CAFE_PLOT_LARGE } from './modules/local/cafe_plot.nf'
 include { CAFE_GO_PREP as CAFE_GO_PREP_LARGE } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN  as CAFE_GO_RUN_LARGE  } from './modules/local/cafe_go_run.nf'
+include { SUMMARIZE_CAFE_GO }                                                  from './modules/local/summarize_cafe_go.nf'
+include { SUMMARIZE_CAFE_GO as SUMMARIZE_CAFE_GO_LARGE }                       from './modules/local/summarize_cafe_go.nf'
+include { PLOT_CAFE_GO }                                                        from './modules/local/plot_cafe_go.nf'
+include { PLOT_CAFE_GO      as PLOT_CAFE_GO_LARGE }                            from './modules/local/plot_cafe_go.nf'
 include { OG_ANNOTATION_SUMMARY } from './modules/local/og_annotation_summary.nf'
 
 workflow {
@@ -65,7 +72,7 @@ workflow {
    // Whether to skip genome processing (download → AGAT → GFFREAD → RENAME_FASTA → OrthoFinder)
    // Only possible when a pre-computed tree and orthogroups are supplied, AND the user
    // is not requesting EggNOG annotation or genome quality stats (which need the proteins/assemblies).
-   def use_precomputed = params.input_tree && params.input_orthogroups
+   def use_precomputed = (params.input_tree && params.input_orthogroups) || params.orthofinder_blast_results
    def needs_genomes   = !use_precomputed || params.run_eggnog || params.stats
 
    if (needs_genomes && !params.input) {
@@ -226,15 +233,25 @@ workflow {
             ch_speciestree = ORTHOFINDER_V2_CAFE.out.speciestree
             ch_orthologues = ORTHOFINDER_V2_CAFE.out.orthologues
         } else {
-            ORTHOFINDER_CAFE (
-                merge_ch
-                    .map { meta, fasta -> fasta }
-                    .collect()
-                    .map { files -> [ [id: "ortho_cafe"], files ] },
-                [[],[]]
-            )
-            ch_speciestree = ORTHOFINDER_CAFE.out.speciestree
-            ch_orthologues = ORTHOFINDER_CAFE.out.orthologues
+            // Stage 1: reciprocal DIAMOND blast (CPU-heavy, parallelisable)
+            // Stage 2: orthogroup inference + phylogeny (different resource profile)
+            if (params.orthofinder_blast_results) {
+                // Resume from a pre-computed blast WorkingDirectory (e.g. from a previous run)
+                ch_blast_wd = Channel.fromPath(params.orthofinder_blast_results, checkIfExists: true)
+                    .map { d -> [ [id: "ortho_cafe"], d ] }
+            } else {
+                ORTHOFINDER_BLAST_CAFE (
+                    merge_ch
+                        .map { meta, fasta -> fasta }
+                        .collect()
+                        .map { files -> [ [id: "ortho_cafe"], files ] }
+                )
+                ch_blast_wd = ORTHOFINDER_BLAST_CAFE.out.working_dir
+            }
+
+            ORTHOFINDER_PHYLO_CAFE ( ch_blast_wd )
+            ch_speciestree = ORTHOFINDER_PHYLO_CAFE.out.speciestree
+            ch_orthologues = ORTHOFINDER_PHYLO_CAFE.out.orthologues
         }
 
         RESCALE_TREE ( ch_speciestree )
@@ -294,6 +311,7 @@ workflow {
         ch_best_results = CAFE_MODEL_COMPARE.out.best_results
 
         CAFE_PLOT ( ch_best_results )
+        CAFE_NODE_GUIDE ( ch_best_results )
 
         // Plot high-differential families — only runs when CAFE_RUN_LARGE converged
         // (converged.txt is an optional output; if absent the channel is empty and
@@ -364,8 +382,24 @@ workflow {
                     tuple( meta, target_file, bg_file, og_go )
                 }
 
+            CAFE_PLOT_ALTVIZ (
+                ch_best_results,
+                CAFE_GO_PREP.out.cafe_summary
+            )
+
             CAFE_GO_RUN ( ch_go_run_input )
 
+            SUMMARIZE_CAFE_GO (
+                CAFE_GO_RUN.out.topgo_results
+                    .map { meta, f -> f }
+                    .collect()
+                    .map { files -> tuple( "cafe_go", files ) }
+            )
+
+            PLOT_CAFE_GO (
+                SUMMARIZE_CAFE_GO.out.pos_tsv
+                    .join( SUMMARIZE_CAFE_GO.out.neg_tsv )
+            )
 
             // --- GO enrichment on high-differential (large) families ---
             // Only fires when CAFE_RUN_LARGE ran (i.e. large_counts was non-empty).
@@ -408,6 +442,18 @@ workflow {
                 }
 
             CAFE_GO_RUN_LARGE ( ch_large_go_run_input )
+
+            SUMMARIZE_CAFE_GO_LARGE (
+                CAFE_GO_RUN_LARGE.out.topgo_results
+                    .map { meta, f -> f }
+                    .collect()
+                    .map { files -> tuple( "cafe_go_large", files ) }
+            )
+
+            PLOT_CAFE_GO_LARGE (
+                SUMMARIZE_CAFE_GO_LARGE.out.pos_tsv
+                    .join( SUMMARIZE_CAFE_GO_LARGE.out.neg_tsv )
+            )
 
         } // end if run_eggnog / predownloaded_gofiles (CAFE GO)
 

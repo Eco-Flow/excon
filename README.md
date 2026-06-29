@@ -1,4 +1,4 @@
-# EXCON (v2.3.1)
+# EXCON (v2.3.2)
 
 A Nextflow pipeline for gene family **EX**pansion and **CON**traction analysis 
 across multiple species using CAFE5.

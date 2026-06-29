@@ -181,9 +181,10 @@ subtitle <- paste0(
 
 # ── Helper: save PDF ──────────────────────────────────────────────────────────
 save_plot <- function(p, stem, w, h) {
-  pdf_path <- paste0(stem, ".pdf")
-  ggsave(pdf_path, plot = p, width = w, height = h, device = "pdf")
-  message("  Saved: ", pdf_path)
+  ggsave(paste0(stem, ".pdf"), plot = p, width = w, height = h, device = cairo_pdf)
+  ggsave(paste0(stem, ".svg"), plot = p, width = w, height = h,
+         device = svglite::svglite)
+  message("  Saved: ", stem, ".pdf / .svg")
 }
 
 # Estimate wrapped-label height: str_wrap at width 45 can create ~2-line labels,
