@@ -21,6 +21,7 @@
 - `cafe_go_prep.pl` header comments clarified, noting which OrthoFinder version was used and what HOGs are.
 
 ### Fixed
+- `CAFE_MODEL_COMPARE` now fails loudly when the winning model's results directory is empty, instead of silently publishing an empty `results/cafe/best/`. This previously masked a stale `-resume` cache that staged an empty CAFE k-run dir: the gamma model had actually converged, but `best/` was published empty and the model-comparison table showed `NA`. Also fixed `parse_score`, which only matched decimal likelihoods (`grep -oE '[0-9]+\.[0-9]+'`) and so returned `NA` for integer `-lnL` values (e.g. `198903`) — it now accepts integers, decimals and `inf`, and the model selection picks whichever model has a usable (finite) score rather than always defaulting to uniform.
 - `SUMMARIZE_CAFE_GO` / GO summary step no longer fails when there are no significant GO hits.
 - Fixed execute permissions (chmod) on the new R scripts and corrected the path to R in the summarize step.
 - Documented that `--go_algo` values using score-based statistics (`weight01_t`, `elim_ks`, `weight_ks`) silently produce empty GO tables, because the CAFE/chromosome GO input is a gene membership list (a 0/1 factor) and the `t`/`ks` statistics require per-gene numeric scores. The R error does not propagate (output is optional), so the pipeline completes "successfully" with no GO results. Use `classic_fisher` or the new `weight01_fisher` instead. Warning added to the `-go_algo` help text and schema.
