@@ -12,6 +12,7 @@
 - New `CAFE_NODE_GUIDE` module: prints a node-label guide tree (`cafe_node_label_guide.pdf/svg`) so the numbered internal nodes in the CAFE figures can be matched to lineages.
 - New `docs/zenodo_cafe_readme.md` explaining the CAFE output files for archived/published datasets.
 - New `--go_algo weight01_fisher` option: runs topGO's hierarchy-aware `weight01` algorithm with the `fisher` statistic, giving less redundant enrichment than `classic_fisher` while remaining compatible with the gene-list input. Added to `ChopGO_VTS2.pl`, `ChopGO_ChromoGoatee.pl`, and the schema.
+- `CAFE_SELECT_K` now publishes its `model_selection.tsv` (per-k −lnL/AIC/BIC across k=1…`cafe_max_k`) and `best_k.txt` to `results/cafe/model_comparison/`, alongside the existing uniform-vs-Poisson comparison. Previously these only existed in the work directory, so the rationale for the chosen number of rate categories wasn't visible in the published results.
 
 ### Changed
 - `SUMMARIZE_CAFE_GO` (`sum_cafe.pl`) now chooses the summary p-value column based on `--go_algo`: `classic_fisher` uses the Bonferroni-adjusted column (each GO term is tested independently, so correction is appropriate — preserving previous behaviour), while the hierarchy-aware algorithms (`weight01_fisher`, `weight01_t`, `elim_ks`, `weight_ks`) use the raw `none` column, since adjusting on top of those is over-conservative and left the summaries/heatmaps near-empty. The chosen value also drives the `Count_significant` tally. The module now passes `params.go_algo` to the script.
