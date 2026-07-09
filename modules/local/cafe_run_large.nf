@@ -17,6 +17,7 @@ process CAFE_RUN_LARGE {
 
     script:
     def e_flag = error_model.size() > 0 ? "-e${error_model}" : ""
+    def z_flag = params.cafe_zero_root ? "-z" : ""
     """
     # Large-differential families often fail with the estimated lambda.
     # Retry with progressively smaller lambda values as recommended in
@@ -31,6 +32,7 @@ process CAFE_RUN_LARGE {
             --cores ${task.cpus} \\
             -l \${lambda_try} \\
             ${e_flag} \\
+            ${z_flag} \\
             -o Out_cafe_large \\
             2>&1 | tee cafe_large.log || true
 

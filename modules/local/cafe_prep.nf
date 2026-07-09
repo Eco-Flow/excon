@@ -19,13 +19,14 @@ process CAFE_PREP {
 
     output:
     path("hog_gene_counts.tsv"),                         emit: prepared_counts
+    path("cafe_input_tree.txt"),                         emit: cafe_tree
     path("SpeciesTree_rooted_ultra.txt"),                emit: prepared_tree
     path("pruned_tree"),                                 emit: pruned_tree
     path("N0.tsv"),                                      emit: N0_table
     path("Out_cafe"),                                    emit: results
     path("Out_cafe/Base_count.tab"),                     emit: result_nftest
     path("Out_cafe_errormodel/Base_error_model.txt"),    emit: error_model
-    path("hog_filtering_report.tsv"),                    emit: filtering_report, optional: true
+    path("hog_filtering_report.tsv"),                    emit: filtering_report
     path("hog_gene_counts_large.tsv"),                   emit: large_counts,     optional: true
     path("lambda.txt"),                                  emit: lambda
     path("cafe_base.log"),                               emit: base_log
@@ -37,6 +38,8 @@ process CAFE_PREP {
     def base_differential = params.cafe_max_differential ?: 50
     def max_differential  = (base_differential / Math.pow(2, task.attempt - 2)).toInteger()
     def use_filtering    = task.attempt > 1
+    def is_dated         = params.input_tree_is_dated ? 'true' : 'false'
+    def z_flag           = params.cafe_zero_root ? '-z' : ''
     """
     export PATH=\$PATH:/usr/bin
     set -e
@@ -48,22 +51,25 @@ process CAFE_PREP {
 
     if [ "${use_filtering}" = "true" ]; then
         echo "CAFE_PREP attempt ${task.attempt}: applying differential filtering (threshold: ${max_differential})"
-        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential} ${params.tree_scale_factor ?: 1000}
+        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential} ${params.tree_scale_factor ?: 1000} ${is_dated}
     else
         echo "CAFE_PREP attempt ${task.attempt}: no filtering"
-        Rscript ${projectDir}/bin/cafe_prep.R ${params.tree_scale_factor ?: 1000}
+        Rscript ${projectDir}/bin/cafe_prep.R ${params.tree_scale_factor ?: 1000} ${is_dated}
     fi
 
     # ---------------------------------------------------------------
     # Stage 1: base run (λ estimation, no error model)
-    # Use pruned_tree (rescaled, non-ultrametric) — this matches the
-    # working run2 approach and avoids chronoMPL numerical instability.
-    # SpeciesTree_rooted_ultra.txt is used only for downstream k-sweeps.
+    # Uses cafe_input_tree.txt — the ultrametric tree cafe_prep.R emits.
+    # When --input_tree_is_dated, this is the supplied time-calibrated tree
+    # UNCHANGED (branch lengths in Myr); otherwise it is the chronoMPL
+    # ultrametric tree scaled once by --tree_scale_factor. Its tips match
+    # the (subset) gene-count columns exactly.
     # ---------------------------------------------------------------
     cafe5 \\
         -i hog_gene_counts.tsv \\
-        -t pruned_tree \\
+        -t cafe_input_tree.txt \\
         --cores ${task.cpus} \\
+        ${z_flag} \\
         -o Out_cafe \\
         2>&1 | tee cafe_base.log
     cafe5_exit=\${PIPESTATUS[0]}
@@ -102,8 +108,9 @@ process CAFE_PREP {
     # ---------------------------------------------------------------
     cafe5 \\
         -i hog_gene_counts.tsv \\
-        -t pruned_tree \\
+        -t cafe_input_tree.txt \\
         --cores ${task.cpus} \\
+        ${z_flag} \\
         -e \\
         -o Out_cafe_errormodel \\
         2>&1 | tee cafe_errormodel.log

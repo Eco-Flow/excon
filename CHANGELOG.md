@@ -1,5 +1,20 @@
 # Changelog
 
+## [unreleased] - dated-tree & species-subset CAFE
+
+### Added
+- New `--input_tree_is_dated` parameter: treats `--input_tree` as an already time-calibrated, ultrametric tree (branch lengths in millions of years) and passes it to **every** CAFE5 stage unchanged. `RESCALE_TREE` is skipped, `chronoMPL()` is skipped in `cafe_prep.R`, and no branch-length rescaling is applied (effectively `--tree_scale_factor 1`). `cafe_prep.R` validates that the tree is rooted, binary, ultrametric, has strictly positive branch lengths, and that its leaf set matches the (subset) gene-count columns. This lets an externally dated tree (e.g. from `ape::chronos`) drive a per-Myr λ.
+- **N0 species subsetting.** `cafe_prep.R`/`cafe_prep_filtered.R` now subset the OrthoFinder `N0.tsv` gene-count columns to exactly the species present in the supplied tree, **retaining the original HOG identifiers**. This enables two focused CAFE runs (e.g. Vespidae, Aculeata) from a single 72-species OrthoFinder v2 analysis without re-running OrthoFinder. Families that become completely empty after subsetting are removed, followed by the single-species filter.
+- **Reasoned filtering report.** `hog_filtering_report.tsv` is now written on every run (not only on the filtered retry) and records a per-HOG `exclusion_reason`: `empty_after_subset`, `single_species`, `max_copies_ge_100`, `differential_gt_threshold`, or `retained`, plus per-family size statistics.
+- New `--cafe_zero_root` parameter: passes CAFE5's `-z/--zero_root` to **all** CAFE5 calls (base, error-model, k-sweep, best-model and large-family runs), retaining families inferred to have zero copies at the analysis root. Intended as a sensitivity analysis alongside the default run for lineage-specific families (odorant/gustatory receptors etc.).
+- New `CAFE_SIG_FAMILIES` module (`cafe_sig_families.R`): writes `changes_per_node.tsv` and `significant_changes_per_node.tsv` (family, node, change, p-value, direction) for every internal node, and — given `--cafe_focus_clades` plus `--orthofinder_msa_dir`/`--orthofinder_genetree_dir` — copies out the sequence alignments and gene trees of the families **significantly expanded at the focus node(s)**. Focus nodes may be given as CAFE node labels or as tip-species sets whose MRCA defines the node (robust to CAFE renumbering nodes between runs).
+
+### Changed
+- CAFE5 now consumes `cafe_input_tree.txt`, the ultrametric tree emitted by `cafe_prep.R`, at **every** stage (base, error-model, k-sweep, best-model, large-family). Previously the base/error-model/k/best/large runs were all fed the non-ultrametric `pruned_tree`, while the ultrametric tree was only published.
+
+### Fixed
+- **Branch lengths were being scaled twice.** `RESCALE_TREE` multiplied the input tree by `--tree_scale_factor`, then `cafe_prep.R` multiplied again after `chronoMPL()`, so `SpeciesTree_rooted_ultra.txt` scaled ~`tree_scale_factor²` while the CAFE model actually received the once-scaled, non-ultrametric `pruned_tree`. The tree fed to CAFE is now made ultrametric and scaled exactly once, and the same tree is used for every stage.
+
 ## [v2.3.2] -
 
 ### Added

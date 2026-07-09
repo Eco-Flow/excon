@@ -152,7 +152,30 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
 | `--tree_scale_factor` | Factor to multiply all OrthoFinder branch lengths by before `chronos()` converts the tree to a time tree for CAFE5. Lower values can cause numerical issues. | `1000` |
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
-| `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
+| `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv`/`N0.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
+| `--input_tree_is_dated` | Treat `--input_tree` as an already time-calibrated, ultrametric tree (branch lengths in Myr). Passed to every CAFE5 stage unchanged (no `RESCALE_TREE`, no `chronoMPL()`, no rescaling). λ is then per-Myr. | `false` |
+| `--cafe_zero_root` | Pass CAFE5's `-z/--zero_root` to all CAFE5 calls, retaining families with zero inferred copies at the root (sensitivity analysis). | `false` |
+| `--cafe_focus_clades` | Focus node(s) for alignment/gene-tree retrieval: CAFE node label(s) or `\|`-separated tip-species sets whose MRCA defines a node (robust to CAFE renumbering). | `null` |
+| `--orthofinder_msa_dir` | OrthoFinder `MultipleSequenceAlignments/` dir; with `--orthofinder_genetree_dir` and `--cafe_focus_clades`, copies out alignments/trees of families significantly expanded at the focus node(s). | `null` |
+| `--orthofinder_genetree_dir` | OrthoFinder `Resolved_Gene_Trees/` directory. See `--orthofinder_msa_dir`. | `null` |
+
+> **Species-subset CAFE with a dated tree.** To run CAFE on a subset of species (e.g. Vespidae, then
+> Aculeata) reusing the original 72-species OrthoFinder v2 HOG definitions, supply the full `N0.tsv`
+> together with a smaller time-calibrated tree and `--input_tree_is_dated`. `cafe_prep.R` subsets the
+> `N0.tsv` columns to exactly the tree's species (keeping the original HOG identifiers), removes HOGs
+> that become empty after subsetting, then removes single-species families — recording the reason for
+> every exclusion in `hog_filtering_report.tsv`. Run the pipeline once per subset:
+> ```
+> nextflow run main.nf --orthofinder_v2 \
+>   --input_orthogroups N0.tsv \
+>   --input_tree Vespidae_dated.nwk --input_tree_is_dated \
+>   --cafe_focus_clades "Vespula_vulgaris,Vespa_crabro|Polistes_dominula,Vespula_vulgaris" \
+>   --orthofinder_msa_dir MultipleSequenceAlignments/ \
+>   --orthofinder_genetree_dir Resolved_Gene_Trees/ \
+>   --outdir results_vespidae
+> ```
+> Add `--cafe_zero_root` for the parallel sensitivity run that keeps zero-at-root families (odorant/
+> gustatory receptors etc.). Set `--cafe_max_differential 20` to match Vizueta et al. 2025.
 
 > **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it
 > (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs.

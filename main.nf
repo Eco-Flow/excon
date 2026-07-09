@@ -26,6 +26,7 @@ include { CAFE_GO_RUN } from './modules/local/cafe_go_run.nf'
 include { CHROMO_GO } from './modules/local/chromo_go.nf'
 include { CAFE_PLOT } from './modules/local/cafe_plot.nf'
 include { CAFE_NODE_GUIDE } from './modules/local/cafe_node_guide.nf'
+include { CAFE_SIG_FAMILIES } from './modules/local/cafe_sig_families.nf'
 include { CAFE_PLOT_ALTVIZ } from './modules/local/cafe_plot_altviz.nf'
 include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
 include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
@@ -254,11 +255,18 @@ workflow {
             ch_orthologues = ORTHOFINDER_PHYLO_CAFE.out.orthologues
         }
 
-        RESCALE_TREE ( ch_speciestree )
+        // A dated, time-calibrated tree is passed to CAFE unchanged (no rescaling);
+        // an OrthoFinder substitution tree is scaled first to avoid CAFE5 precision issues.
+        if (params.input_tree_is_dated) {
+            ch_tree_for_prep = ch_speciestree
+        } else {
+            RESCALE_TREE ( ch_speciestree )
+            ch_tree_for_prep = RESCALE_TREE.out.rescaled_tree
+        }
 
         CAFE_PREP (
             ch_orthologues,
-            RESCALE_TREE.out.rescaled_tree
+            ch_tree_for_prep
         )
 
         // Run CAFE with fixed lambda on high-differential families filtered out during prep.
@@ -266,7 +274,7 @@ workflow {
         // found families above the differential threshold — otherwise large_counts is empty.
         CAFE_RUN_LARGE (
             CAFE_PREP.out.large_counts,
-            CAFE_PREP.out.pruned_tree,
+            CAFE_PREP.out.cafe_tree,
             CAFE_PREP.out.error_model,
             CAFE_PREP.out.lambda.map { f -> f.text.trim() }
         )
@@ -276,7 +284,7 @@ workflow {
 
         CAFE_RUN_K (
         CAFE_PREP.out.prepared_counts,   // hog_gene_counts.tsv — possibly filtered
-        CAFE_PREP.out.pruned_tree,       // rescaled tree with species names already stripped
+        CAFE_PREP.out.cafe_tree,         // ultrametric CAFE tree (dated & unchanged, or chronoMPL-scaled)
         CAFE_PREP.out.error_model,       // Base_error_model.txt — empty file if estimation failed
         k_values                         // each fans out: 1, 2, 3 ... cafe_max_k
         )
@@ -296,7 +304,7 @@ workflow {
 
         CAFE_RUN_BEST(
            CAFE_PREP.out.prepared_counts,
-           CAFE_PREP.out.pruned_tree,
+           CAFE_PREP.out.cafe_tree,
            CAFE_PREP.out.error_model,
            best_k_ch,
            Channel.of( true )  //Only run poisson here, as we ran without -p earlier
@@ -312,6 +320,22 @@ workflow {
 
         CAFE_PLOT ( ch_best_results )
         CAFE_NODE_GUIDE ( ch_best_results )
+
+        // Per-node significant-family tables, plus (optionally) the alignments and
+        // gene trees of families significantly expanded at the focus node(s).
+        ch_msa_dir = params.orthofinder_msa_dir ?
+            Channel.fromPath(params.orthofinder_msa_dir, type: 'dir', checkIfExists: true) :
+            Channel.fromPath("${projectDir}/assets/NO_FILE")
+        ch_genetree_dir = params.orthofinder_genetree_dir ?
+            Channel.fromPath(params.orthofinder_genetree_dir, type: 'dir', checkIfExists: true) :
+            Channel.fromPath("${projectDir}/assets/NO_FILE")
+
+        CAFE_SIG_FAMILIES (
+            ch_best_results,
+            CAFE_PREP.out.N0_table,
+            ch_msa_dir,
+            ch_genetree_dir
+        )
 
         // Plot high-differential families — only runs when CAFE_RUN_LARGE converged
         // (converged.txt is an optional output; if absent the channel is empty and

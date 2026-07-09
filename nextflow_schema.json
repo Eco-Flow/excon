@@ -210,12 +210,36 @@
         "tree_scale_factor": {
             "type": "integer",
             "default": 1000,
-            "description": "Scaling factor multiplied across all branch lengths by rescale_tree.py before CAFE5. chronos() in cafe_prep.R then converts the result to a proper time tree. Default 1000 prevents numerical precision issues in CAFE5."
+            "description": "Scaling factor multiplied across all branch lengths by rescale_tree.py before CAFE5. chronoMPL() in cafe_prep.R then makes the result ultrametric. Default 1000 prevents numerical precision issues in CAFE5. Ignored when --input_tree_is_dated is set."
+        },
+        "input_tree_is_dated": {
+            "type": "boolean",
+            "default": false,
+            "description": "Treat --input_tree as an already time-calibrated, ultrametric tree (branch lengths in millions of years) and pass it to every CAFE5 stage unchanged: RESCALE_TREE is skipped, chronoMPL() is skipped, and no branch-length rescaling is applied (effectively --tree_scale_factor 1). cafe_prep.R validates that the tree is rooted, binary, ultrametric, has positive branch lengths, and that its leaf set exactly matches the (subset) gene-count columns."
+        },
+        "cafe_zero_root": {
+            "type": "boolean",
+            "default": false,
+            "description": "Pass CAFE5's -z/--zero_root option to every CAFE5 call (base, error-model, k-sweep, best-model and large-family runs), retaining families inferred to have zero copies at the analysis root. CAFE5 does not generally recommend this; use as a sensitivity analysis alongside the default run."
+        },
+        "orthofinder_msa_dir": {
+            "type": "string",
+            "format": "directory-path",
+            "description": "OrthoFinder MultipleSequenceAlignments/ directory (per-orthogroup *.fa). When provided together with --orthofinder_genetree_dir, the alignments and gene trees of HOGs significantly expanded at the focus node(s) are copied into the results."
+        },
+        "orthofinder_genetree_dir": {
+            "type": "string",
+            "format": "directory-path",
+            "description": "OrthoFinder Resolved_Gene_Trees/ directory (per-orthogroup *_tree.txt). See --orthofinder_msa_dir."
+        },
+        "cafe_focus_clades": {
+            "type": "string",
+            "description": "Comma-separated CAFE internal node label(s) of interest (as shown in cafe_node_label_guide.pdf), OR one or more '|'-separated tip-species sets whose MRCA defines a node (robust to CAFE renumbering nodes per run), e.g. 'Vespula_vulgaris,Vespa_crabro|Polistes_dominula,Vespula_vulgaris'. Used to extract alignments/gene trees of significantly expanded families."
         },
         "cafe_max_differential": {
-            "type": "integer", 
+            "type": "integer",
             "default": 50,
-            "description": "Maximum gene count differential threshold for CAFE filtering on retry."
+            "description": "Maximum gene count differential (max-min copies) threshold for CAFE filtering on retry. Vizueta et al. 2025 used 20."
         },
         "run_eggnog": {
             "type": "boolean",
