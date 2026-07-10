@@ -2,6 +2,8 @@ work
 nextflow
 .nextflow
 **/.nextflow.log*
+.nextflow*.log
+**/.nextflow*.log
 **/history
 nf-test
 .nextflow.pid

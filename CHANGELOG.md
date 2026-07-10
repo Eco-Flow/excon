@@ -13,6 +13,7 @@
 - CAFE5 now consumes `cafe_input_tree.txt`, the ultrametric tree emitted by `cafe_prep.R`, at **every** stage (base, error-model, k-sweep, best-model, large-family). Previously the base/error-model/k/best/large runs were all fed the non-ultrametric `pruned_tree`, while the ultrametric tree was only published.
 
 ### Fixed
+- **The node-label guide showed no node numbers.** `cafe_node_label_guide.R` read CAFE's `*_asr.tre` with `read.tree()`, but that file is a NEXUS with per-family trees and decorated labels (`SpA<1>_3`, `<8>*_3`), so it mis-parsed into a meaningless multi-tree with blank node labels. It now parses the first tree and strips the CAFE decorations, so tips are species names and the internal-node labels are the CAFE node ids that match `CAFE_summary.txt` and the branch tables — the guide needed to identify internal nodes of interest. The same parser is used by `CAFE_SIG_FAMILIES` to resolve `--cafe_focus_clades` species sets to node ids by MRCA.
 - **Branch lengths were being scaled twice.** `RESCALE_TREE` multiplied the input tree by `--tree_scale_factor`, then `cafe_prep.R` multiplied again after `chronoMPL()`, so `SpeciesTree_rooted_ultra.txt` scaled ~`tree_scale_factor²` while the CAFE model actually received the once-scaled, non-ultrametric `pruned_tree`. The tree fed to CAFE is now made ultrametric and scaled exactly once, and the same tree is used for every stage.
 
 ## [v2.3.2] -

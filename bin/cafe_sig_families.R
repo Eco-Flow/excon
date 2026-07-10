@@ -37,6 +37,21 @@ tree_dir  <- if (length(args) >= 6) args[6] else "NA"
 
 is_na <- function(x) is.null(x) || is.na(x) || x %in% c("", "NA", "NO_FILE")
 
+# CAFE writes *_asr.tre as a NEXUS file with per-family trees whose labels carry
+# CAFE decorations, e.g. tip "SpA<1>_3" and internal node "<8>*_3" (node id 8).
+# Return a plain phylo whose tips are the species names and whose node.label
+# entries are the CAFE internal-node ids used in the .tab column headers.
+read_cafe_asr <- function(path) {
+  lines <- readLines(path, warn = FALSE)
+  tl <- grep("^\\s*TREE\\b", lines, ignore.case = TRUE, value = TRUE)
+  nwk <- if (length(tl) > 0) sub("^[^=]*=\\s*", "", tl[1]) else paste(lines, collapse = "")
+  nwk <- trimws(nwk)
+  nwk <- gsub("\\*", "", nwk)                                      # significance stars
+  nwk <- gsub("([A-Za-z0-9_.]+)<[0-9]+>(_-?[0-9]+)?", "\\1", nwk)  # tips  -> species name
+  nwk <- gsub("\\)<([0-9]+)>(_-?[0-9]+)?", ")\\1", nwk)            # internal -> node id
+  read.tree(text = nwk)
+}
+
 ## ------------------------------------------------------------------
 ## Locate the CAFE output tables
 ## ------------------------------------------------------------------
@@ -118,7 +133,6 @@ resolve_focus_nodes <- function(spec, asr_file) {
   clades <- trimws(clades[clades != ""])
   res <- list()
   tree <- NULL
-  clean_tip <- function(t) sub("<[0-9]+>$", "", t)
   for (cl in clades) {
     if (grepl("^[0-9]+$", cl)) {
       res[[length(res) + 1]] <- list(node = cl, label = paste0("node", cl))
@@ -130,11 +144,13 @@ resolve_focus_nodes <- function(spec, asr_file) {
       next
     }
     if (is.null(tree)) {
-      if (length(asr_file) == 0) { warning("No asr tree to resolve species MRCA."); return(res) }
-      tree <- read.tree(asr_file[1])
+      if (length(asr_file) == 0) {
+        warning("No asr tree to resolve species MRCA.")
+        return(res)
+      }
+      tree <- read_cafe_asr(asr_file[1])
     }
-    tips_clean <- clean_tip(tree$tip.label)
-    idx <- match(sp, tips_clean)
+    idx <- match(sp, tree$tip.label)
     if (any(is.na(idx))) {
       warning("Focus species not found in tree: ",
               paste(sp[is.na(idx)], collapse = ", "), " — clade skipped.")
