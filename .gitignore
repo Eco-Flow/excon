@@ -9,6 +9,7 @@ nf-test
 .nextflow.pid
 /.nextflow/history
 results
+results*
 lib
 Focal_targets/*
 RESUME*

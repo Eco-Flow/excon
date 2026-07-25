@@ -18,6 +18,7 @@ results/
 ├── chromo_go/               # [optional] GO enrichment by chromosome (!won't work for mycoplasma!, only one chr)
 ├── eggnogmapper/            # [optional] EggNOG GO annotations
 ├── orthofinder_cafe/        # OrthoFinder species tree and orthogroups
+├── species_tree/            # [optional, --iqtree_species_tree] IQ-TREE2 species tree
 ├── busco/                   # [optional, --stats] BUSCO completeness
 ├── agat/                    # [optional, --stats] Annotation statistics
 ├── quast/                   # [optional, --stats] Assembly statistics
@@ -130,6 +131,30 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 |------|-------------|
 | `cafe_model_comparison.tsv` | AIC scores for k=1 through k=N rate categories |
 | `best_model.txt` | Selected model: `uniform` or `poisson` at best k |
+
+---
+
+## IQ-TREE2 Species Tree (`results/species_tree/`)
+
+Produced only when `--iqtree_species_tree` is set. The species tree passed to CAFE5 is then
+this tree rather than the OrthoFinder one in `results/orthofinder_cafe/`.
+
+| File | Description |
+|------|-------------|
+| `SpeciesTree_rooted.nwk` | The rooted tree actually used for CAFE5 |
+| `iqtree/species_tree.treefile` | Unrooted ML tree, with SH-aLRT and ultrafast bootstrap support at each node |
+| `iqtree/species_tree.iqtree` | Full IQ-TREE2 report, including the substitution model selected for each partition |
+| `iqtree/species_tree.log` | IQ-TREE2 run log |
+| `supermatrix/supermatrix.faa` | Concatenated single-copy orthogroup alignment, one sequence per species |
+| `supermatrix/partitions.txt` | Partition boundaries in the supermatrix, one per orthogroup |
+
+Support values are given as `SH-aLRT/UFboot`. As a rule of thumb a branch is well supported when
+SH-aLRT ≥ 80 and UFboot ≥ 95; treat anything below that as unresolved rather than as evidence for
+the displayed topology.
+
+Check the `CONCAT_SINGLE_COPY` log (or the task's `.command.out`) for how many orthogroups made it
+into the supermatrix. Only orthogroups present exactly once in every species are used, so the
+count can fall sharply as species are added or if any annotation is fragmented.
 
 ---
 

@@ -25,6 +25,7 @@ The general pipeline logic is as follows:
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
+* Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
 * Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`.
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
@@ -66,8 +67,7 @@ Nextflow pipelines require a few prerequisites. There is further documentation o
 
 - [Docker](https://docs.docker.com/engine/install/) or [Singularity](https://docs.sylabs.io/guides/3.11/admin-guide/installation.html).
 - [Java](https://www.java.com/en/download/help/download_options.html) and [openJDK](https://openjdk.org/install/) >= 8 (**Please Note:** When installing Java versions are `1.VERSION` so `Java 8` is `Java 1.8`).
-- [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html) >= `v25.10.0`.
-- When running nextflow with this pipeline, ideally run `NXF_VER=25.10.0` beforehand, to ensure functionality on this version.
+- [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html) >= `v26.04.6`. The pipeline uses the strict configuration/script syntax and typed parameter declarations, both of which require Nextflow 26. Older versions are rejected by the manifest.
 
 ### Install
 
@@ -142,6 +142,65 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--orthofinder_tree` | Tree inference method (requires `--orthofinder_method msa`): `fasttree`, `raxml`, `raxml-ng`, or `iqtree` | `fasttree` |
 
 > **Note:** `-A` and `-T` are only valid when `-M msa` is set. If you set `--orthofinder_msa_prog` or `--orthofinder_tree` without `--orthofinder_method msa`, OrthoFinder will error.
+
+### Species tree with IQ-TREE2 (optional)
+
+By default the species tree passed to CAFE5 is the one OrthoFinder infers itself (STAG/STRIDE
+over per-orthogroup gene trees, built with FastTree unless `--orthofinder_tree` says otherwise).
+`--iqtree_species_tree` replaces that with a supermatrix maximum-likelihood tree, which is the
+more standard approach for a published species phylogeny:
+
+1. `[CONCAT_SINGLE_COPY]` concatenates the alignments OrthoFinder already produced for every
+   strictly single-copy, complete orthogroup into one supermatrix, writing a partition file
+   with one partition per orthogroup.
+2. `[IQTREE_SPECIES_TREE]` runs IQ-TREE2 on that supermatrix under the edge-proportional
+   partition model (`-spp partitions.txt`) with per-partition model selection (`-m MFP`),
+   1000 ultrafast bootstrap and 1000 SH-aLRT replicates.
+3. `[ROOT_TREE]` roots the result, because IQ-TREE2 returns an unrooted tree and CAFE5 requires
+   a rooted one.
+
+The rooted tree then feeds the normal `RESCALE_TREE` → `CAFE_PREP` path, so `--tree_scale_factor`
+and the rest of the CAFE options behave exactly as before.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--iqtree_species_tree` | Infer the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment instead of using the OrthoFinder tree. Requires `--orthofinder_method msa`. | `false` |
+| `--iqtree_outgroup` | Comma-separated tip name(s) to root the tree on, e.g. `Apis_mellifera`. Must be monophyletic in the inferred tree. If unset, the tree is midpoint-rooted. | `null` (midpoint) |
+| `--iqtree_args` | Extra arguments appended to the IQ-TREE2 command line, e.g. `-m LG+F+G4` to skip model selection. | `null` |
+
+```bash
+nextflow run main.nf \
+  --input input.csv \
+  --orthofinder_method msa \
+  --iqtree_species_tree \
+  --iqtree_outgroup Apis_mellifera \
+  -profile docker
+```
+
+Outputs are written to `results/species_tree/`:
+
+| File | Description |
+|------|-------------|
+| `SpeciesTree_rooted.nwk` | The rooted tree used for CAFE5 |
+| `iqtree/species_tree.treefile` | Unrooted IQ-TREE2 ML tree with support values |
+| `iqtree/species_tree.iqtree` | IQ-TREE2 report, including the model chosen per partition |
+| `supermatrix/supermatrix.faa` | Concatenated alignment |
+| `supermatrix/partitions.txt` | Partition boundaries, one per orthogroup |
+
+> **Requires `--orthofinder_method msa`.** The supermatrix is built from OrthoFinder's
+> `MultipleSequenceAlignments/`, which OrthoFinder only writes in MSA mode. The pipeline
+> stops with an error if the flag is set without it. `--iqtree_species_tree` also cannot be
+> combined with `--input_tree`/`--input_orthogroups`, since those skip OrthoFinder entirely.
+
+> **Only orthogroups present exactly once in every species are used.** With many species, or
+> with fragmented annotations, this set can get small — `CONCAT_SINGLE_COPY` reports how many
+> orthogroups it kept and why the rest were dropped, so check that count in the log.
+
+> **A better tree is not automatically a correctly placed taxon.** Supermatrix ML concatenation
+> is exactly the setting where incomplete lineage sorting and gene-tree conflict can produce a
+> strongly supported but wrong branch. If a specific node is in question, check gene concordance
+> factors (`--iqtree_args '--gcf ...'`) or compare against a coalescent method, rather than
+> assuming the ML tree settles it.
 
 ### CAFE gene family evolution
 

@@ -213,6 +213,39 @@
             "default": false,
             "description": "Use OrthoFinder v2.5.5 instead of v3.1.3. Recommended for large datasets where v3 stalls or fails."
         },
+        "orthofinder_method": {
+            "type": "string",
+            "enum": ["msa", "dendroblast"],
+            "description": "OrthoFinder gene tree inference method (-M). 'msa' additionally writes MultipleSequenceAlignments/, which --iqtree_species_tree requires."
+        },
+        "orthofinder_msa_prog": {
+            "type": "string",
+            "enum": ["mafft", "muscle"],
+            "description": "OrthoFinder MSA program (-A). Requires --orthofinder_method msa."
+        },
+        "orthofinder_search": {
+            "type": "string",
+            "enum": ["diamond", "blast", "mmseqs2"],
+            "description": "OrthoFinder sequence search program (-S)."
+        },
+        "orthofinder_tree": {
+            "type": "string",
+            "enum": ["fasttree", "raxml", "raxml-ng", "iqtree"],
+            "description": "OrthoFinder gene tree inference program (-T). Requires --orthofinder_method msa. Note this sets the per-orthogroup gene tree method inside OrthoFinder; to build the species tree from a concatenated supermatrix instead, use --iqtree_species_tree."
+        },
+        "iqtree_species_tree": {
+            "type": "boolean",
+            "default": false,
+            "description": "Infer the species tree with IQ-TREE2 from a concatenated (supermatrix) alignment of the single-copy orthogroups, instead of using OrthoFinder's own STAG/STRIDE tree. The alignments OrthoFinder already produced are concatenated into a supermatrix with one partition per orthogroup, IQ-TREE2 fits a model per partition (-m MFP) with 1000 ultrafast bootstrap and SH-aLRT replicates, and the resulting tree is rooted and used for every CAFE5 stage. Requires --orthofinder_method msa, and cannot be combined with --input_tree/--input_orthogroups."
+        },
+        "iqtree_outgroup": {
+            "type": "string",
+            "description": "Comma-separated tip name(s) used to root the IQ-TREE2 species tree, e.g. 'Apis_mellifera' or 'Apis_mellifera,Bombus_terrestris'. The named taxa must form a monophyletic group in the inferred tree, otherwise the run fails. When not set the tree is midpoint-rooted instead. Only used with --iqtree_species_tree."
+        },
+        "iqtree_args": {
+            "type": "string",
+            "description": "Extra arguments appended to the IQ-TREE2 command line, e.g. '--gcf gene_trees.nwk' or '-m LG+F+G4' to override model selection. Only used with --iqtree_species_tree."
+        },
         "tree_scale_factor": {
             "type": "integer",
             "default": 1000,

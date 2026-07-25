@@ -28,6 +28,9 @@ include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER_BLAST as ORTHOFINDER_BLAST_CAFE } from './modules/local/orthofinder_blast.nf'
 include { ORTHOFINDER_PHYLO as ORTHOFINDER_PHYLO_CAFE } from './modules/local/orthofinder_phylo.nf'
 include { ORTHOFINDER_V2 as ORTHOFINDER_V2_CAFE } from './modules/local/orthofinder_v2.nf'
+include { CONCAT_SINGLE_COPY } from './modules/local/concat_single_copy.nf'
+include { ROOT_TREE } from './modules/local/root_tree.nf'
+include { IQTREE as IQTREE_SPECIES_TREE } from './modules/nf-core/iqtree/main.nf'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
 
 include { CAFE_PREP } from './modules/local/cafe_prep.nf'
@@ -43,6 +46,65 @@ include { SUMMARIZE_CAFE_GO as SUMMARIZE_CAFE_GO_LARGE }                       f
 include { PLOT_CAFE_GO }                                                        from './modules/local/plot_cafe_go.nf'
 include { PLOT_CAFE_GO      as PLOT_CAFE_GO_LARGE }                            from './modules/local/plot_cafe_go.nf'
 include { OG_ANNOTATION_SUMMARY } from './modules/local/og_annotation_summary.nf'
+
+// Parameter types. Nextflow 26 passes every --flag on the command line as a
+// String unless the parameter is declared with a type here; defaults stay in
+// nextflow.config.
+params {
+    outdir                    : String
+    input                     : String
+    chromo_go                 : Boolean
+    go_cutoff                 : Float
+    go_type                   : String
+    go_max_plot               : Integer
+    go_algo                   : String
+    forks                     : Integer
+    clean                     : Boolean
+    custom_config             : String
+    max_memory                : String
+    max_cpus                  : Integer
+    max_time                  : String
+    trace_report_suffix       : String
+    help                      : Boolean
+    publish_dir_mode          : String
+    groups                    : String
+    stats                     : Boolean
+    busco_mode                : String
+    busco_lineage             : String
+    busco_lineages_path       : String
+    busco_config              : String
+    input_tree                : String
+    input_orthogroups         : String
+    orthofinder_blast_results : String
+    orthofinder_v2            : Boolean
+    orthofinder_method        : String
+    orthofinder_msa_prog      : String
+    orthofinder_search        : String
+    orthofinder_tree          : String
+    iqtree_species_tree       : Boolean
+    iqtree_outgroup           : String
+    iqtree_args               : String
+    tree_scale_factor         : Integer
+    input_tree_is_dated       : Boolean
+    cafe_zero_root            : Boolean
+    skip_cafe                 : Boolean
+    cafe_max_differential     : Integer
+    cafe_max_k                : Integer
+    orthofinder_msa_dir       : String
+    orthofinder_genetree_dir  : String
+    cafe_focus_clades         : String
+    run_eggnog                : Boolean
+    eggnog_data_dir           : String
+    eggnog_target_taxa        : String
+    eggnog_tax_scope          : String
+    eggnog_evalue             : Float
+    eggnog_score              : Float
+    eggnog_pident             : Float
+    eggnog_query_cover        : Float
+    eggnog_subject_cover      : Float
+    eggnog_rep_species        : String
+    predownloaded_gofiles     : String
+}
 
 workflow {
 
@@ -78,6 +140,21 @@ workflow {
 
    if (needs_genomes && !params.input) {
       error "ERROR: --input (samplesheet CSV) is required when not using pre-computed OrthoFinder results, or when --run_eggnog / --stats is set."
+   }
+
+   // The supermatrix is built from OrthoFinder's MultipleSequenceAlignments/, which
+   // only exists in MSA mode, and there is no OrthoFinder run at all to take it from
+   // when a pre-computed tree is supplied.
+   if (params.iqtree_species_tree) {
+      if (params.orthofinder_method != 'msa') {
+         error "ERROR: --iqtree_species_tree requires --orthofinder_method msa (OrthoFinder only writes MultipleSequenceAlignments/ in MSA mode)."
+      }
+      if (params.input_tree && params.input_orthogroups) {
+         error "ERROR: --iqtree_species_tree cannot be combined with --input_tree/--input_orthogroups, which skip OrthoFinder entirely."
+      }
+      if (params.skip_cafe) {
+         error "ERROR: --iqtree_species_tree only affects the CAFE species tree, but --skip_cafe is set."
+      }
    }
 
    if (needs_genomes) {
@@ -221,6 +298,8 @@ workflow {
 
     if (!params.skip_cafe) {
 
+        ch_orthofinder_dir = Channel.empty()
+
         if (params.input_tree && params.input_orthogroups) {
             ch_speciestree = Channel.fromPath(params.input_tree, checkIfExists: true)
             ch_orthologues = Channel.fromPath(params.input_orthogroups, checkIfExists: true)
@@ -231,8 +310,9 @@ workflow {
                     .collect()
                     .map { files -> [ [id: "ortho_cafe"], files ] }
             )
-            ch_speciestree = ORTHOFINDER_V2_CAFE.out.speciestree
-            ch_orthologues = ORTHOFINDER_V2_CAFE.out.orthologues
+            ch_speciestree     = ORTHOFINDER_V2_CAFE.out.speciestree
+            ch_orthologues     = ORTHOFINDER_V2_CAFE.out.orthologues
+            ch_orthofinder_dir = ORTHOFINDER_V2_CAFE.out.orthofinder
         } else {
             // Stage 1: reciprocal DIAMOND blast (CPU-heavy, parallelisable)
             // Stage 2: orthogroup inference + phylogeny (different resource profile)
@@ -251,8 +331,25 @@ workflow {
             }
 
             ORTHOFINDER_PHYLO_CAFE ( ch_blast_wd )
-            ch_speciestree = ORTHOFINDER_PHYLO_CAFE.out.speciestree
-            ch_orthologues = ORTHOFINDER_PHYLO_CAFE.out.orthologues
+            ch_speciestree     = ORTHOFINDER_PHYLO_CAFE.out.speciestree
+            ch_orthologues     = ORTHOFINDER_PHYLO_CAFE.out.orthologues
+            ch_orthofinder_dir = ORTHOFINDER_PHYLO_CAFE.out.orthofinder
+        }
+
+        // Optionally replace the OrthoFinder species tree with an IQ-TREE2 tree
+        // inferred from a concatenated alignment of the single-copy orthogroups.
+        if (params.iqtree_species_tree) {
+            CONCAT_SINGLE_COPY ( ch_orthofinder_dir )
+
+            IQTREE_SPECIES_TREE (
+                CONCAT_SINGLE_COPY.out.alignment.map { meta, aln -> [ meta, aln, [] ] },
+                [], [], [], [],
+                CONCAT_SINGLE_COPY.out.partitions.map { meta, parts -> parts },
+                [], [], [], [], [], [], []
+            )
+
+            ROOT_TREE ( IQTREE_SPECIES_TREE.out.phylogeny )
+            ch_speciestree = ROOT_TREE.out.tree
         }
 
         // A dated, time-calibrated tree is passed to CAFE unchanged (no rescaling);

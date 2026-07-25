@@ -68,6 +68,10 @@ process IQTREE {
     def trees_rf_arg                = trees_rf                ? "-rf $trees_rf"                 : ''
     def prefix                      = task.ext.prefix         ?: meta.id
     def memory                      = task.memory.toString().replaceAll(' ', '')
+    // IQ-TREE rejects -mem when a partition model is in use:
+    // "-mem option does not work with partition models yet".
+    def partitioned                 = partitions_equal || partitions_proportional || partitions_unlinked
+    def memory_arg                  = partitioned             ? ''                              : "-mem $memory"
     """
     iqtree \\
         $args \\
@@ -88,7 +92,7 @@ process IQTREE {
         -pre $prefix \\
         -nt AUTO \\
         -ntmax $task.cpus \\
-        -mem $memory
+        $memory_arg
     """
 
     stub:
