@@ -79,6 +79,8 @@ params {
     input_tree                : String
     input_orthogroups         : String
     orthofinder_blast_results : String
+    orthofinder_results       : String
+    proteome_dir              : String
     orthofinder_v2            : Boolean
     orthofinder_method        : String
     orthofinder_msa_prog      : String
@@ -87,6 +89,7 @@ params {
     iqtree_species_tree       : Boolean
     iqtree_outgroup           : String
     iqtree_args               : String
+    iqtree_partition_model    : String
     tree_scale_factor         : Integer
     input_tree_is_dated       : Boolean
     cafe_zero_root            : Boolean
@@ -138,26 +141,33 @@ workflow {
    // Whether to skip genome processing (download → AGAT → GFFREAD → RENAME_FASTA → OrthoFinder)
    // Only possible when a pre-computed tree and orthogroups are supplied, AND the user
    // is not requesting EggNOG annotation or genome quality stats (which need the proteins/assemblies).
-   def use_precomputed = (params.input_tree && params.input_orthogroups) || params.orthofinder_blast_results
+   def use_precomputed = (params.input_tree && params.input_orthogroups) || params.orthofinder_blast_results || params.orthofinder_results
    def needs_genomes   = !use_precomputed || params.run_eggnog || params.stats
 
    if (needs_genomes && !params.input) {
       error "ERROR: --input (samplesheet CSV) is required when not using pre-computed OrthoFinder results, or when --run_eggnog / --stats is set."
    }
 
+   if (params.proteome_dir && !params.orthofinder_results) {
+      error "ERROR: --proteome_dir is only used alongside --orthofinder_results."
+   }
+
    // The supermatrix is built from OrthoFinder's single-copy orthogroups, so there is
    // nothing to build it from when a pre-computed tree replaces the OrthoFinder run.
    if (params.iqtree_species_tree) {
-      if (params.input_tree && params.input_orthogroups) {
-         error "ERROR: --iqtree_species_tree cannot be combined with --input_tree/--input_orthogroups, which skip OrthoFinder entirely."
+      if (params.input_tree && params.input_orthogroups && !params.orthofinder_results) {
+         error "ERROR: --iqtree_species_tree needs OrthoFinder output. Either let OrthoFinder run, or point --orthofinder_results at a completed run; --input_tree/--input_orthogroups alone skip OrthoFinder entirely."
       }
-      if (params.skip_cafe) {
-         error "ERROR: --iqtree_species_tree only affects the CAFE species tree, but --skip_cafe is set."
+      if (params.orthofinder_results && !params.proteome_dir) {
+         error "ERROR: --iqtree_species_tree with --orthofinder_results also needs --proteome_dir, holding the proteomes whose gene IDs appear in Orthogroups.tsv (the *.clean.fasta files written by RENAME_FASTA)."
       }
       // '--iqtree_outgroup null' on the command line is the literal string "null",
       // not an unset value, and would only fail once ROOT_TREE runs.
       if (params.iqtree_outgroup?.toLowerCase() in ['null', 'none', 'false']) {
          error "ERROR: --iqtree_outgroup was given the literal value '${params.iqtree_outgroup}'. Omit the option entirely to midpoint-root the tree."
+      }
+      if (params.iqtree_args?.toLowerCase() in ['null', 'none', 'false']) {
+         error "ERROR: --iqtree_args was given the literal value '${params.iqtree_args}', which would be passed to IQ-TREE verbatim. Omit the option entirely."
       }
    }
 
@@ -300,11 +310,21 @@ workflow {
 
     // --- CAFE gene family evolution ---
 
-    if (!params.skip_cafe) {
+    // OrthoFinder outputs are needed for CAFE and/or for the IQ-TREE species tree,
+    // so this stage runs whenever either is requested.
+    if (!params.skip_cafe || params.iqtree_species_tree) {
 
         ch_orthofinder_dir = Channel.empty()
 
-        if (params.input_tree && params.input_orthogroups) {
+        if (params.orthofinder_results) {
+            // Reuse a completed OrthoFinder run rather than repeating it.
+            ch_orthofinder_dir = Channel.fromPath(params.orthofinder_results, type: 'dir', checkIfExists: true)
+                .map { d -> [ [id: "ortho_cafe"], d ] }
+            ch_speciestree = Channel.fromPath("${params.orthofinder_results}/Species_Tree/SpeciesTree_rooted_node_labels.txt", checkIfExists: true)
+            ch_orthologues = params.input_orthogroups ?
+                Channel.fromPath(params.input_orthogroups, checkIfExists: true) :
+                Channel.fromPath("${params.orthofinder_results}/Phylogenetic_Hierarchical_Orthogroups/N0.tsv", checkIfExists: true)
+        } else if (params.input_tree && params.input_orthogroups) {
             ch_speciestree = Channel.fromPath(params.input_tree, checkIfExists: true)
             ch_orthologues = Channel.fromPath(params.input_orthogroups, checkIfExists: true)
         } else if (params.orthofinder_v2) {
@@ -346,9 +366,9 @@ workflow {
         // rather than reusing OrthoFinder's own alignments, so this works whatever
         // --orthofinder_method is set to.
         if (params.iqtree_species_tree) {
-            ch_proteomes = merge_ch
-                .map { meta, fasta -> fasta }
-                .collect()
+            ch_proteomes = params.proteome_dir ?
+                Channel.fromPath("${params.proteome_dir}/*", checkIfExists: true).collect() :
+                merge_ch.map { meta, fasta -> fasta }.collect()
 
             EXTRACT_SINGLE_COPY ( ch_orthofinder_dir.combine(ch_proteomes.map { files -> [ files ] }) )
 
@@ -366,6 +386,9 @@ workflow {
             ROOT_TREE ( IQTREE_SPECIES_TREE.out.phylogeny )
             ch_speciestree = ROOT_TREE.out.tree
         }
+    }
+
+    if (!params.skip_cafe) {
 
         // A dated, time-calibrated tree is passed to CAFE unchanged (no rescaling);
         // an OrthoFinder substitution tree is scaled first to avoid CAFE5 precision issues.

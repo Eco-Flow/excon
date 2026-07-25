@@ -18,13 +18,15 @@ process CONCAT_SINGLE_COPY {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
+    def args  = task.ext.args ?: ''
+    def model = params.iqtree_partition_model ?: 'AA'
     """
     concat_single_copy.py \\
         -m ${alignment_dir} \\
         -g ${orthofinder_dir}/Orthogroups/Orthogroups.tsv \\
         -o supermatrix.faa \\
         -p partitions.txt \\
+        --model '${model}' \\
         $args
     """
 

@@ -213,6 +213,16 @@
           "enum": ["classic_fisher", "weight01_fisher", "weight01_t", "elim_ks", "weight_ks"],
           "default": "classic_fisher"
         },
+        "orthofinder_results": {
+            "type": "string",
+            "format": "directory-path",
+            "description": "Path to the results directory of a completed OrthoFinder run (the one containing Orthogroups/, Species_Tree/ and Phylogenetic_Hierarchical_Orthogroups/). OrthoFinder is not re-run, so orthogroup and HOG identifiers are preserved exactly. Use with --iqtree_species_tree (plus --proteome_dir) to build a new species tree from an existing run, and/or with --input_orthogroups to override which gene-count table is used."
+        },
+        "proteome_dir": {
+            "type": "string",
+            "format": "directory-path",
+            "description": "Directory of per-species proteome FASTA files whose gene IDs match the columns of Orthogroups.tsv — the *.clean.fasta files RENAME_FASTA writes to results/proteomes/. Required when combining --orthofinder_results with --iqtree_species_tree, since the single-copy sequences are taken from the proteomes rather than inferred from alignment headers."
+        },
         "orthofinder_v2": {
             "type": "boolean",
             "default": false,
@@ -250,6 +260,11 @@
         "iqtree_args": {
             "type": "string",
             "description": "Extra arguments appended to the IQ-TREE2 command line, e.g. '--gcf gene_trees.nwk' or '-m LG+F+G4' to override model selection. Only used with --iqtree_species_tree."
+        },
+        "iqtree_partition_model": {
+            "type": "string",
+            "description": "Model written in the first field of each line of the IQ-TREE partition file. The default 'AA' declares the datatype and leaves ModelFinder to select a model per partition. Set a concrete model (e.g. 'LG+F+G4') to fix it instead — with a partition file the model must be given here, not via --iqtree_args '-m ...', which IQ-TREE rejects.",
+            "default": "AA"
         },
         "tree_scale_factor": {
             "type": "integer",

@@ -168,7 +168,8 @@ and the rest of the CAFE options behave exactly as before.
 |-----------|-------------|---------|
 | `--iqtree_species_tree` | Infer the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment instead of using the OrthoFinder tree. Works with any `--orthofinder_method`. | `false` |
 | `--iqtree_outgroup` | Comma-separated tip name(s) to root the tree on, e.g. `Apis_mellifera`. Must be monophyletic in the inferred tree. If unset, the tree is midpoint-rooted. | `null` (midpoint) |
-| `--iqtree_args` | Extra arguments appended to the IQ-TREE2 command line, e.g. `-mset LG,WAG,JTT` to restrict ModelFinder's candidate matrices or `-m LG+F+G4` to skip model selection. | `null` |
+| `--iqtree_args` | Extra arguments appended to the IQ-TREE2 command line, e.g. `-mset LG,WAG,JTT` to restrict ModelFinder's candidate matrices, or `--gcf` for gene concordance factors. | `null` |
+| `--iqtree_partition_model` | Model written per partition. `AA` lets ModelFinder pick one per orthogroup; set e.g. `LG+F+G4` to fix it and skip model selection. With a partition file the model has to be set here rather than through `--iqtree_args '-m ...'`. | `AA` |
 
 ```bash
 nextflow run main.nf \
@@ -199,7 +200,8 @@ Outputs are written to `results/species_tree/`:
 > amino-acid model to every partition independently, so a few hundred orthogroups means tens of
 > thousands of model fits before tree search even starts. If that is too slow, narrow the
 > candidate set with `--iqtree_args '-mset LG,WAG,JTT'`, or skip selection entirely with
-> `--iqtree_args '-m LG+F+G4'`.
+> `--iqtree_partition_model LG+F+G4`. Note IQ-TREE rejects `-m <model>` alongside a partition
+> file, so the fixed model must go in the partition file via that parameter.
 
 > **Only orthogroups present exactly once in every species are used.** With many species, or
 > with fragmented annotations, this set can get small — `CONCAT_SINGLE_COPY` reports how many

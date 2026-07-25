@@ -64,6 +64,9 @@ def main():
                         help='Output concatenated FASTA alignment')
     parser.add_argument('-p', '--out-partitions', required=True,
                         help='Output RAxML-style partition file')
+    parser.add_argument('--model', default='AA',
+                        help="Model/datatype field written for each partition (default: AA, "
+                             "letting IQ-TREE's ModelFinder choose per partition)")
     parser.add_argument('--min-orthogroups', type=int, default=1,
                         help='Fail if fewer than this many usable orthogroups are found (default: 1)')
 
@@ -148,7 +151,7 @@ def main():
 
     with open(args.out_partitions, 'w') as fh:
         for og, start, end in partitions:
-            fh.write('AA, %s = %d-%d\n' % (og, start, end))
+            fh.write('%s, %s = %d-%d\n' % (args.model, og, start, end))
 
     print("Supermatrix built successfully")
     print("   Species:                 %d" % len(species))
