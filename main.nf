@@ -1,21 +1,5 @@
 #!/usr/bin/env nextflow
 
-log.info """\
-=========================================
-
- EXCON v${workflow.manifest.version}
-
- -----------------------------------------
-
- Authors:
-   - Chris Wyatt <c.wyatt@ucl.ac.uk>
-
- -----------------------------------------
-
- Copyright (c) 2021
-
- =========================================""".stripIndent()
-
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
 
 include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
@@ -62,8 +46,24 @@ include { OG_ANNOTATION_SUMMARY } from './modules/local/og_annotation_summary.nf
 
 workflow {
 
+   log.info """\
+   =========================================
+   
+    EXCON v${workflow.manifest.version}
+   
+    -----------------------------------------
+   
+    Authors:
+      - Chris Wyatt <c.wyatt@ucl.ac.uk>
+   
+    -----------------------------------------
+   
+    Copyright (c) 2021
+   
+    =========================================""".stripIndent()
+
    if (params.help) {
-      log.info paramsHelp("nextflow run main.nf --input input_file.csv")
+      log.info paramsHelp(command: "nextflow run main.nf --input input_file.csv")
       exit 0
    }
 
@@ -510,8 +510,12 @@ workflow {
     )
 
 
+   workflow.onComplete {
+      completionSummary()
+   }
+
 }
 
-workflow.onComplete {
+def completionSummary() {
    println ( workflow.success ? "\nDone!\n" : "Oops... something went wrong" )
 }

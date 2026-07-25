@@ -45,6 +45,11 @@
             "git_sha": "96c57dfd98a0641886a67bd449fe33ee2ec0e374",
             "installed_by": ["modules"]
           },
+          "iqtree": {
+            "branch": "master",
+            "git_sha": "55ca0738629246b23a84394e94cf50a542f6d72d",
+            "installed_by": ["modules"]
+          },
           "ncbigenomedownload": {
             "branch": "master",
             "git_sha": "aea04408a7a0297b6ac92d820937c381b4f8919e",

@@ -99,6 +99,12 @@
         "custom_config": {
           "type": "string",
           "description": "A path/url to a custom configuration file"
+        },
+        "trace_report_suffix": {
+          "type": "string",
+          "fa_icon": "far calendar",
+          "description": "Suffix to add to the trace report filename. Default is the date and time in the format yyyy-MM-dd_HH-mm-ss.",
+          "hidden": true
         }
       }
     },
