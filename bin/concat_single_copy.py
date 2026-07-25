@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 """
-Build a concatenated (supermatrix) protein alignment from the single-copy
-orthogroup alignments produced by OrthoFinder.
+Build a concatenated (supermatrix) protein alignment from per-orthogroup
+alignments, for species tree inference.
 
-OrthoFinder (run with -M msa) writes one aligned FASTA per orthogroup to
-MultipleSequenceAlignments/. Sequence headers are gene IDs, so Orthogroups.tsv
-is used to map each gene back to the species it came from.
+Takes a directory of aligned FASTA files, one per orthogroup, whose sequences are
+named after their species (as written by extract_single_copy.py), plus the
+OrthoFinder Orthogroups.tsv giving the expected species list.
 
 An orthogroup is used only if it is strictly single-copy and complete: every
 species must be represented exactly once. Those orthogroups are concatenated in
@@ -18,7 +18,6 @@ Pure standard library (no BioPython/ete3) to match the rest of bin/.
 
 import argparse
 import os
-import re
 import sys
 from collections import OrderedDict
 
@@ -45,53 +44,12 @@ def read_fasta(path):
     return seqs
 
 
-def gene_to_species(orthogroups_tsv):
-    """Map every gene ID to its species, using the column headers of Orthogroups.tsv.
-
-    Only usable as a fallback: gene IDs in Orthogroups.tsv are bare (e.g. 'agat-157')
-    and are not necessarily unique across species, so a later species can overwrite an
-    earlier one. Prefer resolving the species from the alignment header prefix.
-    """
-    mapping = {}
+def read_species(orthogroups_tsv):
+    """Return the species list from the column headers of Orthogroups.tsv."""
     with open(orthogroups_tsv) as fh:
         header = fh.readline().rstrip('\n\r').split('\t')
-        # First column is the orthogroup ID; the rest are species.
-        species = header[1:]
-        for line in fh:
-            fields = line.rstrip('\n\r').split('\t')
-            for sp, cell in zip(species, fields[1:]):
-                if not cell.strip():
-                    continue
-                for gene in cell.split(','):
-                    gene = gene.strip()
-                    if gene:
-                        mapping.setdefault(gene, sp)
-    return mapping, species
-
-
-def species_prefixes(species):
-    """Build the header prefixes OrthoFinder writes for each species.
-
-    OrthoFinder names each sequence in MultipleSequenceAlignments/ after the input
-    file it came from, with punctuation replaced by underscores — so a species column
-    'Genus_species.clean' appears in the alignment as 'Genus_species_clean_<gene>'.
-    Returns a list of (prefix, species) sorted longest-first so that a species whose
-    name is a prefix of another cannot shadow it.
-    """
-    prefixes = []
-    for sp in species:
-        for variant in {sp, sp.replace('.', '_'), re.sub(r'[^A-Za-z0-9]', '_', sp)}:
-            prefixes.append((variant + '_', sp))
-    prefixes.sort(key=lambda pair: len(pair[0]), reverse=True)
-    return prefixes
-
-
-def resolve_species(header, prefixes, fallback):
-    """Resolve a sequence header to a species, by prefix first then by gene ID."""
-    for prefix, sp in prefixes:
-        if header.startswith(prefix):
-            return sp
-    return fallback.get(header)
+    # First column is the orthogroup ID; the rest are species.
+    return header[1:]
 
 
 def main():
@@ -99,7 +57,7 @@ def main():
         description='Concatenate single-copy orthogroup alignments into a supermatrix'
     )
     parser.add_argument('-m', '--msa-dir', required=True,
-                        help='OrthoFinder MultipleSequenceAlignments/ directory')
+                        help='Directory of per-orthogroup aligned FASTA files')
     parser.add_argument('-g', '--orthogroups', required=True,
                         help='OrthoFinder Orthogroups.tsv (used to map genes to species)')
     parser.add_argument('-o', '--out-fasta', required=True,
@@ -112,16 +70,13 @@ def main():
     args = parser.parse_args()
 
     if not os.path.isdir(args.msa_dir):
-        sys.exit(
-            "ERROR: MSA directory '%s' not found. OrthoFinder only writes "
-            "MultipleSequenceAlignments/ when run with -M msa." % args.msa_dir
-        )
+        sys.exit("ERROR: alignment directory '%s' not found." % args.msa_dir)
 
-    mapping, species = gene_to_species(args.orthogroups)
+    species = read_species(args.orthogroups)
     if not species:
         sys.exit("ERROR: no species columns found in %s" % args.orthogroups)
     species = sorted(species)
-    prefixes = species_prefixes(species)
+    species_set = set(species)
 
     alignment_files = sorted(
         os.path.join(args.msa_dir, f)
@@ -148,12 +103,11 @@ def main():
         # Group this orthogroup's sequences by species.
         by_species = {}
         unmapped = False
-        for gene, seq in seqs.items():
-            sp = resolve_species(gene, prefixes, mapping)
-            if sp is None:
+        for name, seq in seqs.items():
+            if name not in species_set:
                 unmapped = True
                 break
-            by_species.setdefault(sp, []).append(seq)
+            by_species.setdefault(name, []).append(seq)
         if unmapped:
             skipped_incomplete += 1
             continue

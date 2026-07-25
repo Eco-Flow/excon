@@ -25,7 +25,7 @@ The general pipeline logic is as follows:
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
-* Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
+* Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[EXTRACT_SINGLE_COPY]`, `[ALIGN_SINGLE_COPY]`, `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
 * Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`.
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
@@ -150,13 +150,15 @@ over per-orthogroup gene trees, built with FastTree unless `--orthofinder_tree` 
 `--iqtree_species_tree` replaces that with a supermatrix maximum-likelihood tree, which is the
 more standard approach for a published species phylogeny:
 
-1. `[CONCAT_SINGLE_COPY]` concatenates the alignments OrthoFinder already produced for every
-   strictly single-copy, complete orthogroup into one supermatrix, writing a partition file
+1. `[EXTRACT_SINGLE_COPY]` writes one FASTA per strictly single-copy, complete orthogroup,
+   taking each sequence from the proteome of the species named in `Orthogroups.tsv`.
+2. `[ALIGN_SINGLE_COPY]` aligns each of those orthogroups with MAFFT.
+3. `[CONCAT_SINGLE_COPY]` concatenates them into one supermatrix, writing a partition file
    with one partition per orthogroup.
-2. `[IQTREE_SPECIES_TREE]` runs IQ-TREE2 on that supermatrix under the edge-proportional
+4. `[IQTREE_SPECIES_TREE]` runs IQ-TREE2 on that supermatrix under the edge-proportional
    partition model (`-spp partitions.txt`) with per-partition model selection (`-m MFP`),
    1000 ultrafast bootstrap and 1000 SH-aLRT replicates.
-3. `[ROOT_TREE]` roots the result, because IQ-TREE2 returns an unrooted tree and CAFE5 requires
+5. `[ROOT_TREE]` roots the result, because IQ-TREE2 returns an unrooted tree and CAFE5 requires
    a rooted one.
 
 The rooted tree then feeds the normal `RESCALE_TREE` → `CAFE_PREP` path, so `--tree_scale_factor`
@@ -164,14 +166,13 @@ and the rest of the CAFE options behave exactly as before.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--iqtree_species_tree` | Infer the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment instead of using the OrthoFinder tree. Requires `--orthofinder_method msa`. | `false` |
+| `--iqtree_species_tree` | Infer the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment instead of using the OrthoFinder tree. Works with any `--orthofinder_method`. | `false` |
 | `--iqtree_outgroup` | Comma-separated tip name(s) to root the tree on, e.g. `Apis_mellifera`. Must be monophyletic in the inferred tree. If unset, the tree is midpoint-rooted. | `null` (midpoint) |
-| `--iqtree_args` | Extra arguments appended to the IQ-TREE2 command line, e.g. `-m LG+F+G4` to skip model selection. | `null` |
+| `--iqtree_args` | Extra arguments appended to the IQ-TREE2 command line, e.g. `-mset LG,WAG,JTT` to restrict ModelFinder's candidate matrices or `-m LG+F+G4` to skip model selection. | `null` |
 
 ```bash
 nextflow run main.nf \
   --input input.csv \
-  --orthofinder_method msa \
   --iqtree_species_tree \
   --iqtree_outgroup Apis_mellifera \
   -profile docker
@@ -187,15 +188,18 @@ Outputs are written to `results/species_tree/`:
 | `supermatrix/supermatrix.faa` | Concatenated alignment |
 | `supermatrix/partitions.txt` | Partition boundaries, one per orthogroup |
 
-> **Requires `--orthofinder_method msa`.** The supermatrix is built from OrthoFinder's
-> `MultipleSequenceAlignments/`, which OrthoFinder only writes in MSA mode. The pipeline
-> stops with an error if the flag is set without it. `--iqtree_species_tree` also cannot be
-> combined with `--input_tree`/`--input_orthogroups`, since those skip OrthoFinder entirely.
+> **No particular `--orthofinder_method` is needed.** The single-copy orthogroups are aligned
+> by the pipeline itself, so this works with OrthoFinder's default (DendroBLAST) mode as well
+> as `-M msa`. The default is considerably faster, since `-M msa` aligns *every* orthogroup and
+> builds a gene tree for each, while only the single-copy ones are needed here.
+> `--iqtree_species_tree` cannot be combined with `--input_tree`/`--input_orthogroups`, since
+> those skip OrthoFinder entirely.
 
-> **MSA mode is significantly slower than OrthoFinder's default.** `-M msa` aligns and builds
-> a tree for every orthogroup rather than using DendroBLAST distances. This matters most with
-> `--orthofinder_v2`, which is itself the option recommended for large datasets — budget
-> considerably more time and memory for the OrthoFinder step than a default run.
+> **Per-partition model selection dominates the runtime.** `-m MFP` fits every candidate
+> amino-acid model to every partition independently, so a few hundred orthogroups means tens of
+> thousands of model fits before tree search even starts. If that is too slow, narrow the
+> candidate set with `--iqtree_args '-mset LG,WAG,JTT'`, or skip selection entirely with
+> `--iqtree_args '-m LG+F+G4'`.
 
 > **Only orthogroups present exactly once in every species are used.** With many species, or
 > with fragmented annotations, this set can get small — `CONCAT_SINGLE_COPY` reports how many
@@ -214,7 +218,7 @@ Outputs are written to `results/species_tree/`:
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
 | `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
-| `--tree_scale_factor` | Factor to multiply all OrthoFinder branch lengths by before `chronos()` converts the tree to a time tree for CAFE5. Lower values can cause numerical issues. | `1000` |
+| `--tree_scale_factor` | Factor to multiply all species-tree branch lengths by before `chronoMPL()` converts the tree to a time tree for CAFE5. Applied once, by `RESCALE_TREE`. Lower values can cause numerical issues. CAFE5's λ is per unit branch length, so changing this rescales λ by the same factor. | `1000` |
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
 | `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv`/`N0.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
 | `--input_tree_is_dated` | Treat `--input_tree` as an already time-calibrated, ultrametric tree (branch lengths in Myr). Passed to every CAFE5 stage unchanged (no `RESCALE_TREE`, no `chronoMPL()`, no rescaling). λ is then per-Myr. | `false` |
@@ -326,7 +330,8 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 | `docker` | Run with Docker containers |
 | `singularity` | Run with Singularity containers |
 | `conda` | Run with Conda environments |
-| `test_bacteria` | Test run with small bacterial genomes |
+| `test_bacteria` | Fastest smoke test: 4 small bacterial genomes. Exercises every step, but CAFE5 does not converge on it (see below) |
+| `test_chlamydia` | 10 *Chlamydia* genomes. Slower than `test_bacteria`, but closely related enough for CAFE5 to fit a model, so it exercises the CAFE stages end to end |
 | `test_small` | Test run with small insect genomes |
 
 
@@ -347,6 +352,13 @@ Please select one of the following profiles when running the pipeline.
 * `local` - This profile is used if you are running the pipeline on your local machine.
 * `aws_batch` - This profile is used if you are running the pipeline on AWS utilising the AWS Batch functionality. **Please Note:** You must use the `Docker` profile with with AWS Batch.
 * `test_small` - This profile is used if you want to test running the pipeline on your infrastructure, running from predownloaded go files. **Please Note:** You do not provide any input parameters if this profile is selected but you still provide a container profile.
+
+> **Which test profile to use.** `test_bacteria` (4 *Mycoplasmoides*) is the quickest way to check the
+> pipeline runs, but those species are too divergent for CAFE5: about half the orthogroups are identical
+> across all four, leaving almost no copy-number variation across just two internal branches, so
+> `CAFE_PREP` exhausts its retries and the error is ignored. That is a property of the dataset, not a
+> pipeline fault. Use `test_chlamydia` (10 species in one genus) when you need the CAFE stages
+> themselves to be exercised.
 
 ## Custom Configuration
 

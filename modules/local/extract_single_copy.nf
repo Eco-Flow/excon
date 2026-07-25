@@ -1,4 +1,4 @@
-process CONCAT_SINGLE_COPY {
+process EXTRACT_SINGLE_COPY {
     tag "$meta.id"
     label 'process_single'
 
@@ -7,11 +7,10 @@ process CONCAT_SINGLE_COPY {
         'biocontainers/eggnog-mapper:2.1.13--pyhdfd78af_2' }"
 
     input:
-    tuple val(meta), path(orthofinder_dir), path(alignment_dir)
+    tuple val(meta), path(orthofinder_dir), path(proteomes, stageAs: 'proteomes/*')
 
     output:
-    tuple val(meta), path('supermatrix.faa')   , emit: alignment
-    tuple val(meta), path('partitions.txt')    , emit: partitions
+    tuple val(meta), path('single_copy_orthogroups'), emit: orthogroups
     tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), emit: versions, topic: versions
 
     when:
@@ -20,17 +19,15 @@ process CONCAT_SINGLE_COPY {
     script:
     def args = task.ext.args ?: ''
     """
-    concat_single_copy.py \\
-        -m ${alignment_dir} \\
+    extract_single_copy.py \\
         -g ${orthofinder_dir}/Orthogroups/Orthogroups.tsv \\
-        -o supermatrix.faa \\
-        -p partitions.txt \\
+        -p proteomes \\
+        -o single_copy_orthogroups \\
         $args
     """
 
     stub:
     """
-    touch supermatrix.faa
-    touch partitions.txt
+    mkdir single_copy_orthogroups
     """
 }

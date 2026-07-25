@@ -5,8 +5,12 @@ process CAFE_SIG_FAMILIES {
     input:
     path cafe_results
     path n0_table
-    path msa_dir
-    path tree_dir
+    // Both are optional and default to the same assets/NO_FILE placeholder, so they
+    // must be staged under distinct names or Nextflow rejects the name collision.
+    // cafe_sig_families.R guards with dir.exists(), and the placeholder is a file,
+    // so an unset input is still correctly treated as absent.
+    path msa_dir,  stageAs: 'og_msa_dir'
+    path tree_dir, stageAs: 'og_gene_tree_dir'
 
     output:
     path("changes_per_node.tsv"),             emit: changes

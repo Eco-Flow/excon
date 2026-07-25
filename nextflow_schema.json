@@ -83,6 +83,11 @@
           "fa_icon": "fas fa-copy",
           "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"]
         },
+        "ncbi_max_forks": {
+          "type": "integer",
+          "default": 10,
+          "description": "Number of NCBIGENOMEDOWNLOAD tasks to run concurrently. Each parses the full NCBI assembly summary for its taxonomic group, so a lower value can be faster on a laptop (see -profile mac); raise it on a cluster."
+        },
         "forks": {
           "type": "integer",
           "description": "Maximum number of each process that will be run in parallel"
@@ -236,7 +241,7 @@
         "iqtree_species_tree": {
             "type": "boolean",
             "default": false,
-            "description": "Infer the species tree with IQ-TREE2 from a concatenated (supermatrix) alignment of the single-copy orthogroups, instead of using OrthoFinder's own STAG/STRIDE tree. The alignments OrthoFinder already produced are concatenated into a supermatrix with one partition per orthogroup, IQ-TREE2 fits a model per partition (-m MFP) with 1000 ultrafast bootstrap and SH-aLRT replicates, and the resulting tree is rooted and used for every CAFE5 stage. Requires --orthofinder_method msa, and cannot be combined with --input_tree/--input_orthogroups."
+            "description": "Infer the species tree with IQ-TREE2 from a concatenated (supermatrix) alignment of the single-copy orthogroups, instead of using OrthoFinder's own STAG/STRIDE tree. The alignments OrthoFinder already produced are concatenated into a supermatrix with one partition per orthogroup, IQ-TREE2 fits a model per partition (-m MFP) with 1000 ultrafast bootstrap and SH-aLRT replicates, and the resulting tree is rooted and used for every CAFE5 stage. The single-copy orthogroups are aligned with MAFFT by the pipeline, so this works with any --orthofinder_method. Cannot be combined with --input_tree/--input_orthogroups."
         },
         "iqtree_outgroup": {
             "type": "string",

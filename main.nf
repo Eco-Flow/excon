@@ -28,6 +28,8 @@ include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER_BLAST as ORTHOFINDER_BLAST_CAFE } from './modules/local/orthofinder_blast.nf'
 include { ORTHOFINDER_PHYLO as ORTHOFINDER_PHYLO_CAFE } from './modules/local/orthofinder_phylo.nf'
 include { ORTHOFINDER_V2 as ORTHOFINDER_V2_CAFE } from './modules/local/orthofinder_v2.nf'
+include { EXTRACT_SINGLE_COPY } from './modules/local/extract_single_copy.nf'
+include { ALIGN_SINGLE_COPY } from './modules/local/align_single_copy.nf'
 include { CONCAT_SINGLE_COPY } from './modules/local/concat_single_copy.nf'
 include { ROOT_TREE } from './modules/local/root_tree.nf'
 include { IQTREE as IQTREE_SPECIES_TREE } from './modules/nf-core/iqtree/main.nf'
@@ -68,6 +70,7 @@ params {
     help                      : Boolean
     publish_dir_mode          : String
     groups                    : String
+    ncbi_max_forks            : Integer
     stats                     : Boolean
     busco_mode                : String
     busco_lineage             : String
@@ -142,13 +145,9 @@ workflow {
       error "ERROR: --input (samplesheet CSV) is required when not using pre-computed OrthoFinder results, or when --run_eggnog / --stats is set."
    }
 
-   // The supermatrix is built from OrthoFinder's MultipleSequenceAlignments/, which
-   // only exists in MSA mode, and there is no OrthoFinder run at all to take it from
-   // when a pre-computed tree is supplied.
+   // The supermatrix is built from OrthoFinder's single-copy orthogroups, so there is
+   // nothing to build it from when a pre-computed tree replaces the OrthoFinder run.
    if (params.iqtree_species_tree) {
-      if (params.orthofinder_method != 'msa') {
-         error "ERROR: --iqtree_species_tree requires --orthofinder_method msa (OrthoFinder only writes MultipleSequenceAlignments/ in MSA mode)."
-      }
       if (params.input_tree && params.input_orthogroups) {
          error "ERROR: --iqtree_species_tree cannot be combined with --input_tree/--input_orthogroups, which skip OrthoFinder entirely."
       }
@@ -343,8 +342,19 @@ workflow {
 
         // Optionally replace the OrthoFinder species tree with an IQ-TREE2 tree
         // inferred from a concatenated alignment of the single-copy orthogroups.
+        // The sequences are pulled from the per-species proteomes and aligned here
+        // rather than reusing OrthoFinder's own alignments, so this works whatever
+        // --orthofinder_method is set to.
         if (params.iqtree_species_tree) {
-            CONCAT_SINGLE_COPY ( ch_orthofinder_dir )
+            ch_proteomes = merge_ch
+                .map { meta, fasta -> fasta }
+                .collect()
+
+            EXTRACT_SINGLE_COPY ( ch_orthofinder_dir.combine(ch_proteomes.map { files -> [ files ] }) )
+
+            ALIGN_SINGLE_COPY ( EXTRACT_SINGLE_COPY.out.orthogroups )
+
+            CONCAT_SINGLE_COPY ( ch_orthofinder_dir.join(ALIGN_SINGLE_COPY.out.alignments) )
 
             IQTREE_SPECIES_TREE (
                 CONCAT_SINGLE_COPY.out.alignment.map { meta, aln -> [ meta, aln, [] ] },

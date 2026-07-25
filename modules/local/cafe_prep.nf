@@ -49,12 +49,15 @@ process CAFE_PREP {
     sed -i 's/\\.clean//g' pruned_tree
     sed -i 's/\\.clean//g' N0.tsv
 
+    # Scale factor 1: RESCALE_TREE has already applied --tree_scale_factor to the
+    # incoming tree, and chronoMPL() is linear, so applying it again here would
+    # scale the tree by the factor squared.
     if [ "${use_filtering}" = "true" ]; then
         echo "CAFE_PREP attempt ${task.attempt}: applying differential filtering (threshold: ${max_differential})"
-        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential} ${params.tree_scale_factor ?: 1000} ${is_dated}
+        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential} 1 ${is_dated}
     else
         echo "CAFE_PREP attempt ${task.attempt}: no filtering"
-        Rscript ${projectDir}/bin/cafe_prep.R ${params.tree_scale_factor ?: 1000} ${is_dated}
+        Rscript ${projectDir}/bin/cafe_prep.R 1 ${is_dated}
     fi
 
     # ---------------------------------------------------------------
