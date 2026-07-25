@@ -18,6 +18,7 @@ Pure standard library (no BioPython/ete3) to match the rest of bin/.
 
 import argparse
 import os
+import re
 import sys
 from collections import OrderedDict
 
@@ -45,7 +46,12 @@ def read_fasta(path):
 
 
 def gene_to_species(orthogroups_tsv):
-    """Map every gene ID to its species, using the column headers of Orthogroups.tsv."""
+    """Map every gene ID to its species, using the column headers of Orthogroups.tsv.
+
+    Only usable as a fallback: gene IDs in Orthogroups.tsv are bare (e.g. 'agat-157')
+    and are not necessarily unique across species, so a later species can overwrite an
+    earlier one. Prefer resolving the species from the alignment header prefix.
+    """
     mapping = {}
     with open(orthogroups_tsv) as fh:
         header = fh.readline().rstrip('\n\r').split('\t')
@@ -59,8 +65,33 @@ def gene_to_species(orthogroups_tsv):
                 for gene in cell.split(','):
                     gene = gene.strip()
                     if gene:
-                        mapping[gene] = sp
+                        mapping.setdefault(gene, sp)
     return mapping, species
+
+
+def species_prefixes(species):
+    """Build the header prefixes OrthoFinder writes for each species.
+
+    OrthoFinder names each sequence in MultipleSequenceAlignments/ after the input
+    file it came from, with punctuation replaced by underscores — so a species column
+    'Genus_species.clean' appears in the alignment as 'Genus_species_clean_<gene>'.
+    Returns a list of (prefix, species) sorted longest-first so that a species whose
+    name is a prefix of another cannot shadow it.
+    """
+    prefixes = []
+    for sp in species:
+        for variant in {sp, sp.replace('.', '_'), re.sub(r'[^A-Za-z0-9]', '_', sp)}:
+            prefixes.append((variant + '_', sp))
+    prefixes.sort(key=lambda pair: len(pair[0]), reverse=True)
+    return prefixes
+
+
+def resolve_species(header, prefixes, fallback):
+    """Resolve a sequence header to a species, by prefix first then by gene ID."""
+    for prefix, sp in prefixes:
+        if header.startswith(prefix):
+            return sp
+    return fallback.get(header)
 
 
 def main():
@@ -90,6 +121,7 @@ def main():
     if not species:
         sys.exit("ERROR: no species columns found in %s" % args.orthogroups)
     species = sorted(species)
+    prefixes = species_prefixes(species)
 
     alignment_files = sorted(
         os.path.join(args.msa_dir, f)
@@ -117,7 +149,7 @@ def main():
         by_species = {}
         unmapped = False
         for gene, seq in seqs.items():
-            sp = mapping.get(gene)
+            sp = resolve_species(gene, prefixes, mapping)
             if sp is None:
                 unmapped = True
                 break

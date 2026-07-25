@@ -192,6 +192,11 @@ Outputs are written to `results/species_tree/`:
 > stops with an error if the flag is set without it. `--iqtree_species_tree` also cannot be
 > combined with `--input_tree`/`--input_orthogroups`, since those skip OrthoFinder entirely.
 
+> **MSA mode is significantly slower than OrthoFinder's default.** `-M msa` aligns and builds
+> a tree for every orthogroup rather than using DendroBLAST distances. This matters most with
+> `--orthofinder_v2`, which is itself the option recommended for large datasets — budget
+> considerably more time and memory for the OrthoFinder step than a default run.
+
 > **Only orthogroups present exactly once in every species are used.** With many species, or
 > with fragmented annotations, this set can get small — `CONCAT_SINGLE_COPY` reports how many
 > orthogroups it kept and why the rest were dropped, so check that count in the log.

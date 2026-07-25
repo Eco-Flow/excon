@@ -155,6 +155,11 @@ workflow {
       if (params.skip_cafe) {
          error "ERROR: --iqtree_species_tree only affects the CAFE species tree, but --skip_cafe is set."
       }
+      // '--iqtree_outgroup null' on the command line is the literal string "null",
+      // not an unset value, and would only fail once ROOT_TREE runs.
+      if (params.iqtree_outgroup?.toLowerCase() in ['null', 'none', 'false']) {
+         error "ERROR: --iqtree_outgroup was given the literal value '${params.iqtree_outgroup}'. Omit the option entirely to midpoint-root the tree."
+      }
    }
 
    if (needs_genomes) {

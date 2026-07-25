@@ -2,6 +2,10 @@
 
 ## [unreleased] - dated-tree & species-subset CAFE
 
+### Fixed
+- **`--orthofinder_method`, `--orthofinder_msa_prog`, `--orthofinder_tree` and `--orthofinder_search` were silently ignored when `--orthofinder_v2` was set.** `ORTHOFINDER_V2_CAFE` had no `ext.args` block, so OrthoFinder v2 always ran with its defaults (dendroblast gene trees, DIAMOND search) no matter what was requested, while the v3 path honoured them. Any previous v2 run that passed these options produced results that did not reflect them. v2 now takes `-M`, `-A`, `-T` and also `-S`, since unlike the split v3 path it performs the sequence search in the same process.
+- The OrthoFinder stub blocks now create `MultipleSequenceAlignments/`, so `-stub` runs represent MSA-mode output.
+
 ### Changed
 - **Now requires Nextflow >= 26.04.6** (`nextflowVersion = '!>=26.04.6'`, previously `!>=25.04.6`). Nextflow 26 enforces the strict configuration and script syntax, so `nextflow.config` no longer defines Groovy functions (`check_max` is replaced by `process.resourceLimits`), top-level variable declarations, or `if` statements, and `main.nf` no longer has top-level statements.
 - **All pipeline parameters are now declared with explicit types in `main.nf`.** Nextflow 26 passes every `--param` given on the command line as a `String` regardless of its default, so with an untyped parameter `--orthofinder_v2` failed validation with `Value is [string] but should be [boolean]`, and `--flag false` would have been the truthy string `"false"`. Declaring the types makes `--flag`, `--flag true` and `--flag false` all resolve to real booleans, and numeric parameters to real numbers. Defaults remain in `nextflow.config`; profiles and `-params-file` continue to override as before. This affected every boolean parameter (`--stats`, `--run_eggnog`, `--chromo_go`, `--skip_cafe`, `--orthofinder_v2`, `--cafe_zero_root`, `--input_tree_is_dated`, `--clean`) and every numeric one, not just the new options.

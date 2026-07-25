@@ -53,6 +53,7 @@ process ORTHOFINDER_V2 {
     mkdir       $prefix/Putative_Xenologs
     mkdir       $prefix/Resolved_Gene_Trees
     mkdir       $prefix/Single_Copy_Orthologue_Sequences
+    mkdir       $prefix/MultipleSequenceAlignments
     mkdir       $prefix/Species_Tree
     mkdir       $prefix/WorkingDirectory
     touch       $prefix/Log.txt
