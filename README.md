@@ -196,6 +196,30 @@ Outputs are written to `results/species_tree/`:
 > `--iqtree_species_tree` cannot be combined with `--input_tree`/`--input_orthogroups`, since
 > those skip OrthoFinder entirely.
 
+### Reusing a finished run
+
+`--orthofinder_results` points at the results directory of a completed OrthoFinder run, so it
+is not repeated and the orthogroup/HOG identifiers are preserved exactly. With
+`--iqtree_species_tree` it also needs `--proteome_dir`, holding the proteomes those gene IDs
+refer to (`results/proteomes/`, written by `RENAME_FASTA`). Add `--skip_cafe` to build a
+species tree and nothing else:
+
+```bash
+nextflow run main.nf \
+  --iqtree_species_tree --skip_cafe \
+  --orthofinder_results /path/to/results/orthofinder_cafe/ortho_cafe \
+  --proteome_dir /path/to/results/proteomes \
+  -profile docker
+```
+
+If the run predates `results/proteomes/`, or its work directory has been deleted, two scripts
+in `bin/` rebuild the proteomes from published output. Both reproduce the originals exactly:
+
+| script | needs | use when |
+|--------|-------|----------|
+| `proteomes_from_orthofinder.py -r <orthofinder results> -o proteomes` | the OrthoFinder `WorkingDirectory/` | preferred — these are the exact sequences OrthoFinder was given |
+| `rename_fasta_standalone.py -f results/gffread -g results/agat -o proteomes` | published GFFREAD + AGAT output | the OrthoFinder directory is incomplete |
+
 > **Per-partition model selection dominates the runtime.** `-m MFP` fits every candidate
 > amino-acid model to every partition independently, so a few hundred orthogroups means tens of
 > thousands of model fits before tree search even starts. If that is too slow, narrow the
