@@ -112,13 +112,16 @@ def main():
         for sp, gene in genes.items():
             wanted[sp].add(gene)
 
+    print("Reading %d proteomes for %d single-copy orthogroups"
+          % (len(species), len(single_copy_rows)), flush=True)
     proteomes = {}
-    for sp in species:
+    for n, sp in enumerate(species, 1):
         path = find_proteome(args.proteome_dir, sp)
         if path is None:
             sys.exit("ERROR: no proteome file found for species '%s' in %s"
                      % (sp, args.proteome_dir))
         proteomes[sp] = read_fasta(path, wanted[sp])
+        print("   [%d/%d] %s" % (n, len(species), os.path.basename(path)), flush=True)
 
     if not os.path.isdir(args.out_dir):
         os.makedirs(args.out_dir)

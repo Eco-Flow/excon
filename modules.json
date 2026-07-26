@@ -1,104 +1,78 @@
 {
-    "name": "",
-    "homePage": "",
-    "repos": {
-        "https://github.com/nf-core/modules.git": {
-            "modules": {
-                "nf-core": {
-                    "agat/convertspgxf2gxf": {
-                        "branch": "master",
-                        "git_sha": "d32242b309862f5ac37022bf30d9b907e0ee4751",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "agat/spkeeplongestisoform": {
-                        "branch": "master",
-                        "git_sha": "da620ca273b5e1e53713c30755551211c3e7dd36",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "agat/spstatistics": {
-                        "branch": "master",
-                        "git_sha": "d32242b309862f5ac37022bf30d9b907e0ee4751",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "busco/busco": {
-                        "branch": "master",
-                        "git_sha": "3984c94cb6783f36e97df11b1b4ed0d32bfe0de7",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "custom/dumpsoftwareversions": {
-                        "branch": "master",
-                        "git_sha": "ad65d06c959cff1da9e94c4a972deaf7430931fa",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "eggnogmapper": {
-                        "branch": "master",
-                        "git_sha": "e11b95631ff49d1e2530b0e493289e7579ee259b",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "gffread": {
-                        "branch": "master",
-                        "git_sha": "51f2b493a7ff28b40a9f99faca64245521f2bb24",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "gunzip": {
-                        "branch": "master",
-                        "git_sha": "96c57dfd98a0641886a67bd449fe33ee2ec0e374",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "iqtree": {
-                        "branch": "master",
-                        "git_sha": "55ca0738629246b23a84394e94cf50a542f6d72d",
-                        "installed_by": [
-                            "modules"
-                        ],
-                        "patch": "modules/nf-core/iqtree/iqtree.diff"
-                    },
-                    "mafft/align": {
-                        "branch": "master",
-                        "git_sha": "f0fc064c76250bf362d1900bbf8b62092f9f2a1b",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "ncbigenomedownload": {
-                        "branch": "master",
-                        "git_sha": "aea04408a7a0297b6ac92d820937c381b4f8919e",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "orthofinder": {
-                        "branch": "master",
-                        "git_sha": "1bde3edb5e586e16a4993dac87bc83b494017192",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
-                    "quast": {
-                        "branch": "master",
-                        "git_sha": "c3ef6747c66c2d6217d067fd2dfb3412ff46bc3e",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    }
-                }
-            }
+  "name": "",
+  "homePage": "",
+  "repos": {
+    "https://github.com/nf-core/modules.git": {
+      "modules": {
+        "nf-core": {
+          "agat/convertspgxf2gxf": {
+            "branch": "master",
+            "git_sha": "d32242b309862f5ac37022bf30d9b907e0ee4751",
+            "installed_by": ["modules"]
+          },
+          "agat/spkeeplongestisoform": {
+            "branch": "master",
+            "git_sha": "da620ca273b5e1e53713c30755551211c3e7dd36",
+            "installed_by": ["modules"]
+          },
+          "agat/spstatistics": {
+            "branch": "master",
+            "git_sha": "d32242b309862f5ac37022bf30d9b907e0ee4751",
+            "installed_by": ["modules"]
+          },
+          "busco/busco": {
+            "branch": "master",
+            "git_sha": "3984c94cb6783f36e97df11b1b4ed0d32bfe0de7",
+            "installed_by": ["modules"]
+          },
+          "custom/dumpsoftwareversions": {
+            "branch": "master",
+            "git_sha": "ad65d06c959cff1da9e94c4a972deaf7430931fa",
+            "installed_by": ["modules"]
+          },
+          "eggnogmapper": {
+            "branch": "master",
+            "git_sha": "e11b95631ff49d1e2530b0e493289e7579ee259b",
+            "installed_by": ["modules"]
+          },
+          "gffread": {
+            "branch": "master",
+            "git_sha": "51f2b493a7ff28b40a9f99faca64245521f2bb24",
+            "installed_by": ["modules"]
+          },
+          "gunzip": {
+            "branch": "master",
+            "git_sha": "96c57dfd98a0641886a67bd449fe33ee2ec0e374",
+            "installed_by": ["modules"]
+          },
+          "iqtree": {
+            "branch": "master",
+            "git_sha": "55ca0738629246b23a84394e94cf50a542f6d72d",
+            "installed_by": ["modules"],
+            "patch": "modules/nf-core/iqtree/iqtree.diff"
+          },
+          "mafft/align": {
+            "branch": "master",
+            "git_sha": "f0fc064c76250bf362d1900bbf8b62092f9f2a1b",
+            "installed_by": ["modules"]
+          },
+          "ncbigenomedownload": {
+            "branch": "master",
+            "git_sha": "aea04408a7a0297b6ac92d820937c381b4f8919e",
+            "installed_by": ["modules"]
+          },
+          "orthofinder": {
+            "branch": "master",
+            "git_sha": "1bde3edb5e586e16a4993dac87bc83b494017192",
+            "installed_by": ["modules"]
+          },
+          "quast": {
+            "branch": "master",
+            "git_sha": "c3ef6747c66c2d6217d067fd2dfb3412ff46bc3e",
+            "installed_by": ["modules"]
+          }
         }
+      }
     }
+  }
 }

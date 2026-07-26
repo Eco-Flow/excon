@@ -281,6 +281,12 @@
             "description": "Model written in the first field of each line of the IQ-TREE partition file. The default 'AA' declares the datatype and leaves ModelFinder to select a model per partition. Set a concrete model (e.g. 'LG+F+G4') to fix it instead — with a partition file the model must be given here, not via --iqtree_args '-m ...', which IQ-TREE rejects.",
             "default": "AA"
         },
+        "iqtree_partition_file": {
+            "type": "string",
+            "format": "file-path",
+            "description": "Reuse an existing IQ-TREE partition file instead of the one built by CONCAT_SINGLE_COPY. Intended for restarting a run without repeating model selection: a previous run's *.best_scheme file lists the model chosen for each partition, so IQ-TREE uses those directly. The partition coordinates must match the supermatrix, so only use a file produced from the same set of orthogroups. Supplying this suppresses the default -m MFP.",
+            "hidden": true
+        },
         "tree_scale_factor": {
             "type": "integer",
             "default": 1000,

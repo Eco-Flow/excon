@@ -93,6 +93,7 @@ params {
     iqtree_outgroup           : String
     iqtree_args               : String
     iqtree_partition_model    : String
+    iqtree_partition_file     : String
     tree_scale_factor         : Integer
     input_tree_is_dated       : Boolean
     cafe_zero_root            : Boolean
@@ -379,10 +380,16 @@ workflow {
 
             CONCAT_SINGLE_COPY ( ch_orthofinder_dir.join(ALIGN_SINGLE_COPY.out.alignments) )
 
+            // A partition file from a previous run carries that run's per-partition
+            // models, so ModelFinder does not have to be repeated.
+            ch_partitions = params.iqtree_partition_file ?
+                Channel.fromPath(params.iqtree_partition_file, checkIfExists: true) :
+                CONCAT_SINGLE_COPY.out.partitions.map { meta, parts -> parts }
+
             IQTREE_SPECIES_TREE (
                 CONCAT_SINGLE_COPY.out.alignment.map { meta, aln -> [ meta, aln, [] ] },
                 [], [], [], [],
-                CONCAT_SINGLE_COPY.out.partitions.map { meta, parts -> parts },
+                ch_partitions,
                 [], [], [], [], [], [], []
             )
 
