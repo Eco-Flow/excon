@@ -62,6 +62,9 @@ params {
     go_algo                   : String
     forks                     : Integer
     clean                     : Boolean
+    config_profile_description : String
+    config_profile_contact     : String
+    config_profile_url         : String
     custom_config             : String
     max_memory                : String
     max_cpus                  : Integer

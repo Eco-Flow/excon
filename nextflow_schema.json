@@ -101,6 +101,21 @@
           "default": "amd",
           "description": "An amd or arm value assigned to this parameter determines whether containers built for the amd or arm CPU architecture are used"
         },
+        "config_profile_description": {
+          "type": "string",
+          "description": "Institutional config description.",
+          "hidden": true
+        },
+        "config_profile_contact": {
+          "type": "string",
+          "description": "Institutional config contact information.",
+          "hidden": true
+        },
+        "config_profile_url": {
+          "type": "string",
+          "description": "Institutional config URL link.",
+          "hidden": true
+        },
         "custom_config": {
           "type": "string",
           "description": "A path/url to a custom configuration file"

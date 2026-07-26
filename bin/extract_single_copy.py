@@ -21,24 +21,31 @@ import sys
 from collections import OrderedDict
 
 
-def read_fasta(path):
-    """Read a FASTA file into an OrderedDict of {header_first_token: sequence}."""
+def read_fasta(path, wanted=None):
+    """Read a FASTA file into an OrderedDict of {header_first_token: sequence}.
+
+    When `wanted` is given, only those sequence IDs are kept. Whole proteomes do not
+    need to be held in memory at once — only the genes that belong to a single-copy
+    orthogroup are ever used.
+    """
     seqs = OrderedDict()
     name = None
     chunks = []
+    keep = True
     with open(path) as fh:
         for line in fh:
             line = line.rstrip('\n\r')
             if not line:
                 continue
             if line.startswith('>'):
-                if name is not None:
+                if name is not None and keep:
                     seqs[name] = ''.join(chunks)
                 name = line[1:].strip().split()[0]
+                keep = wanted is None or name in wanted
                 chunks = []
-            else:
+            elif keep:
                 chunks.append(line.strip())
-    if name is not None:
+    if name is not None and keep:
         seqs[name] = ''.join(chunks)
     return seqs
 
@@ -79,20 +86,12 @@ def main():
     if not species:
         sys.exit("ERROR: no species columns found in %s" % args.orthogroups)
 
-    proteomes = {}
-    for sp in species:
-        path = find_proteome(args.proteome_dir, sp)
-        if path is None:
-            sys.exit("ERROR: no proteome file found for species '%s' in %s"
-                     % (sp, args.proteome_dir))
-        proteomes[sp] = read_fasta(path)
-
-    if not os.path.isdir(args.out_dir):
-        os.makedirs(args.out_dir)
-
-    written = 0
+    # Work out the single-copy orthogroups first, so only the genes they contain are
+    # read from the proteomes. Reading every proteome in full scales with the total
+    # gene count across the analysis, which is far more than is needed here.
+    single_copy_rows = []
     skipped_not_single = 0
-    missing_gene = 0
+    wanted = {sp: set() for sp in species}
 
     for fields in rows:
         og = fields[0]
@@ -109,6 +108,25 @@ def main():
         if not single_copy or len(genes) != len(species):
             skipped_not_single += 1
             continue
+        single_copy_rows.append((og, genes))
+        for sp, gene in genes.items():
+            wanted[sp].add(gene)
+
+    proteomes = {}
+    for sp in species:
+        path = find_proteome(args.proteome_dir, sp)
+        if path is None:
+            sys.exit("ERROR: no proteome file found for species '%s' in %s"
+                     % (sp, args.proteome_dir))
+        proteomes[sp] = read_fasta(path, wanted[sp])
+
+    if not os.path.isdir(args.out_dir):
+        os.makedirs(args.out_dir)
+
+    written = 0
+    missing_gene = 0
+
+    for og, genes in single_copy_rows:
 
         records = []
         for sp in species:

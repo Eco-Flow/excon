@@ -167,7 +167,7 @@ and the rest of the CAFE options behave exactly as before.
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `--iqtree_species_tree` | Infer the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment instead of using the OrthoFinder tree. Works with any `--orthofinder_method`. | `false` |
-| `--iqtree_outgroup` | Comma-separated tip name(s) to root the tree on, e.g. `Apis_mellifera`. Must be monophyletic in the inferred tree. If unset, the tree is midpoint-rooted. | `null` (midpoint) |
+| `--iqtree_outgroup` | Comma-separated tip name(s) to root the tree on, matching the sample names in your input CSV. Must be monophyletic in the inferred tree. If unset, the tree is midpoint-rooted. | `null` (midpoint) |
 | `--iqtree_args` | Extra arguments appended to the IQ-TREE2 command line, e.g. `-mset LG,WAG,JTT` to restrict ModelFinder's candidate matrices, or `--gcf` for gene concordance factors. | `null` |
 | `--iqtree_partition_model` | Model written per partition. `AA` lets ModelFinder pick one per orthogroup; set e.g. `LG+F+G4` to fix it and skip model selection. With a partition file the model has to be set here rather than through `--iqtree_args '-m ...'`. | `AA` |
 
@@ -175,7 +175,7 @@ and the rest of the CAFE options behave exactly as before.
 nextflow run main.nf \
   --input input.csv \
   --iqtree_species_tree \
-  --iqtree_outgroup Apis_mellifera \
+  --iqtree_outgroup Drosophila_yakuba \
   -profile docker
 ```
 
@@ -219,6 +219,12 @@ in `bin/` rebuild the proteomes from published output. Both reproduce the origin
 |--------|-------|----------|
 | `proteomes_from_orthofinder.py -r <orthofinder results> -o proteomes` | the OrthoFinder `WorkingDirectory/` | preferred — these are the exact sequences OrthoFinder was given |
 | `rename_fasta_standalone.py -f results/gffread -g results/agat -o proteomes` | published GFFREAD + AGAT output | the OrthoFinder directory is incomplete |
+
+> **Give `IQTREE_SPECIES_TREE` plenty of memory on a scheduler.** IQ-TREE rejects its own
+> `-mem` flag when a partition model is in use, so the pipeline cannot cap its memory and
+> IQ-TREE will use what it needs. On SGE/SLURM, request generously (the `withName` block sets
+> 8 CPUs / 16 GB by default, which a large supermatrix will outgrow) or the scheduler will
+> kill the job.
 
 > **Per-partition model selection dominates the runtime.** `-m MFP` fits every candidate
 > amino-acid model to every partition independently, so a few hundred orthogroups means tens of
