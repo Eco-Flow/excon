@@ -287,6 +287,27 @@
             "description": "Reuse an existing IQ-TREE partition file instead of the one built by CONCAT_SINGLE_COPY. Intended for restarting a run without repeating model selection: a previous run's *.best_scheme file lists the model chosen for each partition, so IQ-TREE uses those directly. The partition coordinates must match the supermatrix, so only use a file produced from the same set of orthogroups. Supplying this suppresses the default -m MFP.",
             "hidden": true
         },
+        "tree_calibrations": {
+            "type": "string",
+            "format": "file-path",
+            "description": "TSV of node-age calibrations used to time-calibrate the species tree with ape::chronos before CAFE5. Columns: clade (label), tips (comma-separated tip names whose MRCA defines the node), age_min and age_max in millions of years (equal values fix the age). Applies to whichever species tree is in use, including the one built by --iqtree_species_tree. The calibrated tree is passed to every CAFE5 stage unchanged, so lambda is per Myr; --tree_scale_factor and chronoMPL() are skipped. Naming nodes by the MRCA of two tips avoids depending on node numbering."
+        },
+        "chronos_model": {
+            "type": "string",
+            "enum": ["discrete", "correlated", "relaxed"],
+            "default": "discrete",
+            "description": "Substitution-rate model used by ape::chronos. Only used with --tree_calibrations."
+        },
+        "chronos_lambda": {
+            "type": "number",
+            "default": 1,
+            "description": "Rate-smoothing parameter for ape::chronos. Only used with --tree_calibrations."
+        },
+        "chronos_rate_categories": {
+            "type": "integer",
+            "default": 10,
+            "description": "Number of rate categories for the 'discrete' chronos model. Only used with --tree_calibrations."
+        },
         "tree_scale_factor": {
             "type": "integer",
             "default": 1000,

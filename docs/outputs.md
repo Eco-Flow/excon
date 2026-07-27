@@ -148,6 +148,17 @@ this tree rather than the OrthoFinder one in `results/orthofinder_cafe/`.
 | `supermatrix/supermatrix.faa` | Concatenated single-copy orthogroup alignment, one sequence per species |
 | `supermatrix/partitions.txt` | Partition boundaries in the supermatrix, one per orthogroup |
 
+With `--tree_calibrations`, the same directory also holds the time-calibrated tree:
+
+| File | Description |
+|------|-------------|
+| `SpeciesTree_dated.nwk` | Ultrametric tree with branch lengths in millions of years — the tree CAFE5 receives |
+| `dating_calibrations.tsv` | Each calibration, the node it resolved to, and the age actually fitted |
+| `dating_qc.tsv` | Model settings, root age, shortest branch, ultrametric/binary checks |
+
+When this tree is used, CAFE5's λ is a rate per million years. Without it, λ is in units of the
+(rescaled) substitution tree and is not comparable to published per-Myr rates.
+
 Support values are given as `SH-aLRT/UFboot`. As a rule of thumb a branch is well supported when
 SH-aLRT ≥ 80 and UFboot ≥ 95; treat anything below that as unresolved rather than as evidence for
 the displayed topology.

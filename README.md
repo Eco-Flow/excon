@@ -26,7 +26,7 @@ The general pipeline logic is as follows:
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
 * Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[EXTRACT_SINGLE_COPY]`, `[ALIGN_SINGLE_COPY]`, `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
-* Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`.
+* Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it with `ape::chronos` when node ages are supplied `[DATE_TREE]` (see `--tree_calibrations`).
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
 * Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
@@ -243,6 +243,65 @@ in `bin/` rebuild the proteomes from published output. Both reproduce the origin
 > factors (`--iqtree_args '--gcf ...'`) or compare against a coalescent method, rather than
 > assuming the ML tree settles it.
 
+### Time-calibrating the species tree (optional)
+
+CAFE5 estimates λ per unit of branch length, so λ is only a rate *per million years* if the
+tree is on a time axis. Without calibrations the pipeline makes the tree ultrametric with
+`chronoMPL()` and scales it by `--tree_scale_factor`, which is enough for CAFE5 to run but
+leaves λ in arbitrary units and can distort branch-specific significance.
+
+`--tree_calibrations` instead time-calibrates the tree with `ape::chronos` using node ages you
+supply. It applies to whichever species tree is in use — OrthoFinder's or the one from
+`--iqtree_species_tree` — and the calibrated tree is then passed to **every** CAFE5 stage
+unchanged (no `chronoMPL()`, no `--tree_scale_factor`), exactly as `--input_tree_is_dated` does
+for an externally dated tree.
+
+The calibration file is a TSV with a header:
+
+```tsv
+clade	tips	age_min	age_max
+Aculeata	Vespa_crabro,Apis_mellifera	142.3	142.3
+Formicidae_plus_Apoidea	Atta_cephalotes,Apis_mellifera	108.6	108.6
+Apoidea	Nysson_spinosus,Melipona_bicolor	102.13	102.13
+```
+
+| column | meaning |
+|--------|---------|
+| `clade` | label used in the report; not interpreted |
+| `tips` | two or more tip names — the calibrated node is their **most recent common ancestor** |
+| `age_min` / `age_max` | age bounds in millions of years; set them equal to fix the age |
+
+Naming nodes by an MRCA rather than a node number means the file stays valid across trees, and
+tip names may be given with or without the internal `.clean` suffix.
+
+```bash
+nextflow run main.nf \
+  --input input.csv \
+  --iqtree_species_tree \
+  --tree_calibrations calibrations.tsv \
+  -profile docker
+```
+
+Outputs are written to `results/species_tree/`:
+
+| File | Description |
+|------|-------------|
+| `SpeciesTree_dated.nwk` | Ultrametric tree, branch lengths in millions of years, used for CAFE5 |
+| `dating_calibrations.tsv` | Each calibration with the node it resolved to and the age actually fitted |
+| `dating_qc.tsv` | Model settings, root age, shortest branch, ultrametric/binary checks |
+
+`--chronos_model` (`discrete`, `correlated`, `relaxed`), `--chronos_lambda` and
+`--chronos_rate_categories` tune the fit.
+
+> **Dating failures are fatal, by design.** `ape::chronos` reports non-convergence as a
+> *warning* and still returns a tree, so the pipeline treats any chronos warning as an error
+> rather than publishing a tree that did not converge. It also checks that the fitted node ages
+> match the calibrations you asked for, and that the result is ultrametric and binary.
+
+> **Calibrations are yours to justify.** The pipeline applies the ages you give it; it has no
+> opinion on which fossils or published estimates are appropriate. Record their provenance —
+> `dating_calibrations.tsv` is published to make that easy.
+
 ### CAFE gene family evolution
 
 | Parameter | Description | Default |
@@ -250,6 +309,10 @@ in `bin/` rebuild the proteomes from published output. Both reproduce the origin
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
 | `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
+| `--tree_calibrations` | TSV of node ages used to time-calibrate the species tree with `ape::chronos`, so CAFE5's λ is per million years. See [Time-calibrating the species tree](#time-calibrating-the-species-tree-optional). Skips `--tree_scale_factor` and `chronoMPL()`. | `null` |
+| `--chronos_model` | `ape::chronos` rate model: `discrete`, `correlated` or `relaxed` | `discrete` |
+| `--chronos_lambda` | `ape::chronos` rate-smoothing parameter | `1` |
+| `--chronos_rate_categories` | Rate categories for the `discrete` model | `10` |
 | `--tree_scale_factor` | Factor to multiply all species-tree branch lengths by before `chronoMPL()` converts the tree to a time tree for CAFE5. Applied once, by `RESCALE_TREE`. Lower values can cause numerical issues. CAFE5's λ is per unit branch length, so changing this rescales λ by the same factor. | `1000` |
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
 | `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv`/`N0.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |

@@ -3,6 +3,7 @@
 include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
 
 include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
+include { DATE_TREE } from './modules/local/date_tree.nf'
 include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
@@ -94,6 +95,10 @@ params {
     iqtree_args               : String
     iqtree_partition_model    : String
     iqtree_partition_file     : String
+    tree_calibrations         : String
+    chronos_model             : String
+    chronos_lambda            : Float
+    chronos_rate_categories   : Integer
     tree_scale_factor         : Integer
     input_tree_is_dated       : Boolean
     cafe_zero_root            : Boolean
@@ -404,6 +409,15 @@ workflow {
         // an OrthoFinder substitution tree is scaled first to avoid CAFE5 precision issues.
         if (params.input_tree_is_dated) {
             ch_tree_for_prep = ch_speciestree
+        } else if (params.tree_calibrations) {
+            // Calibrate here instead, so the tree reaching CAFE5 is on a time axis
+            // and lambda is per Myr. Works for the OrthoFinder tree and the
+            // IQ-TREE one alike, since both arrive on ch_speciestree.
+            DATE_TREE (
+                ch_speciestree,
+                Channel.fromPath(params.tree_calibrations, checkIfExists: true)
+            )
+            ch_tree_for_prep = DATE_TREE.out.dated_tree
         } else {
             RESCALE_TREE ( ch_speciestree )
             ch_tree_for_prep = RESCALE_TREE.out.rescaled_tree

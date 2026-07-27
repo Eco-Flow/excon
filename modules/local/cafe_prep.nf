@@ -38,7 +38,9 @@ process CAFE_PREP {
     def base_differential = params.cafe_max_differential ?: 50
     def max_differential  = (base_differential / Math.pow(2, task.attempt - 2)).toInteger()
     def use_filtering    = task.attempt > 1
-    def is_dated         = params.input_tree_is_dated ? 'true' : 'false'
+    // A tree from DATE_TREE is already ultrametric and in Myr, so it is handled
+    // exactly like a user-supplied dated tree.
+    def is_dated         = (params.input_tree_is_dated || params.tree_calibrations) ? 'true' : 'false'
     def z_flag           = params.cafe_zero_root ? '-z' : ''
     """
     export PATH=\$PATH:/usr/bin
