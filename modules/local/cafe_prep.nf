@@ -48,6 +48,9 @@ process CAFE_PREP {
     // exactly like a user-supplied dated tree.
     def is_dated         = (params.input_tree_is_dated || params.tree_calibrations) ? 'true' : 'false'
     def z_flag           = params.cafe_zero_root ? '-z' : ''
+    // Matches maxRetries below: the final attempt must not exit 1, or the run ends
+    // with no result at all rather than one lacking an error model.
+    def can_retry        = task.attempt <= 3
     """
     export PATH=\$PATH:/usr/bin
     set -e
@@ -117,6 +120,10 @@ process CAFE_PREP {
     # The resulting Base_error_model.txt is passed to CAFE_RUN_K so
     # that all downstream k-sweep runs correct for this error.
     # ---------------------------------------------------------------
+    # set +e so a failing error model does not abort the script: process.shell sets
+    # -e and pipefail, which would otherwise kill the task at the pipeline below and
+    # skip the fallback entirely.
+    set +e
     cafe5 \\
         -i hog_gene_counts.tsv \\
         -t cafe_input_tree.txt \\
@@ -126,11 +133,22 @@ process CAFE_PREP {
         -o Out_cafe_errormodel \\
         2>&1 | tee cafe_errormodel.log
     errormodel_exit=\${PIPESTATUS[0]}
+    set -e
 
-    # A failed error model is non-fatal — downstream processes handle
-    # a missing file via the optional NO_FILE fallback pattern
-    if [ \$errormodel_exit -ne 0 ]; then
-        echo "WARNING: error model estimation failed (exit \$errormodel_exit) — continuing without it" >&2
+    # A failed error model is non-fatal — downstream processes handle an empty file
+    # via the optional NO_FILE fallback pattern. CAFE5 can also exit 0 without writing
+    # the model at all, so the file itself is checked rather than just the exit status.
+    touch cafe_errormodel.log
+    if [ \$errormodel_exit -ne 0 ] || [ ! -s Out_cafe_errormodel/Base_error_model.txt ]; then
+        if [ "${can_retry}" = "true" ]; then
+            # CAFE5 exits 0 even when it fails to converge here, so the retry has to be
+            # triggered explicitly, exactly as the base run does above. Without this the
+            # task exits 0, Nextflow fails it for a missing output, and errorStrategy
+            # sees exitStatus 0 rather than 1 and ignores it instead of retrying.
+            echo "ERROR: error model did not converge — retrying with stricter differential filtering" >&2
+            exit 1
+        fi
+        echo "WARNING: no error model produced after ${task.attempt} attempts — continuing without it" >&2
         mkdir -p Out_cafe_errormodel
         touch Out_cafe_errormodel/Base_error_model.txt
     fi
