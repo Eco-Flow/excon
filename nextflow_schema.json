@@ -350,6 +350,11 @@
             "default": 50,
             "description": "Maximum gene count differential (max-min copies) threshold for CAFE filtering on retry. Vizueta et al. 2025 used 20."
         },
+        "cafe_filter_first": {
+            "type": "boolean",
+            "default": false,
+            "description": "Apply --cafe_max_differential from the first CAFE_PREP attempt instead of only on retries. By default the first attempt is unfiltered so that no family is discarded when CAFE5 can cope with the full set, and each retry halves the threshold. Set this when the data are already known to need filtering, since the unfiltered attempt is then a guaranteed failure costing a full CAFE5 run."
+        },
         "run_eggnog": {
             "type": "boolean",
             "default": false,

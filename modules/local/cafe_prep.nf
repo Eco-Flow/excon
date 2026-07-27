@@ -36,8 +36,14 @@ process CAFE_PREP {
 
     script:
     def base_differential = params.cafe_max_differential ?: 50
-    def max_differential  = (base_differential / Math.pow(2, task.attempt - 2)).toInteger()
-    def use_filtering    = task.attempt > 1
+    // By default the first attempt is unfiltered, so no family is discarded when
+    // CAFE5 can cope with the full set; each retry then halves the threshold.
+    // --cafe_filter_first starts filtering immediately, which is worth setting when
+    // the data are already known to need it — the unfiltered attempt is otherwise a
+    // guaranteed failure, and relying on retries is fragile if a run gets interrupted.
+    def first_attempt_no = params.cafe_filter_first ? 1 : 2
+    def max_differential  = (base_differential / Math.pow(2, task.attempt - first_attempt_no)).toInteger()
+    def use_filtering    = params.cafe_filter_first || task.attempt > 1
     // A tree from DATE_TREE is already ultrametric and in Myr, so it is handled
     // exactly like a user-supplied dated tree.
     def is_dated         = (params.input_tree_is_dated || params.tree_calibrations) ? 'true' : 'false'

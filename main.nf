@@ -107,6 +107,7 @@ params {
     cafe_zero_root            : Boolean
     skip_cafe                 : Boolean
     cafe_max_differential     : Integer
+    cafe_filter_first         : Boolean
     cafe_max_k                : Integer
     orthofinder_msa_dir       : String
     orthofinder_genetree_dir  : String

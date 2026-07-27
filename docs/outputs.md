@@ -17,6 +17,7 @@ results/
 ├── cafe_go/                 # GO enrichment results and plots
 ├── chromo_go/               # [optional] GO enrichment by chromosome (!won't work for mycoplasma!, only one chr)
 ├── eggnogmapper/            # [optional] EggNOG GO annotations
+├── proteomes/               # Per-species proteomes (the gene IDs used throughout)
 ├── orthofinder_cafe/        # OrthoFinder species tree and orthogroups
 ├── species_tree/            # [optional, --iqtree_species_tree] IQ-TREE2 species tree
 ├── busco/                   # [optional, --stats] BUSCO completeness
@@ -131,6 +132,19 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 |------|-------------|
 | `cafe_model_comparison.tsv` | AIC scores for k=1 through k=N rate categories |
 | `best_model.txt` | Selected model: `uniform` or `poisson` at best k |
+
+---
+
+## Proteomes (`results/proteomes/`)
+
+The `*.clean.fasta` files written by `RENAME_FASTA`, one per species. These hold the exact
+sequences given to OrthoFinder, and their headers are the gene IDs that appear throughout
+`Orthogroups.tsv`, `N0.tsv` and the CAFE outputs.
+
+They are published because reusing a finished analysis needs them: `--proteome_dir` takes this
+directory. If a run predates this being published, or its work directory has been deleted, both
+`bin/proteomes_from_orthofinder.py` and `bin/rename_fasta_standalone.py` rebuild them exactly
+from published output.
 
 ---
 
