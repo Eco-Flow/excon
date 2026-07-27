@@ -156,6 +156,15 @@ workflow {
    def use_precomputed = (params.input_tree && params.input_orthogroups) || params.orthofinder_blast_results || params.orthofinder_results
    def needs_genomes   = !use_precomputed || params.run_eggnog || params.stats
 
+   // --input_tree and --input_orthogroups only skip OrthoFinder together: the tree
+   // says which species to analyse, the table supplies the gene counts.
+   if (params.input_tree && !params.input_orthogroups && !params.orthofinder_results) {
+      error "ERROR: --input_tree also needs --input_orthogroups (the Orthogroups.tsv or N0.tsv holding the gene counts). Supplied alone it cannot skip OrthoFinder, so --input is required as well."
+   }
+   if (params.input_orthogroups && !params.input_tree && !params.orthofinder_results) {
+      error "ERROR: --input_orthogroups also needs --input_tree (the species tree for those gene counts)."
+   }
+
    if (needs_genomes && !params.input) {
       error "ERROR: --input (samplesheet CSV) is required when not using pre-computed OrthoFinder results, or when --run_eggnog / --stats is set."
    }
