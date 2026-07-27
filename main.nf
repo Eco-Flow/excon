@@ -4,6 +4,7 @@ include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-sch
 
 include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { DATE_TREE } from './modules/local/date_tree.nf'
+include { PRUNE_TREE } from './modules/local/prune_tree.nf'
 include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
@@ -95,6 +96,8 @@ params {
     iqtree_args               : String
     iqtree_partition_model    : String
     iqtree_partition_file     : String
+    cafe_clade                : String
+    cafe_species              : String
     tree_calibrations         : String
     chronos_model             : String
     chronos_lambda            : Float
@@ -155,6 +158,10 @@ workflow {
 
    if (needs_genomes && !params.input) {
       error "ERROR: --input (samplesheet CSV) is required when not using pre-computed OrthoFinder results, or when --run_eggnog / --stats is set."
+   }
+
+   if (params.cafe_clade && params.cafe_species) {
+      error "ERROR: give either --cafe_clade or --cafe_species, not both."
    }
 
    if (params.proteome_dir && !params.orthofinder_results) {
@@ -421,6 +428,14 @@ workflow {
         } else {
             RESCALE_TREE ( ch_speciestree )
             ch_tree_for_prep = RESCALE_TREE.out.rescaled_tree
+        }
+
+        // Restricting to a clade happens last, so dating uses the full tree and
+        // calibrations may reference species outside the subset. Pruning preserves
+        // node ages, so a calibrated tree stays calibrated.
+        if (params.cafe_clade || params.cafe_species) {
+            PRUNE_TREE ( ch_tree_for_prep )
+            ch_tree_for_prep = PRUNE_TREE.out.tree
         }
 
         CAFE_PREP (

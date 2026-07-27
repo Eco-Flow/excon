@@ -287,6 +287,14 @@
             "description": "Reuse an existing IQ-TREE partition file instead of the one built by CONCAT_SINGLE_COPY. Intended for restarting a run without repeating model selection: a previous run's *.best_scheme file lists the model chosen for each partition, so IQ-TREE uses those directly. The partition coordinates must match the supermatrix, so only use a file produced from the same set of orthogroups. Supplying this suppresses the default -m MFP.",
             "hidden": true
         },
+        "cafe_clade": {
+            "type": "string",
+            "description": "Restrict the CAFE analysis to one clade, given as two or more tip names whose most recent common ancestor defines it (e.g. 'Vespa_crabro,Apis_mellifera'). The species tree is pruned to that clade and the gene-count table is subset to match, so a single OrthoFinder analysis can be analysed clade by clade while keeping the original orthogroup identifiers. Pruning happens after any time-calibration, so node ages are retained. Mutually exclusive with --cafe_species."
+        },
+        "cafe_species": {
+            "type": "string",
+            "description": "Restrict the CAFE analysis to an explicit set of species, given as a comma-separated list of tip names or a path to a file with one name per line. Mutually exclusive with --cafe_clade."
+        },
         "tree_calibrations": {
             "type": "string",
             "format": "file-path",

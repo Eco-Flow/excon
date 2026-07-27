@@ -27,6 +27,7 @@ The general pipeline logic is as follows:
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
 * Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[EXTRACT_SINGLE_COPY]`, `[ALIGN_SINGLE_COPY]`, `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
 * Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it with `ape::chronos` when node ages are supplied `[DATE_TREE]` (see `--tree_calibrations`).
+* Optionally restricts the analysis to one clade `[PRUNE_TREE]` (see `--cafe_clade` / `--cafe_species`).
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
 * Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
@@ -242,6 +243,45 @@ in `bin/` rebuild the proteomes from published output. Both reproduce the origin
 > strongly supported but wrong branch. If a specific node is in question, check gene concordance
 > factors (`--iqtree_args '--gcf ...'`) or compare against a coalescent method, rather than
 > assuming the ML tree settles it.
+
+### Analysing one clade at a time (optional)
+
+Including distantly related outgroups is often good for orthology inference but bad for CAFE5:
+families absent from the outgroups are empty at the analysis root, and CAFE5 discards those —
+which tends to remove exactly the lineage-specific families of interest (odorant receptors,
+P450s and so on). Running CAFE on a clade at a time avoids that, without re-running OrthoFinder
+and without changing orthogroup identifiers.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--cafe_clade` | Two or more tip names; everything descended from their most recent common ancestor is analysed, e.g. `Vespa_crabro,Apis_mellifera` | `null` |
+| `--cafe_species` | An explicit set of tips instead: a comma-separated list, or a path to a file with one name per line | `null` |
+
+Give one or the other, not both. The species tree is pruned to the selection and `cafe_prep.R`
+subsets the gene-count table to match, so the same OrthoFinder output can be analysed clade by
+clade by changing one option:
+
+```bash
+# same inputs, one clade per run
+nextflow run main.nf --input_tree species_tree.nwk --input_orthogroups N0.tsv \
+  --tree_calibrations calibrations.tsv \
+  --cafe_clade "Ancistrocerus_nigricornis,Vespa_crabro" --outdir clade_a -profile docker
+
+nextflow run main.nf --input_tree species_tree.nwk --input_orthogroups N0.tsv \
+  --tree_calibrations calibrations.tsv \
+  --cafe_clade "Vespa_crabro,Apis_mellifera" --outdir clade_b -profile docker
+```
+
+`results/species_tree/pruned_tree_species.tsv` records which species were retained and dropped.
+
+> **Pruning happens after time-calibration, deliberately.** The tree is dated once using every
+> species, so calibrations may reference taxa that fall outside the clade being analysed, and
+> both subsets inherit the same ages. Pruning preserves node ages and ultrametricity, so a
+> calibrated tree stays calibrated.
+
+> **Defining a clade by an MRCA can capture more than you expect.** Pick two tips that span the
+> group: for a genus, two of its most divergent members, not two close relatives. Check
+> `pruned_tree_species.tsv` to confirm the selection is what you intended.
 
 ### Time-calibrating the species tree (optional)
 

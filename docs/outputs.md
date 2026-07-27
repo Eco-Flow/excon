@@ -156,6 +156,13 @@ With `--tree_calibrations`, the same directory also holds the time-calibrated tr
 | `dating_calibrations.tsv` | Each calibration, the node it resolved to, and the age actually fitted |
 | `dating_qc.tsv` | Model settings, root age, shortest branch, ultrametric/binary checks |
 
+With `--cafe_clade` or `--cafe_species`, the pruned tree actually given to CAFE5:
+
+| File | Description |
+|------|-------------|
+| `SpeciesTree_pruned.nwk` | The tree restricted to the selected clade or species |
+| `pruned_tree_species.tsv` | Every species in the full tree, flagged as retained or dropped |
+
 When this tree is used, CAFE5's λ is a rate per million years. Without it, λ is in units of the
 (rescaled) substitution tree and is not comparable to published per-Myr rates.
 
