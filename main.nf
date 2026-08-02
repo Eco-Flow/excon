@@ -41,8 +41,12 @@ include { CAFE_PREP } from './modules/local/cafe_prep.nf'
 include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
 include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
+include { SPLIT_LARGE_FAMILIES } from './modules/local/split_large_families.nf'
 include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
+include { MERGE_CAFE_LARGE_RESULTS } from './modules/local/merge_cafe_large_results.nf'
 include { CAFE_PLOT as CAFE_PLOT_LARGE } from './modules/local/cafe_plot.nf'
+include { CAFE_SIG_FAMILIES as CAFE_SIG_FAMILIES_LARGE } from './modules/local/cafe_sig_families.nf'
+include { COMBINE_CAFE_SIG_FAMILIES } from './modules/local/combine_cafe_sig_families.nf'
 include { CAFE_GO_PREP as CAFE_GO_PREP_LARGE } from './modules/local/cafe_go_prep.nf'
 include { CAFE_GO_RUN  as CAFE_GO_RUN_LARGE  } from './modules/local/cafe_go_run.nf'
 include { SUMMARIZE_CAFE_GO }                                                  from './modules/local/summarize_cafe_go.nf'
@@ -461,14 +465,28 @@ workflow {
             ch_tree_for_prep
         )
 
-        // Run CAFE with fixed lambda on high-differential families filtered out during prep.
-        // Only executes when cafe_prep_filtered.R was triggered (attempt > 1) and
-        // found families above the differential threshold — otherwise large_counts is empty.
+        // High-differential families filtered out during prep are run one at a time,
+        // each fitting its own lambda, rather than forcing one lambda to explain every
+        // excluded family at once (which never converged). Only executes when
+        // cafe_prep_filtered.R was triggered (attempt > 1) and found families above the
+        // differential threshold — otherwise large_counts is empty and nothing downstream
+        // of it fires.
+        SPLIT_LARGE_FAMILIES ( CAFE_PREP.out.large_counts )
+
         CAFE_RUN_LARGE (
-            CAFE_PREP.out.large_counts,
+            SPLIT_LARGE_FAMILIES.out.family_tables.flatten(),
             CAFE_PREP.out.cafe_tree,
-            CAFE_PREP.out.error_model,
-            CAFE_PREP.out.lambda.map { f -> f.text.trim() }
+            CAFE_PREP.out.error_model
+        )
+
+        // Stitch the many single-family runs back into one CAFE5-shaped directory so
+        // the existing downstream consumers (cafeplotter, CAFE_GO_PREP_LARGE, CAFE_SIG_
+        // FAMILIES_LARGE below) can read it exactly like an ordinary CAFE5 result.
+        // collect() emits a single empty list even when the source channel had zero
+        // items (e.g. no large families at all, or none converged) — filtered out so
+        // MERGE_CAFE_LARGE_RESULTS only runs when there is actually something to merge.
+        MERGE_CAFE_LARGE_RESULTS (
+            CAFE_RUN_LARGE.out.results.collect().filter { it.size() > 0 }
         )
 
 
@@ -529,14 +547,41 @@ workflow {
             ch_genetree_dir
         )
 
-        // Plot high-differential families — only runs when CAFE_RUN_LARGE converged
-        // (converged.txt is an optional output; if absent the channel is empty and
-        //  downstream steps are silently skipped)
-        ch_large_results_ok = CAFE_RUN_LARGE.out.converged
-            .combine( CAFE_RUN_LARGE.out.results )
+        // Plot high-differential families — only runs when at least one of them
+        // converged on its own lambda (converged.txt is an optional output; if
+        // absent the channel is empty and downstream steps are silently skipped)
+        ch_large_results_ok = MERGE_CAFE_LARGE_RESULTS.out.converged
+            .combine( MERGE_CAFE_LARGE_RESULTS.out.results )
             .map { flag, dir -> dir }
 
         CAFE_PLOT_LARGE ( ch_large_results_ok )
+
+        // Same significant-family extraction as the main model, run on the merged
+        // large-family results — falls back to the NO_FILE placeholder (which
+        // cafe_sig_families.R treats as "no CAFE tables found", writing empty
+        // tables) when no families were large enough to need this track at all,
+        // so COMBINE_CAFE_SIG_FAMILIES below always has something to read.
+        ch_large_results_for_sig = ch_large_results_ok
+            .ifEmpty( file("${projectDir}/assets/NO_FILE") )
+
+        CAFE_SIG_FAMILIES_LARGE (
+            ch_large_results_for_sig,
+            CAFE_PREP.out.N0_table,
+            ch_msa_dir,
+            ch_genetree_dir
+        )
+
+        // One combined report spanning every orthogroup CAFE5 could fit at all —
+        // the shared k/lambda model's families plus the large-differential ones
+        // fit individually — tagged by which track produced each row. Node ids
+        // line up between the two: both stem from the same CAFE_PREP.out.cafe_tree,
+        // and CAFE5 numbers internal nodes from the tree topology alone.
+        COMBINE_CAFE_SIG_FAMILIES (
+            CAFE_SIG_FAMILIES.out.changes,
+            CAFE_SIG_FAMILIES.out.sig_changes,
+            CAFE_SIG_FAMILIES_LARGE.out.changes,
+            CAFE_SIG_FAMILIES_LARGE.out.sig_changes
+        )
 
 
         if (params.run_eggnog) {

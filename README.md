@@ -406,6 +406,23 @@ Outputs are written to `results/species_tree/`:
 > escalated wall time — a retry asking for more than the queue maximum is rejected at submission
 > and fails instantly, which looks like a convergence failure but is not one.
 
+> **What happens to the filtered-out families.** Families above the differential threshold are
+> not discarded — `hog_gene_counts_large.tsv` is analysed separately in `cafe/large_families/`.
+> Each family is run **independently**, fitting its own λ, rather than as one shared batch: a
+> single shared λ cannot explain both a modest and an extreme size differential at once, so
+> lumping every high-differential family together into one CAFE5 call tends to be unfittable
+> regardless of λ. Running them one at a time removes that conflict, since a single family
+> imposes none. The converged per-family runs are stitched back into one CAFE5-shaped directory
+> (`cafe/large_families/Out_cafe_large/`) so `cafe_plot_large/` and `cafe_go_large/` read it exactly
+> like an ordinary CAFE5 result; `large_family_lambda_summary.tsv` records each family's own fitted
+> λ and -lnL, since there is no longer one shared value to report. `CAFE_SIG_FAMILIES` also runs on
+> this merged result, and its output is concatenated with the main model's into
+> `cafe/significant_families/combined_changes_per_node.tsv` /
+> `combined_significant_changes_per_node.tsv`, tagged by a `source` column (`main_model` vs
+> `large_family_own_lambda`) — one report spanning every orthogroup CAFE5 could fit at all. A
+> family that still fails to converge even on its own is dropped from the merge with a warning,
+> rather than failing the run.
+
 > **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it
 > (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs.
 > The orthogroups file to pass depends on which version of OrthoFinder was used:
@@ -595,7 +612,7 @@ results/
 │   │   ├── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
 │   │   └── SpeciesTree_rooted_ultra.txt  # Ultrametric tree used by CAFE5
 │   ├── best/                        # Full CAFE5 results for the winning model (uniform or Poisson)
-│   ├── large_families/              # CAFE run on high-differential families (retry path only)
+│   ├── large_families/              # High-differential families, each run independently under its own lambda
 │   └── model_comparison/
 │       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
 │       └── best_model.txt            # "uniform" or "poisson"

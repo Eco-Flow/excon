@@ -44,6 +44,17 @@
 - **The node-label guide showed no node numbers.** `cafe_node_label_guide.R` read CAFE's `*_asr.tre` with `read.tree()`, but that file is a NEXUS with per-family trees and decorated labels (`SpA<1>_3`, `<8>*_3`), so it mis-parsed into a meaningless multi-tree with blank node labels. It now parses the first tree and strips the CAFE decorations, so tips are species names and the internal-node labels are the CAFE node ids that match `CAFE_summary.txt` and the branch tables — the guide needed to identify internal nodes of interest. The same parser is used by `CAFE_SIG_FAMILIES` to resolve `--cafe_focus_clades` species sets to node ids by MRCA.
 - **Branch lengths were being scaled twice.** `RESCALE_TREE` multiplied the input tree by `--tree_scale_factor`, then `cafe_prep.R` multiplied again after `chronoMPL()`, so `SpeciesTree_rooted_ultra.txt` scaled ~`tree_scale_factor²` while the CAFE model actually received the once-scaled, non-ultrametric `pruned_tree`. The same tree is now made ultrametric and used for every stage. (The double scaling itself survived this change and is fixed separately below.)
 
+### Fixed
+- **`CAFE_RUN_LARGE` (the high-differential family fallback) essentially never converged.** Every family excluded by `--cafe_max_differential` was run in one shared batch under a single λ (a ladder of progressively smaller fallback values, down to `1e-7`), but no single λ can simultaneously explain a modest and an extreme size differential — the batch was frequently unfittable regardless of which λ was tried, so `cafe/large_families/` and its downstream `cafe_plot_large`/`cafe_go_large` outputs were often silently empty. Each high-differential family is now run **independently** (`SPLIT_LARGE_FAMILIES` splits `hog_gene_counts_large.tsv` into one family per task, then `CAFE_RUN_LARGE` fits each its own λ), since a single family imposes no cross-family conflict. `MERGE_CAFE_LARGE_RESULTS`/`bin/merge_cafe_large_results.py` stitches the converged per-family runs back into one CAFE5-shaped directory — row-concatenation for most tables, except `*_clade_results.txt`, which is summed rather than concatenated since CAFE5 reports it as a total across the whole run — so downstream steps read it exactly as before. A family that still fails to converge on its own is dropped from the merge with a warning, rather than failing the run.
+
+### Added
+- New `large_family_lambda_summary.tsv` in `cafe/large_families/`: each high-differential family's own independently-fitted λ and -lnL, replacing the single shared value that no longer exists.
+- `CAFE_SIG_FAMILIES` now also runs on the merged large-family results (`CAFE_SIG_FAMILIES_LARGE`), and a new `COMBINE_CAFE_SIG_FAMILIES` step (`bin/combine_cafe_sig_families.py`) concatenates both tracks into `cafe/significant_families/combined_changes_per_node.tsv` / `combined_significant_changes_per_node.tsv`, tagged by a `source` column (`main_model` vs `large_family_own_lambda`) — one report spanning every orthogroup CAFE5 could fit, not just the ones sharing the main model's λ/k.
+- New `modules/local/split_large_families.nf`, `modules/local/merge_cafe_large_results.nf`, `modules/local/combine_cafe_sig_families.nf`, `bin/merge_cafe_large_results.py` and `bin/combine_cafe_sig_families.py`.
+
+### Changed
+- `CAFE_RUN_LARGE`'s `24.GB` memory override removed. A single-family run needs a fraction of that, so it now uses the `process_single` label's 2GB default instead.
+
 ## [v2.3.2] -
 
 ### Added
