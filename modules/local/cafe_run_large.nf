@@ -4,9 +4,11 @@ process CAFE_RUN_LARGE {
     container 'ecoflowucl/cafe:r-4.3.1'
 
     input:
-    path hog_counts     // one family's own split of hog_gene_counts_large.tsv
-    path species_tree
-    path error_model
+    // Bundled into one tuple (built with .combine() in main.nf) rather than three
+    // separate positional channels, so species_tree/error_model are unambiguously
+    // paired with every one of the 158 hog_counts items rather than relying on
+    // Nextflow's implicit broadcast of a singleton channel alongside a multi-item one.
+    tuple path(hog_counts), path(species_tree), path(error_model)
 
     output:
     path "Out_cafe_large_${hog_counts.baseName}/", emit: results, optional: true

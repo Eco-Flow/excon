@@ -490,10 +490,13 @@ workflow {
             }
             .view { f -> "DEBUG large_family file collected: ${f}" }
 
+        // Explicit combine() rather than passing cafe_tree/error_model as separate
+        // positional channels — makes their reuse across all 158 hog_counts items
+        // unambiguous rather than relying on Nextflow's implicit broadcast pairing.
         CAFE_RUN_LARGE (
-            ch_large_family_tables,
-            CAFE_PREP.out.cafe_tree,
-            CAFE_PREP.out.error_model
+            ch_large_family_tables
+                .combine( CAFE_PREP.out.cafe_tree )
+                .combine( CAFE_PREP.out.error_model )
         )
 
         // Stitch the many single-family runs back into one CAFE5-shaped directory so
