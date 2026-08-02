@@ -478,9 +478,7 @@ workflow {
         // differential threshold — otherwise large_counts is empty and nothing
         // downstream of it fires.
         ch_large_family_tables = CAFE_PREP.out.large_counts
-            .view { f -> "DEBUG large_counts file emitted: ${f}" }
             .splitCsv( header: true, sep: '\t' )
-            .view { row -> "DEBUG large_family row: ${row.HOG}" }
             .collectFile { row ->
                 def hog    = (row.HOG as String).replaceAll(/[^A-Za-z0-9_.-]/, '_')
                 def cols   = row.keySet() as List
@@ -488,7 +486,6 @@ workflow {
                 def line   = cols.collect { row[it] }.join('\t')
                 [ "${hog}.tsv", "${header}\n${line}\n" ]
             }
-            .view { f -> "DEBUG large_family file collected: ${f}" }
 
         // Explicit combine() rather than passing cafe_tree/error_model as separate
         // positional channels — makes their reuse across all 158 hog_counts items
