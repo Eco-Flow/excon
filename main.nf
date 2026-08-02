@@ -444,7 +444,15 @@ workflow {
         // calibrations may reference species outside the subset. Pruning preserves
         // node ages, so a calibrated tree stays calibrated.
         if (params.cafe_clade || params.cafe_species) {
-            PRUNE_TREE ( ch_tree_for_prep )
+            // --cafe_species may be a path to a file of tip names rather than an inline
+            // comma-separated list. Under a container profile that file only exists on
+            // the launch host, so it must be staged as a proper input or prune_tree.R's
+            // file.exists() check fails inside the task's work directory.
+            ch_cafe_species_file = (params.cafe_species && file(params.cafe_species).exists()) ?
+                Channel.fromPath(params.cafe_species, checkIfExists: true) :
+                Channel.fromPath("${projectDir}/assets/NO_FILE")
+
+            PRUNE_TREE ( ch_tree_for_prep, ch_cafe_species_file )
             ch_tree_for_prep = PRUNE_TREE.out.tree
         }
 

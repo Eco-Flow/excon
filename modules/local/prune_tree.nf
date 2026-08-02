@@ -5,6 +5,9 @@ process PRUNE_TREE {
 
     input:
     path tree_newick
+    // A file of tip names for --cafe_species, staged so it is visible inside the
+    // container's work directory; assets/NO_FILE when the selection is inline instead.
+    path species_file
 
     output:
     path 'SpeciesTree_pruned.nwk'    , emit: tree
@@ -16,7 +19,7 @@ process PRUNE_TREE {
 
     script:
     def mode      = params.cafe_clade ? 'clade' : 'species'
-    def selection = params.cafe_clade ?: params.cafe_species
+    def selection = (species_file.name != 'NO_FILE') ? species_file : (params.cafe_clade ?: params.cafe_species)
     """
     Rscript ${projectDir}/bin/prune_tree.R \\
         ${tree_newick} \\
