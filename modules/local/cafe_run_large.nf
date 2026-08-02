@@ -1,7 +1,17 @@
 process CAFE_RUN_LARGE {
     tag "${hog_counts.baseName}"
-    label 'process_single'
+    label 'process_low'
     container 'ecoflowucl/cafe:r-4.3.1'
+
+    // A handful of families need many more Nelder-Mead iterations than most to
+    // pin down their own lambda, and can run past process_low's 2h/4GB (killed
+    // externally by the scheduler rather than exiting cleanly, so the script's
+    // own non-convergence handling below never gets a chance to run). This track
+    // is best-effort — retry with more time/memory a couple of times (task.attempt
+    // scales process_low's 2h/4GB up each retry), then drop the family from the
+    // merge rather than fail the whole run.
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
+    maxRetries 3
 
     input:
     // Bundled into one tuple (built with .combine() in main.nf) rather than three
