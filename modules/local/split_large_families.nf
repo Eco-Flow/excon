@@ -1,5 +1,6 @@
 process SPLIT_LARGE_FAMILIES {
     label 'process_single'
+    container 'ecoflowucl/cafe:r-4.3.1'
 
     input:
     path large_counts   // hog_gene_counts_large.tsv from CAFE_PREP (optional — may be absent)
@@ -9,18 +10,7 @@ process SPLIT_LARGE_FAMILIES {
 
     script:
     """
-    mkdir -p large_family_splits
-    awk -F'\\t' '
-        NR == 1 { header = \$0; next }
-        {
-            hog = \$2
-            gsub(/[^A-Za-z0-9_.-]/, "_", hog)
-            fname = "large_family_splits/" hog ".tsv"
-            print header > fname
-            print \$0 >> fname
-            close(fname)
-        }
-    ' ${large_counts}
+    ${projectDir}/bin/split_large_families.py -o large_family_splits ${large_counts}
     """
 
     stub:
