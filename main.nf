@@ -41,7 +41,6 @@ include { CAFE_PREP } from './modules/local/cafe_prep.nf'
 include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
 include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
-include { SPLIT_LARGE_FAMILIES } from './modules/local/split_large_families.nf'
 include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
 include { MERGE_CAFE_LARGE_RESULTS } from './modules/local/merge_cafe_large_results.nf'
 include { CAFE_PLOT as CAFE_PLOT_LARGE } from './modules/local/cafe_plot.nf'
@@ -467,14 +466,29 @@ workflow {
 
         // High-differential families filtered out during prep are run one at a time,
         // each fitting its own lambda, rather than forcing one lambda to explain every
-        // excluded family at once (which never converged). Only executes when
+        // excluded family at once (which never converged). Split with splitCsv/
+        // collectFile — entirely inside Nextflow's own dataflow engine — rather than
+        // an external process writing one file per family and having Nextflow glob
+        // that directory afterwards: on a networked work directory (GPFS etc.) that
+        // glob can race the writes and see only some of the files. splitCsv/
+        // collectFile emit each family as its own channel item directly, so there is
+        // no separate directory listing step to race. Named by HOG id so CAFE_RUN_LARGE
+        // task tags and output directories stay readable. Only produces items when
         // cafe_prep_filtered.R was triggered (attempt > 1) and found families above the
-        // differential threshold — otherwise large_counts is empty and nothing downstream
-        // of it fires.
-        SPLIT_LARGE_FAMILIES ( CAFE_PREP.out.large_counts )
+        // differential threshold — otherwise large_counts is empty and nothing
+        // downstream of it fires.
+        ch_large_family_tables = CAFE_PREP.out.large_counts
+            .splitCsv( header: true, sep: '\t' )
+            .collectFile { row ->
+                def hog    = (row.HOG as String).replaceAll(/[^A-Za-z0-9_.-]/, '_')
+                def cols   = row.keySet() as List
+                def header = cols.join('\t')
+                def line   = cols.collect { row[it] }.join('\t')
+                [ "${hog}.tsv", "${header}\n${line}\n" ]
+            }
 
         CAFE_RUN_LARGE (
-            SPLIT_LARGE_FAMILIES.out.family_tables.flatten(),
+            ch_large_family_tables,
             CAFE_PREP.out.cafe_tree,
             CAFE_PREP.out.error_model
         )
