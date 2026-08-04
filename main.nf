@@ -671,7 +671,9 @@ workflow {
                 CAFE_GO_RUN.out.topgo_results
                     .map { meta, f -> f }
                     .collect()
-                    .map { files -> tuple( "cafe_go", files ) }
+                    .map { files -> tuple( "cafe_go", files ) },
+                CAFE_GO_RUN.out.pdfs.map { meta, f -> f }.flatten().collect(),
+                CAFE_GO_RUN.out.svgs.map { meta, f -> f }.flatten().collect()
             )
 
             PLOT_CAFE_GO (
@@ -725,7 +727,9 @@ workflow {
                 CAFE_GO_RUN_LARGE.out.topgo_results
                     .map { meta, f -> f }
                     .collect()
-                    .map { files -> tuple( "cafe_go_large", files ) }
+                    .map { files -> tuple( "cafe_go_large", files ) },
+                CAFE_GO_RUN_LARGE.out.pdfs.map { meta, f -> f }.flatten().collect(),
+                CAFE_GO_RUN_LARGE.out.svgs.map { meta, f -> f }.flatten().collect()
             )
 
             PLOT_CAFE_GO_LARGE (
