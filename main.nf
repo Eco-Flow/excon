@@ -488,7 +488,7 @@ workflow {
             }
 
         // Explicit combine() rather than passing cafe_tree/error_model as separate
-        // positional channels — makes their reuse across all 158 hog_counts items
+        // positional channels — makes their reuse across every hog_counts item
         // unambiguous rather than relying on Nextflow's implicit broadcast pairing.
         CAFE_RUN_LARGE (
             ch_large_family_tables

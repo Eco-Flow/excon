@@ -16,8 +16,8 @@ process CAFE_RUN_LARGE {
     input:
     // Bundled into one tuple (built with .combine() in main.nf) rather than three
     // separate positional channels, so species_tree/error_model are unambiguously
-    // paired with every one of the 158 hog_counts items rather than relying on
-    // Nextflow's implicit broadcast of a singleton channel alongside a multi-item one.
+    // paired with every hog_counts item rather than relying on Nextflow's implicit
+    // broadcast of a singleton channel alongside a multi-item one.
     tuple path(hog_counts), path(species_tree), path(error_model)
 
     output:

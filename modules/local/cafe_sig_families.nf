@@ -16,7 +16,7 @@ process CAFE_SIG_FAMILIES {
     path("changes_per_node.tsv"),             emit: changes
     path("significant_changes_per_node.tsv"), emit: sig_changes
     path("focus_families_manifest.tsv"),      emit: focus_manifest, optional: true
-    path("focus_families/**"),                emit: focus_families,  optional: true
+    path("focus_families.tar.gz"),            emit: focus_families,  optional: true
     tuple val("${task.process}"), val('R'), val('4.3.1'), emit: versions_R, topic: versions
 
     script:
@@ -30,5 +30,14 @@ process CAFE_SIG_FAMILIES {
         ${focus} \\
         ${msa_dir} \\
         ${tree_dir}
+
+    # One alignment + one gene tree per significantly expanded family, per focus
+    # node, adds up to hundreds of small files. Archived into one file so the
+    # published output isn't dominated by file count; extract with
+    # tar -xzf focus_families.tar.gz to browse the originals.
+    if [ -d focus_families ]; then
+        tar -czf focus_families.tar.gz focus_families
+        rm -rf focus_families
+    fi
     """
 }
