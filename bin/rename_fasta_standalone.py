@@ -56,30 +56,52 @@ def transcript_to_gene(gff_path):
     return mapping
 
 
-def rename(fasta_path, mapping, out_path):
+def rename(fasta_path, mapping, out_path, internal_stop_action='strip'):
+    """internal_stop_action: 'strip' (default) removes every '*' including internal
+    ones, splicing the flanking peptide fragments together; 'drop' discards the
+    whole gene instead. Mirrors RENAME_FASTA's --internal_stop_action."""
     seen = set()
     written = 0
     duplicates = 0
+    internal_stop_genes = []
+
+    def flush(gene_id, seq_lines, fout):
+        nonlocal written, duplicates
+        if gene_id in seen:
+            duplicates += 1
+            return
+        # gffread represents the true terminal stop codon as a trailing '*' —
+        # expected, and stripped below. A '*' anywhere else means the CDS has a
+        # premature stop (bad gene model).
+        seq = ''.join(seq_lines).replace('.', '')
+        body = seq[:-1] if seq.endswith('*') else seq
+        if '*' in body:
+            internal_stop_genes.append(gene_id)
+            if internal_stop_action == 'drop':
+                return
+            body = body.replace('*', '')
+        seen.add(gene_id)
+        fout.write('>%s\n' % gene_id)
+        fout.write(body + '\n')
+        written += 1
+
     with open(fasta_path) as fin, open(out_path, 'w') as fout:
-        skip = False
+        pending = None
         for line in fin:
             if line.startswith('>'):
+                if pending is not None:
+                    flush(pending[0], pending[1], fout)
                 seq_id = line[1:].strip().split()[0]
                 gene_id = mapping.get(seq_id, seq_id)
                 if gene_id == seq_id and '.' in seq_id:
                     gene_id = seq_id.rsplit('.', 1)[0]
-                if gene_id in seen:
-                    skip = True
-                    duplicates += 1
-                else:
-                    seen.add(gene_id)
-                    skip = False
-                    fout.write('>%s\n' % gene_id)
-                    written += 1
-            else:
-                if not skip:
-                    fout.write(line.replace('.', '').replace('*', ''))
-    return written, duplicates
+                pending = (gene_id, [])
+            elif pending is not None:
+                pending[1].append(line.rstrip('\n'))
+        if pending is not None:
+            flush(pending[0], pending[1], fout)
+
+    return written, duplicates, internal_stop_genes
 
 
 def strip_ext(name):
@@ -96,6 +118,11 @@ def main():
                         help='Directory of AGAT GFF files (results/agat)')
     parser.add_argument('-o', '--out-dir', required=True,
                         help='Directory to write <species>.clean.fasta into')
+    parser.add_argument('--internal-stop-action', choices=['strip', 'drop'], default='strip',
+                        help="How to handle a premature stop codon in a translated CDS: "
+                             "'strip' (default) splices around every '*' including internal "
+                             "ones; 'drop' discards the whole gene. Matches the pipeline's "
+                             "--internal_stop_action, so use whichever value the run used.")
 
     args = parser.parse_args()
 
@@ -126,9 +153,16 @@ def main():
 
         mapping = transcript_to_gene(gff)
         out = os.path.join(args.out_dir, species + '.clean.fasta')
-        written, duplicates = rename(fasta, mapping, out)
+        written, duplicates, internal_stop_genes = rename(
+            fasta, mapping, out, internal_stop_action=args.internal_stop_action)
         total += written
-        note = '  (%d duplicate gene IDs skipped)' % duplicates if duplicates else ''
+        notes = []
+        if duplicates:
+            notes.append('%d duplicate gene IDs skipped' % duplicates)
+        if internal_stop_genes:
+            verb = 'dropped' if args.internal_stop_action == 'drop' else 'stripped'
+            notes.append('%d internal stop codon(s) %s' % (len(internal_stop_genes), verb))
+        note = '  (%s)' % '; '.join(notes) if notes else ''
         print("   %-45s %6d sequences%s" % (species + '.clean.fasta', written, note))
 
     if missing:

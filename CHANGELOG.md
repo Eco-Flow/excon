@@ -57,6 +57,12 @@
 ### Changed
 - `CAFE_RUN_LARGE`'s `24.GB` memory override removed. A single-family run needs a fraction of that, so it now uses the `process_single` label's 2GB default instead.
 
+### Fixed
+- **`RENAME_FASTA` silently corrupted proteins with a premature (internal) stop codon.** It stripped every `*` from a translated CDS line-by-line, with no way to tell a normal trailing stop (expected, gffread's own convention) from one appearing mid-sequence — so a gene with an internal stop had its pre- and post-stop peptide fragments spliced into one fake, contiguous "protein" and fed to OrthoFinder with no warning. This affected any genome+GFF input, not just a particular annotation source. `RENAME_FASTA` (and `bin/rename_fasta_standalone.py`) now buffer each record fully before deciding, since a line-at-a-time replace can't distinguish trailing from internal — fixing the underlying inability to detect the case at all, not just its symptom.
+
+### Added
+- **New `--internal_stop_action` parameter** (`strip` (default) or `drop`) controlling what happens to a gene once an internal stop is found. `strip` matches the (now-fixed) historic behaviour — splice around every `*`, keep the gene. `drop` discards the gene entirely instead, matching OrthoFinder's own recommendation for genes with internal stops. Neither is universally correct, so this is a user choice rather than a hardcoded behaviour — see the README's "Internal stop codons" section. Either way, every affected gene is now recorded in `results/proteomes/<species>.internal_stop_codons.tsv` (`gene_id`, `action`), which did not exist before at all.
+
 ## [v2.3.2] -
 
 ### Added

@@ -136,6 +136,36 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--busco_lineages_path` | Path to local BUSCO lineage databases | `null` |
 | `--busco_config` | Path to BUSCO config file | `null` |
 
+### Internal stop codons (optional)
+
+`RENAME_FASTA` translates each species' CDS to protein and writes `results/proteomes/<species>.clean.fasta`,
+the input OrthoFinder actually receives. `gffread` marks a normal, in-frame stop codon with a
+trailing `*` — expected, and always removed. A `*` anywhere else in the sequence means the CDS
+has a **premature stop**: a common sign of a bad gene model (an assembly gap, a frameshift, an
+annotation error, or two species annotated by different pipelines with different stringency).
+`--internal_stop_action` controls what happens to that gene:
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--internal_stop_action` | `strip` or `drop` (see below) | `strip` |
+
+* **`strip`** (default) removes every `*` in the sequence, including internal ones, which splices
+  the peptide before and after the premature stop into one contiguous sequence. This keeps every
+  gene in the analysis, but the spliced sequence is not a real protein — it may not resemble the
+  gene's true product at all.
+* **`drop`** discards the whole gene instead — the behaviour [OrthoFinder's own documentation
+  recommends](https://github.com/davidemms/OrthoFinder) for genes with internal stops, and what
+  the CAFE5 tutorial's own filtering step assumes has already happened upstream. The gene is
+  absent from that species' proteome entirely, rather than present with a fabricated sequence.
+
+Either way, every affected gene is listed in `results/proteomes/<species>.internal_stop_codons.tsv`
+(`gene_id`, `action` taken), so the choice can be audited regardless of which one you pick. There
+is no universally correct default — `strip` keeps gene counts comparable across species (useful
+when internal stops are rare and you care more about not losing genes than about sequence purity),
+while `drop` is more defensible when you're specifically comparing gene *counts* between species
+with different annotation quality (e.g. CAFE5 itself), since a spliced fake sequence could still
+seed a spurious orthogroup membership that a dropped gene cannot.
+
 ### OrthoFinder options (optional)
 
 | Parameter | Description | Default |

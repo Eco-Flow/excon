@@ -84,6 +84,7 @@ params {
     busco_lineage             : String
     busco_lineages_path       : String
     busco_config              : String
+    internal_stop_action      : String
     input_tree                : String
     input_orthogroups         : String
     orthofinder_blast_results : String
@@ -175,6 +176,10 @@ workflow {
 
    if (params.cafe_clade && params.cafe_species) {
       error "ERROR: give either --cafe_clade or --cafe_species, not both."
+   }
+
+   if (!(params.internal_stop_action in ['strip', 'drop'])) {
+      error "ERROR: --internal_stop_action must be 'strip' or 'drop', got '${params.internal_stop_action}'."
    }
 
    if (params.proteome_dir && !params.orthofinder_results) {
