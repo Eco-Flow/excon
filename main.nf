@@ -178,8 +178,8 @@ workflow {
       error "ERROR: give either --cafe_clade or --cafe_species, not both."
    }
 
-   if (!(params.internal_stop_action in ['strip', 'drop'])) {
-      error "ERROR: --internal_stop_action must be 'strip' or 'drop', got '${params.internal_stop_action}'."
+   if (!(params.internal_stop_action in ['strip', 'drop', 'longest_orf'])) {
+      error "ERROR: --internal_stop_action must be 'strip', 'drop' or 'longest_orf', got '${params.internal_stop_action}'."
    }
 
    if (params.proteome_dir && !params.orthofinder_results) {

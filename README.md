@@ -147,24 +147,40 @@ annotation error, or two species annotated by different pipelines with different
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--internal_stop_action` | `strip` or `drop` (see below) | `strip` |
+| `--internal_stop_action` | `longest_orf`, `strip` or `drop` (see below) | `longest_orf` |
 
-* **`strip`** (default) removes every `*` in the sequence, including internal ones, which splices
-  the peptide before and after the premature stop into one contiguous sequence. This keeps every
-  gene in the analysis, but the spliced sequence is not a real protein — it may not resemble the
-  gene's true product at all.
+* **`longest_orf`** (default) keeps only the single longest stretch of sequence between stops —
+  still within the reading frame the annotation already defines (this is not a 3-/6-frame search
+  for an alternative ORF, just the longest real fragment of the one CDS translation gffread
+  produced). A gene that is mostly correct with one truncating error near an end keeps most of its
+  length and is likely to still resolve to the right orthogroup, rather than being spliced into a
+  chimera (`strip`) or lost outright (`drop`). It is the weakest option when the true premature
+  stop is near the start or middle of the gene, since the surviving fragment may then be too short
+  to place reliably.
+* **`strip`** removes every `*` in the sequence, including internal ones, which splices the
+  peptide before and after the premature stop into one contiguous sequence. This keeps every gene
+  in the analysis, but the spliced sequence is not a real protein — it may not resemble the gene's
+  true product at all, and could coincidentally resemble something else entirely (the two flanking
+  fragments are, in general, unrelated to each other).
 * **`drop`** discards the whole gene instead — the behaviour [OrthoFinder's own documentation
   recommends](https://github.com/davidemms/OrthoFinder) for genes with internal stops, and what
   the CAFE5 tutorial's own filtering step assumes has already happened upstream. The gene is
-  absent from that species' proteome entirely, rather than present with a fabricated sequence.
+  absent from that species' proteome entirely, rather than present with a fabricated sequence. The
+  cost is the mirror image of `strip`'s: a real ortholog with an otherwise-correct gene model can
+  vanish from that species' count purely because of one annotation-error stop, which for CAFE5
+  looks indistinguishable from a genuine lineage-specific loss.
 
 Either way, every affected gene is listed in `results/proteomes/<species>.internal_stop_codons.tsv`
-(`gene_id`, `action` taken), so the choice can be audited regardless of which one you pick. There
-is no universally correct default — `strip` keeps gene counts comparable across species (useful
-when internal stops are rare and you care more about not losing genes than about sequence purity),
-while `drop` is more defensible when you're specifically comparing gene *counts* between species
-with different annotation quality (e.g. CAFE5 itself), since a spliced fake sequence could still
-seed a spurious orthogroup membership that a dropped gene cannot.
+(`gene_id`, `action` taken, `original_length`, `kept_length`), so the choice can be audited
+regardless of which one you pick — `kept_length` in particular shows how much of `longest_orf`'s
+output actually survived per gene, which the action label alone doesn't convey. `longest_orf` is
+the default because it is the best general-purpose compromise for count-based analyses like
+CAFE5 — it avoids `strip`'s chimera risk while, unlike `drop`, not zeroing out a species for a
+gene that is mostly real. `strip` is still worth choosing if you specifically want to keep every
+gene present regardless of sequence purity (e.g. feeding a downstream step that only cares about
+gene presence/absence, not the sequence); `drop` if you want counts free of any fabricated or
+truncated sequence at all, and can accept the corresponding risk of losing real genes to
+annotation noise.
 
 ### OrthoFinder options (optional)
 

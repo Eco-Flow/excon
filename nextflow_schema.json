@@ -207,6 +207,12 @@
           "type": "string",
           "description": "A path to a BUSCO config file (optional)"
         },
+        "internal_stop_action": {
+          "type": "string",
+          "enum": ["strip", "drop", "longest_orf"],
+          "default": "longest_orf",
+          "description": "How RENAME_FASTA handles a translated CDS with a premature (internal) stop codon. 'strip' splices around every '*', keeping the gene but producing a non-real spliced sequence. 'drop' discards the whole gene, matching OrthoFinder's own recommendation. 'longest_orf' keeps only the single longest stretch between stops (same reading frame as annotated), a real but possibly truncated fragment. Affected genes are recorded in <species>.internal_stop_codons.tsv regardless of choice."
+        },
         "go_cutoff": {
           "type": "number",
           "description": "Choose pval cutoff (default: 0.05)",

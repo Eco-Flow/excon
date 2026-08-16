@@ -1,5 +1,15 @@
 # Changelog
 
+## [unreleased]
+
+### Added
+- **New `longest_orf` value for `--internal_stop_action`.** Alongside `strip` (splice around every `*`) and `drop` (discard the gene), `longest_orf` keeps only the single longest stretch of sequence between stops — still within the reading frame the annotation already defines, not a 3-/6-frame search. This sits between the existing options for count-based analyses like CAFE5: it avoids `strip`'s risk of splicing two unrelated flanking fragments into a chimera that could seed a spurious orthogroup match, while, unlike `drop`, not losing a gene entirely (and thus reducing that species' count to zero for that family) over a single truncating error near one end of an otherwise-correct gene model. Implemented identically in `RENAME_FASTA` (`modules/local/rename_fasta.nf`) and `bin/rename_fasta_standalone.py`, so a run can be reproduced outside Nextflow with whichever value it used.
+- `results/proteomes/<species>.internal_stop_codons.tsv` now also records `original_length` and `kept_length` per affected gene (previously just `gene_id`, `action`), needed to audit `longest_orf` specifically — the action label alone doesn't say whether a gene kept 95% of its length or 5%.
+- `--internal_stop_action` added to `nextflow_schema.json` (previously undeclared there, `main.nf`'s own validation was the only enforcement).
+
+### Changed
+- **`--internal_stop_action` now defaults to `longest_orf`, replacing `strip` (the default since v2.3.2).** `strip`'s splice of two unrelated flanking fragments into one fake sequence risks seeding a spurious orthogroup match, and `drop`'s alternative of losing the gene entirely can zero out a species' count for a family over a single annotation-error stop — indistinguishable, to CAFE5, from a genuine loss. `longest_orf` avoids both failure modes for the common case of a gene that is mostly correct with one truncating error. Any run relying on the old default should now pass `--internal_stop_action strip` explicitly.
+
 ## [v2.4.0] - 2026-08-16 - Subsettable
 
 ### Fixed

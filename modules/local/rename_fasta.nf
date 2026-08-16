@@ -18,8 +18,10 @@ process RENAME_FASTA {
     script:
     """
     python3 <<EOF
-    # 'strip' (default) removes every '*' including internal ones, splicing the two
-    # flanking peptide fragments together; 'drop' discards the whole gene instead.
+    # 'longest_orf' (default) keeps only the single longest stretch between stops
+    # (same reading frame as annotated — not a multi-frame scan); 'strip' removes
+    # every '*' including internal ones, splicing the two flanking peptide fragments
+    # together; 'drop' discards the whole gene instead.
     # See --internal_stop_action in nextflow.config for the reasoning.
     INTERNAL_STOP_ACTION = "${params.internal_stop_action}"
 
@@ -72,10 +74,21 @@ process RENAME_FASTA {
         seq = "".join(seq_lines).replace(".", "")
         body = seq[:-1] if seq.endswith("*") else seq
         if "*" in body:
-            internal_stop_genes.append(gene_id)
+            original_len = len(body)
             if INTERNAL_STOP_ACTION == "drop":
+                internal_stop_genes.append((gene_id, original_len, 0))
                 return
-            body = body.replace("*", "")
+            elif INTERNAL_STOP_ACTION == "longest_orf":
+                # Longest stretch between stops, in the same reading frame as
+                # annotated — a single real fragment, rather than 'strip's splice
+                # of two unrelated flanking fragments or 'drop's loss of the gene.
+                body = max(body.split("*"), key=len)
+                if not body:
+                    internal_stop_genes.append((gene_id, original_len, 0))
+                    return
+            else:
+                body = body.replace("*", "")
+            internal_stop_genes.append((gene_id, original_len, len(body)))
         seen.add(gene_id)
         fout.write(f">{gene_id}\\n")
         fout.write(body + "\\n")
@@ -98,12 +111,15 @@ process RENAME_FASTA {
             flush(pending[0], pending[1], fout)
 
     if internal_stop_genes:
-        verb = "dropped" if INTERNAL_STOP_ACTION == "drop" else "kept (internal stop codon(s) stripped)"
+        verb = {
+            "drop": "dropped",
+            "longest_orf": "kept (longest ORF between stops)",
+        }.get(INTERNAL_STOP_ACTION, "kept (internal stop codon(s) stripped)")
         print(f"WARNING: {len(internal_stop_genes)} gene(s) had a premature stop codon and were {verb}", flush=True)
         with open("${meta.id}.internal_stop_codons.tsv", "w") as rep:
-            rep.write("gene_id\\taction\\n")
-            for g in internal_stop_genes:
-                rep.write(f"{g}\\t{INTERNAL_STOP_ACTION}\\n")
+            rep.write("gene_id\\taction\\toriginal_length\\tkept_length\\n")
+            for g, orig_len, kept_len in internal_stop_genes:
+                rep.write(f"{g}\\t{INTERNAL_STOP_ACTION}\\t{orig_len}\\t{kept_len}\\n")
     EOF
     """
 }
