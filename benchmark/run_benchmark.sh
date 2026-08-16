@@ -44,7 +44,7 @@ CUSTOM_CONFIG=""
 MAX_MEMORY="128.GB"
 MAX_CPUS=16
 NF_EXTRA_ARGS=""
-NXF_VER="${NXF_VER:-25.10.0}"
+NXF_VER="${NXF_VER:-26.04.6}"  # must satisfy nextflow.config's nextflowVersion (!>=26.04.6)
 FORCE=false
 
 # --- Argument parsing ---

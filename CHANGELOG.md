@@ -3,6 +3,7 @@
 ## [unreleased]
 
 ### Fixed
+- **`benchmark/run_benchmark.sh` pinned generated `run.sh` scripts to Nextflow 25.10.0**, predating this pipeline's move to requiring `>=26.04.6` (`nextflowVersion = '!>=26.04.6'` in `nextflow.config`, which needs Nextflow 26's config/script syntax). Every generated `run.sh` failed immediately with `Unknown config attribute` since the pinned 25.10.0 couldn't parse the current `nextflow.config`. Default is now `26.04.6`; `NXF_VER` in the environment still overrides it if a newer pinned version is needed later.
 - **`GFFREAD` now runs with `-S`, so gffread marks stop codons with `*`.** gffread's `-y` protein translation uses `.` for every stop codon by default — `*` only appears with `-S`, which `conf/modules.config`'s `GFFREAD` block (`ext.args = '-y'`) wasn't passing. `RENAME_FASTA`'s `--internal_stop_action` detection (`strip`/`drop`/`longest_orf`) looks for `*`, so it needs this flag to see a premature stop at all. Confirmed against gffread v0.12.7 (the version pinned in this pipeline's container): `-y` alone translates a CDS with one premature stop to `MKVLACD.CDEADEADEA`; `-S -y` gives `MKVLACD*CDEADEADEA`. Also confirmed gffread never prints the true terminal stop at all — trimmed internally before output, with or without `-S` — so the existing trailing-`*`-strip in `RENAME_FASTA` remains a harmless no-op for gffread's own output. `ext.args` is now `'-S -y'`.
 
 ### Added
