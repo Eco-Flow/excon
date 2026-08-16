@@ -74,6 +74,24 @@ cd benchmark/results/bacteria_close_fragmented_n10 && ./run.sh -bg
 qstat   # see all child jobs on the scheduler
 ```
 
+Launching every generated run.sh this way at once submits that many independent
+Nextflow sessions simultaneously, each with its own burst of child jobs — on a
+full run_benchmark.sh grid (dozens of run.sh files) that can spike a lot of SGE
+jobs at once. `benchmark/launch_all.sh` launches them for you instead, capped
+to a fixed number of concurrent Nextflow sessions, working through the rest as
+earlier ones finish:
+
+```bash
+# Run under nohup/screen/tmux — it stays alive until every run has been
+# launched and the last few have finished (a slot only frees up on exit)
+nohup ./benchmark/launch_all.sh --max-concurrent 3 > benchmark/launch_all.log 2>&1 &
+disown
+tail -f benchmark/launch_all.log
+```
+Skips any run directory that already has `output/` or `.nextflow.log` (already
+started, by this or a manual `./run.sh`), so it's safe to re-run if interrupted
+or to mix with runs you started by hand.
+
 The process hierarchy for each run:
 ```
 login node: nohup run.sh             ← lightweight, stays on login node
