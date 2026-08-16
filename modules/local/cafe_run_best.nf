@@ -21,6 +21,7 @@ process CAFE_RUN_BEST {
     def k_flag    = best_k > 1  ? "-k ${best_k}" : ""
     def p_flag    = use_poisson ? "-p" : ""
     def e_flag    = error_model.size() > 0 ? "-e${error_model}" : ""
+    def z_flag    = params.cafe_zero_root ? "-z" : ""
     """
     cafe5 \\
         -i ${hog_counts} \\
@@ -29,6 +30,7 @@ process CAFE_RUN_BEST {
         ${k_flag} \\
         ${p_flag} \\
         ${e_flag} \\
+        ${z_flag} \\
         -o Out_cafe_${run_label} \\
         2>&1 | tee cafe_${run_label}.log
     cafe5_exit=\${PIPESTATUS[0]}

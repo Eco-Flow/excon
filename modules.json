@@ -45,6 +45,17 @@
             "git_sha": "96c57dfd98a0641886a67bd449fe33ee2ec0e374",
             "installed_by": ["modules"]
           },
+          "iqtree": {
+            "branch": "master",
+            "git_sha": "55ca0738629246b23a84394e94cf50a542f6d72d",
+            "installed_by": ["modules"],
+            "patch": "modules/nf-core/iqtree/iqtree.diff"
+          },
+          "mafft/align": {
+            "branch": "master",
+            "git_sha": "f0fc064c76250bf362d1900bbf8b62092f9f2a1b",
+            "installed_by": ["modules"]
+          },
           "ncbigenomedownload": {
             "branch": "master",
             "git_sha": "aea04408a7a0297b6ac92d820937c381b4f8919e",

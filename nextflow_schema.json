@@ -83,6 +83,11 @@
           "fa_icon": "fas fa-copy",
           "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"]
         },
+        "ncbi_max_forks": {
+          "type": "integer",
+          "default": 10,
+          "description": "Number of NCBIGENOMEDOWNLOAD tasks to run concurrently. Each parses the full NCBI assembly summary for its taxonomic group, so a lower value can be faster on a laptop (see -profile mac); raise it on a cluster."
+        },
         "forks": {
           "type": "integer",
           "description": "Maximum number of each process that will be run in parallel"
@@ -96,9 +101,30 @@
           "default": "amd",
           "description": "An amd or arm value assigned to this parameter determines whether containers built for the amd or arm CPU architecture are used"
         },
+        "config_profile_description": {
+          "type": "string",
+          "description": "Institutional config description.",
+          "hidden": true
+        },
+        "config_profile_contact": {
+          "type": "string",
+          "description": "Institutional config contact information.",
+          "hidden": true
+        },
+        "config_profile_url": {
+          "type": "string",
+          "description": "Institutional config URL link.",
+          "hidden": true
+        },
         "custom_config": {
           "type": "string",
           "description": "A path/url to a custom configuration file"
+        },
+        "trace_report_suffix": {
+          "type": "string",
+          "fa_icon": "far calendar",
+          "description": "Suffix to add to the trace report filename. Default is the date and time in the format yyyy-MM-dd_HH-mm-ss.",
+          "hidden": true
         }
       }
     },
@@ -198,23 +224,136 @@
         },
         "go_algo": {
           "type": "string",
-          "description": "topGO algorithm and statistic combination (classic_fisher, weight01_t, elim_ks, weight_ks)",
+          "description": "topGO algorithm and statistic combination (classic_fisher, weight01_fisher, weight01_t, elim_ks, weight_ks). The GO input is a gene membership list, so only the Fisher-based options (classic_fisher, weight01_fisher) produce results; the score-based t/ks options require per-gene scores and yield empty tables with this input.",
+          "enum": ["classic_fisher", "weight01_fisher", "weight01_t", "elim_ks", "weight_ks"],
           "default": "classic_fisher"
+        },
+        "orthofinder_results": {
+            "type": "string",
+            "format": "directory-path",
+            "description": "Path to the results directory of a completed OrthoFinder run (the one containing Orthogroups/, Species_Tree/ and Phylogenetic_Hierarchical_Orthogroups/). OrthoFinder is not re-run, so orthogroup and HOG identifiers are preserved exactly. Use with --iqtree_species_tree (plus --proteome_dir) to build a new species tree from an existing run, and/or with --input_orthogroups to override which gene-count table is used."
+        },
+        "proteome_dir": {
+            "type": "string",
+            "format": "directory-path",
+            "description": "Directory of per-species proteome FASTA files whose gene IDs match the columns of Orthogroups.tsv — the *.clean.fasta files RENAME_FASTA writes to results/proteomes/. Required when combining --orthofinder_results with --iqtree_species_tree, since the single-copy sequences are taken from the proteomes rather than inferred from alignment headers."
         },
         "orthofinder_v2": {
             "type": "boolean",
             "default": false,
             "description": "Use OrthoFinder v2.5.5 instead of v3.1.3. Recommended for large datasets where v3 stalls or fails."
         },
+        "orthofinder_method": {
+            "type": "string",
+            "enum": ["msa", "dendroblast"],
+            "description": "OrthoFinder gene tree inference method (-M). 'msa' additionally writes MultipleSequenceAlignments/, which --iqtree_species_tree requires."
+        },
+        "orthofinder_msa_prog": {
+            "type": "string",
+            "enum": ["mafft", "muscle"],
+            "description": "OrthoFinder MSA program (-A). Requires --orthofinder_method msa."
+        },
+        "orthofinder_search": {
+            "type": "string",
+            "enum": ["diamond", "blast", "mmseqs2"],
+            "description": "OrthoFinder sequence search program (-S)."
+        },
+        "orthofinder_tree": {
+            "type": "string",
+            "enum": ["fasttree", "raxml", "raxml-ng", "iqtree"],
+            "description": "OrthoFinder gene tree inference program (-T). Requires --orthofinder_method msa. Note this sets the per-orthogroup gene tree method inside OrthoFinder; to build the species tree from a concatenated supermatrix instead, use --iqtree_species_tree."
+        },
+        "iqtree_species_tree": {
+            "type": "boolean",
+            "default": false,
+            "description": "Infer the species tree with IQ-TREE2 from a concatenated (supermatrix) alignment of the single-copy orthogroups, instead of using OrthoFinder's own STAG/STRIDE tree. The alignments OrthoFinder already produced are concatenated into a supermatrix with one partition per orthogroup, IQ-TREE2 fits a model per partition (-m MFP) with 1000 ultrafast bootstrap and SH-aLRT replicates, and the resulting tree is rooted and used for every CAFE5 stage. The single-copy orthogroups are aligned with MAFFT by the pipeline, so this works with any --orthofinder_method. Cannot be combined with --input_tree/--input_orthogroups."
+        },
+        "iqtree_outgroup": {
+            "type": "string",
+            "description": "Comma-separated tip name(s) used to root the IQ-TREE2 species tree, e.g. 'Apis_mellifera' or 'Apis_mellifera,Bombus_terrestris'. The named taxa must form a monophyletic group in the inferred tree, otherwise the run fails. When not set the tree is midpoint-rooted instead. Only used with --iqtree_species_tree."
+        },
+        "iqtree_args": {
+            "type": "string",
+            "description": "Extra arguments appended to the IQ-TREE2 command line, e.g. '--gcf gene_trees.nwk' or '-m LG+F+G4' to override model selection. Only used with --iqtree_species_tree."
+        },
+        "iqtree_partition_model": {
+            "type": "string",
+            "description": "Model written in the first field of each line of the IQ-TREE partition file. The default 'AA' declares the datatype and leaves ModelFinder to select a model per partition. Set a concrete model (e.g. 'LG+F+G4') to fix it instead — with a partition file the model must be given here, not via --iqtree_args '-m ...', which IQ-TREE rejects.",
+            "default": "AA"
+        },
+        "iqtree_partition_file": {
+            "type": "string",
+            "format": "file-path",
+            "description": "Reuse an existing IQ-TREE partition file instead of the one built by CONCAT_SINGLE_COPY. Intended for restarting a run without repeating model selection: a previous run's *.best_scheme file lists the model chosen for each partition, so IQ-TREE uses those directly. The partition coordinates must match the supermatrix, so only use a file produced from the same set of orthogroups. Supplying this suppresses the default -m MFP.",
+            "hidden": true
+        },
+        "cafe_clade": {
+            "type": "string",
+            "description": "Restrict the CAFE analysis to one clade, given as two or more tip names whose most recent common ancestor defines it (e.g. 'Vespa_crabro,Apis_mellifera'). The species tree is pruned to that clade and the gene-count table is subset to match, so a single OrthoFinder analysis can be analysed clade by clade while keeping the original orthogroup identifiers. Pruning happens after any time-calibration, so node ages are retained. Mutually exclusive with --cafe_species."
+        },
+        "cafe_species": {
+            "type": "string",
+            "description": "Restrict the CAFE analysis to an explicit set of species, given as a comma-separated list of tip names or a path to a file with one name per line. Mutually exclusive with --cafe_clade."
+        },
+        "tree_calibrations": {
+            "type": "string",
+            "format": "file-path",
+            "description": "TSV of node-age calibrations used to time-calibrate the species tree with ape::chronos before CAFE5. Columns: clade (label), tips (comma-separated tip names whose MRCA defines the node), age_min and age_max in millions of years (equal values fix the age). Applies to whichever species tree is in use, including the one built by --iqtree_species_tree. The calibrated tree is passed to every CAFE5 stage unchanged, so lambda is per Myr; --tree_scale_factor and chronoMPL() are skipped. Naming nodes by the MRCA of two tips avoids depending on node numbering."
+        },
+        "chronos_model": {
+            "type": "string",
+            "enum": ["discrete", "correlated", "relaxed"],
+            "default": "discrete",
+            "description": "Substitution-rate model used by ape::chronos. Only used with --tree_calibrations."
+        },
+        "chronos_lambda": {
+            "type": "number",
+            "default": 1,
+            "description": "Rate-smoothing parameter for ape::chronos. Only used with --tree_calibrations."
+        },
+        "chronos_rate_categories": {
+            "type": "integer",
+            "default": 10,
+            "description": "Number of rate categories for the 'discrete' chronos model. Only used with --tree_calibrations."
+        },
         "tree_scale_factor": {
             "type": "integer",
             "default": 1000,
-            "description": "Scaling factor multiplied across all branch lengths by rescale_tree.py before CAFE5. chronos() in cafe_prep.R then converts the result to a proper time tree. Default 1000 prevents numerical precision issues in CAFE5."
+            "description": "Scaling factor multiplied across all branch lengths by rescale_tree.py before CAFE5. chronoMPL() in cafe_prep.R then makes the result ultrametric. Default 1000 prevents numerical precision issues in CAFE5. Ignored when --input_tree_is_dated is set."
+        },
+        "input_tree_is_dated": {
+            "type": "boolean",
+            "default": false,
+            "description": "Treat --input_tree as an already time-calibrated, ultrametric tree (branch lengths in millions of years) and pass it to every CAFE5 stage unchanged: RESCALE_TREE is skipped, chronoMPL() is skipped, and no branch-length rescaling is applied (effectively --tree_scale_factor 1). cafe_prep.R validates that the tree is rooted, binary, ultrametric, has positive branch lengths, and that its leaf set exactly matches the (subset) gene-count columns."
+        },
+        "cafe_zero_root": {
+            "type": "boolean",
+            "default": false,
+            "description": "Pass CAFE5's -z/--zero_root option to every CAFE5 call (base, error-model, k-sweep, best-model and large-family runs), retaining families inferred to have zero copies at the analysis root. CAFE5 does not generally recommend this; use as a sensitivity analysis alongside the default run."
+        },
+        "orthofinder_msa_dir": {
+            "type": "string",
+            "format": "directory-path",
+            "description": "OrthoFinder MultipleSequenceAlignments/ directory (per-orthogroup *.fa). When provided together with --orthofinder_genetree_dir, the alignments and gene trees of HOGs significantly expanded at the focus node(s) are copied into the results."
+        },
+        "orthofinder_genetree_dir": {
+            "type": "string",
+            "format": "directory-path",
+            "description": "OrthoFinder Resolved_Gene_Trees/ directory (per-orthogroup *_tree.txt). See --orthofinder_msa_dir."
+        },
+        "cafe_focus_clades": {
+            "type": "string",
+            "description": "Comma-separated CAFE internal node label(s) of interest (as shown in cafe_node_label_guide.pdf), OR one or more '|'-separated tip-species sets whose MRCA defines a node (robust to CAFE renumbering nodes per run), e.g. 'Vespula_vulgaris,Vespa_crabro|Polistes_dominula,Vespula_vulgaris'. Used to extract alignments/gene trees of significantly expanded families."
         },
         "cafe_max_differential": {
-            "type": "integer", 
+            "type": "integer",
             "default": 50,
-            "description": "Maximum gene count differential threshold for CAFE filtering on retry."
+            "description": "Maximum gene count differential (max-min copies) threshold for CAFE filtering on retry. Vizueta et al. 2025 used 20."
+        },
+        "cafe_filter_first": {
+            "type": "boolean",
+            "default": false,
+            "description": "Apply --cafe_max_differential from the first CAFE_PREP attempt instead of only on retries. By default the first attempt is unfiltered so that no family is discarded when CAFE5 can cope with the full set, and each retry halves the threshold. Set this when the data are already known to need filtering, since the unfiltered attempt is then a guaranteed failure costing a full CAFE5 run."
         },
         "run_eggnog": {
             "type": "boolean",

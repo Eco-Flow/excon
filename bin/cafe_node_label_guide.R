@@ -11,6 +11,21 @@ if (!capabilities("cairo")) {
 args <- commandArgs(trailingOnly = TRUE)
 cafe_dir <- if (length(args) >= 1) args[1] else "."
 
+# CAFE writes *_asr.tre as a NEXUS file with per-family trees whose labels carry
+# CAFE decorations, e.g. tip "SpA<1>_3" and internal node "<8>*_3" (node id 8).
+# read.tree() mis-parses this; parse the first tree and strip the decorations so
+# tips are species names and node.label holds the CAFE internal-node ids.
+read_cafe_asr <- function(path) {
+  lines <- readLines(path, warn = FALSE)
+  tl <- grep("^\\s*TREE\\b", lines, ignore.case = TRUE, value = TRUE)
+  nwk <- if (length(tl) > 0) sub("^[^=]*=\\s*", "", tl[1]) else paste(lines, collapse = "")
+  nwk <- trimws(nwk)
+  nwk <- gsub("\\*", "", nwk)
+  nwk <- gsub("([A-Za-z0-9_.]+)<[0-9]+>(_-?[0-9]+)?", "\\1", nwk)  # tips
+  nwk <- gsub("\\)<([0-9]+)>(_-?[0-9]+)?", ")\\1", nwk)            # internal
+  read.tree(text = nwk)
+}
+
 tree_files <- list.files(cafe_dir, pattern = "_asr\\.tre$", full.names = TRUE)
 
 if (length(tree_files) == 0) {
@@ -25,7 +40,7 @@ if (length(tree_files) == 0) {
 
 tree_file <- tree_files[1]
 cat("Reading:", tree_file, "\n")
-tree <- read.tree(tree_file)
+tree <- read_cafe_asr(tree_file)
 
 cat("Tips:", Ntip(tree), "  Internal nodes:", Nnode(tree), "\n")
 cat("Node labels:", paste(tree$node.label, collapse = ", "), "\n")

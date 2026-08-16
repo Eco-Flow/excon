@@ -1,120 +1,139 @@
 #!/usr/bin/Rscript
 
-# CAFE preparation script with differential filtering
-# This version is used when CAFE fails due to large size differentials
+# CAFE input preparation WITH differential filtering.
+# Used on retry when the un-filtered base run fails on a large size differential.
+# Mirrors cafe_prep.R (subsetting, dated-tree handling, reasoned report) and adds
+# a max-minus-min differential filter, routing over-threshold families to a
+# fixed-lambda re-analysis (hog_gene_counts_large.tsv).
+#
+# Positional args (supplied by cafe_prep.nf):
+#   args[1] = max_differential threshold (max-min copies) (default 50)
+#   args[2] = branch-length scale factor applied AFTER chronoMPL() (default 1000)
+#             Ignored when the tree is already dated (args[3] == "true").
+#   args[3] = "true" if --input_tree_is_dated (tree validated + used unchanged)
 
 library(ape)
 library(data.table)
 
-# Get threshold and optional scale factor from command line
-# args[1] = max_differential threshold (default 50)
-# args[2] = branch-length scale factor applied after chronos() (default 1000)
 args <- commandArgs(trailingOnly = TRUE)
-max_differential <- if (length(args) >= 1) {
-  as.numeric(args[1])
-} else {
+max_differential <- if (length(args) >= 1) as.numeric(args[1]) else
   as.numeric(Sys.getenv("CAFE_MAX_DIFF", "50"))
-}
 scale_factor <- if (length(args) >= 2) as.numeric(args[2]) else 1000
+is_dated     <- if (length(args) >= 3) tolower(args[3]) %in% c("true", "1", "yes") else FALSE
 
 cat("================================================\n")
 cat("CAFE PREP with Differential Filtering\n")
-cat("Threshold:", max_differential, "\n")
+cat("Threshold (max-min):", max_differential, "\n")
+cat("Dated input tree:", is_dated, "\n")
 cat("================================================\n\n")
 
+## ------------------------------------------------------------------
+## 1. Tree
+## ------------------------------------------------------------------
 tre <- read.tree('pruned_tree')
-stopifnot(is.binary(tre))
-stopifnot(is.rooted(tre))
-
-if (!is.ultrametric(tre)) {
-  tre <- chronoMPL(tre)
+stopifnot("Input tree must be rooted" = is.rooted(tre))
+stopifnot("Input tree must be binary" = is.binary(tre))
+if (any(is.na(tre$edge.length)) || any(tre$edge.length <= 0)) {
+  stop("Input tree has missing or non-positive branch lengths.")
 }
-tre$edge.length <- tre$edge.length * scale_factor
+
+if (is_dated) {
+  if (!is.ultrametric(tre, tol = 1e-3)) {
+    stop("--input_tree_is_dated set but supplied tree is not ultrametric.")
+  }
+} else {
+  if (!is.ultrametric(tre)) tre <- chronoMPL(tre)
+  tre$edge.length <- tre$edge.length * scale_factor
+}
+tree_leaves <- tre$tip.label
+
+## ------------------------------------------------------------------
+## 2. N0 subset to tree leaves
+## ------------------------------------------------------------------
+hog_wide <- fread('N0.tsv')
+id_col <- if ('HOG' %in% names(hog_wide)) 'HOG' else 'Orthogroup'
+for (drop_col in c('OG', 'Gene Tree Parent Clade')) {
+  if (drop_col %in% names(hog_wide)) hog_wide[, (drop_col) := NULL]
+}
+species_cols <- setdiff(names(hog_wide), id_col)
+missing_leaves <- setdiff(tree_leaves, species_cols)
+if (length(missing_leaves) > 0) {
+  stop("Tree leaves absent from N0.tsv columns: ",
+       paste(missing_leaves, collapse = ", "))
+}
+hog_wide <- hog_wide[, c(id_col, tree_leaves), with = FALSE]
+all_hogs <- hog_wide[[id_col]]
+
+## ------------------------------------------------------------------
+## 3. Long form -> complete count matrix
+## ------------------------------------------------------------------
+hog <- melt(hog_wide, id.vars = id_col, variable.name = 'species', value.name = 'pid')
+hog <- hog[pid != '']
+hog[, n := vapply(strsplit(pid, ', '), length, integer(1))]
+hog[, species := factor(species, levels = tree_leaves)]
+counts <- dcast(hog, get(id_col) ~ species, value.var = 'n', fill = 0, drop = c(TRUE, FALSE))
+setnames(counts, 'id_col', 'HOG')
+for (leaf in tree_leaves) if (!leaf %in% names(counts)) counts[, (leaf) := 0L]
+setcolorder(counts, c('HOG', tree_leaves))
+
+## ------------------------------------------------------------------
+## 4. Stats + exclusion reasons (incl. differential threshold)
+## ------------------------------------------------------------------
+cmat <- as.matrix(counts[, ..tree_leaves])
+stats <- data.table(
+  HOG               = counts$HOG,
+  n_species_present = rowSums(cmat > 0),
+  n_max             = apply(cmat, 1, max),
+  n_min             = apply(cmat, 1, min),
+  total_genes       = rowSums(cmat)
+)
+stats[, differential := n_max - n_min]
+
+empty_hogs <- setdiff(all_hogs, counts$HOG)
+if (length(empty_hogs) > 0) {
+  stats <- rbind(stats, data.table(
+    HOG = empty_hogs, n_species_present = 0L, n_max = 0L, n_min = 0L,
+    total_genes = 0L, differential = 0L
+  ))
+}
+
+MAX_COPIES <- 100L
+reason <- rep('retained', nrow(stats))
+reason[stats$differential > max_differential]  <- 'differential_gt_threshold'
+reason[stats$n_max >= MAX_COPIES]              <- 'max_copies_ge_100'
+reason[stats$n_species_present == 1]           <- 'single_species'
+reason[stats$n_species_present == 0]           <- 'empty_after_subset'
+stats[, exclusion_reason := reason]
+stats[, excluded := exclusion_reason != 'retained']
+
+setorder(stats, exclusion_reason, -differential)
+fwrite(stats, 'hog_filtering_report.tsv', sep = '\t')
+cat("\n--- Filtering summary (reason : n HOGs) ---\n")
+print(stats[, .N, by = exclusion_reason])
+
+## ------------------------------------------------------------------
+## 5. Retained counts + tree + large-family table
+## ------------------------------------------------------------------
+keep_hogs <- stats[exclusion_reason == 'retained', HOG]
+counts_keep <- counts[HOG %in% keep_hogs]
+counts_keep[, Desc := 'n/a']
+setcolorder(counts_keep, c('Desc', 'HOG', tree_leaves))
+fwrite(counts_keep, 'hog_gene_counts.tsv', sep = '\t')
+cat("Retained families:", nrow(counts_keep), "\n")
+
+stopifnot("Tree tips must match gene-count columns" =
+            setequal(tre$tip.label, tree_leaves))
+write.tree(tre, 'cafe_input_tree.txt')
 write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
 
-hog <- fread('N0.tsv')
-
-# Handle both OrthoFinder v2 (HOG) and v3 (Orthogroup) column names
-id_col <- if ('HOG' %in% names(hog)) 'HOG' else 'Orthogroup'
-
-# Remove columns that may not exist in v3
-if ('OG' %in% names(hog)) hog[, OG := NULL]
-if ('Gene Tree Parent Clade' %in% names(hog)) hog[, `Gene Tree Parent Clade` := NULL]
-
-hog <- melt(hog, id.vars=id_col, variable.name='species', value.name='pid')
-hog <- hog[pid != '']
-hog$n <- sapply(hog$pid, function(x) length(strsplit(x, ', ')[[1]]))
-
-cat("Initial HOG count:", length(unique(hog[[id_col]])), "\n")
-
-# Exclude HOGs with lots of genes in one or more species
-keep <- hog[, list(n_max=max(n)), by=id_col][n_max < 100][[id_col]]
-hog <- hog[get(id_col) %in% keep]
-cat("After max<100 filter:", length(unique(hog[[id_col]])), "\n")
-
-# Exclude HOGs present in only 1 species
-keep <- hog[, .N, by=id_col][N > 1][[id_col]]
-hog <- hog[get(id_col) %in% keep]
-cat("After single-species filter:", length(unique(hog[[id_col]])), "\n")
-
-# Calculate size differential (max - min) and filter
-size_stats <- hog[, list(
-  n_max = max(n),
-  n_min = min(n),
-  n_mean = mean(n),
-  differential = max(n) - min(n)
-), by = id_col]
-
-# Report statistics before filtering
-cat("\n--- Size Differential Statistics ---\n")
-cat("Min differential:", min(size_stats$differential), "\n")
-cat("Max differential:", max(size_stats$differential), "\n")
-cat("Mean differential:", round(mean(size_stats$differential), 2), "\n")
-cat("Median differential:", median(size_stats$differential), "\n")
-
-# Show top problematic families
-cat("\nTop 10 families with largest size differentials:\n")
-top10 <- size_stats[order(-differential)][1:min(10, nrow(size_stats))]
-print(top10[, .SD, .SDcols = c(id_col, 'n_min', 'n_max', 'differential')])
-
-# Count families above threshold
-n_above_threshold <- sum(size_stats$differential > max_differential)
-cat("\nHOGs with differential >", max_differential, ":", n_above_threshold, "\n")
-
-# Keep only HOGs with differential <= threshold
-keep_diff <- size_stats[differential <= max_differential][[id_col]]
-hog_filtered <- hog[get(id_col) %in% keep_diff]
-
-cat("After differential filter:", length(unique(hog_filtered[[id_col]])), "\n")
-cat("Families removed:", length(unique(hog[[id_col]])) - length(unique(hog_filtered[[id_col]])), "\n")
-cat("Retention rate:", round(100 * length(unique(hog_filtered[[id_col]])) / length(unique(hog[[id_col]])), 2), "%\n\n")
-
-# Write detailed filtering report
-filtering_report <- size_stats[order(-differential)]
-fwrite(filtering_report, 'hog_filtering_report.tsv', sep='\t')
-cat("Detailed filtering report written to: hog_filtering_report.tsv\n")
-
-# Create final count table — CAFE expects HOG as first column name
-counts <- dcast(hog_filtered, get(id_col) ~ species, value.var='n', fill=0)
-setnames(counts, 'id_col', 'HOG')
-counts[, Desc := 'n/a']
-setcolorder(counts, 'Desc')
-fwrite(counts, 'hog_gene_counts.tsv', sep='\t')
-
-cat("Filtered count table written to: hog_gene_counts.tsv\n")
-cat("Final gene family count:", nrow(counts), "\n")
-
-# Write the removed high-differential families for fixed-lambda re-analysis
-large_ids <- size_stats[differential > max_differential][[id_col]]
+# High-differential families for fixed-lambda re-analysis
+large_ids <- stats[exclusion_reason == 'differential_gt_threshold', HOG]
 if (length(large_ids) > 0) {
-  hog_large <- hog[get(id_col) %in% large_ids]
-  counts_large <- dcast(hog_large, get(id_col) ~ species, value.var='n', fill=0)
-  setnames(counts_large, 'id_col', 'HOG')
+  counts_large <- counts[HOG %in% large_ids]
   counts_large[, Desc := 'n/a']
-  setcolorder(counts_large, 'Desc')
-  fwrite(counts_large, 'hog_gene_counts_large.tsv', sep='\t')
-  cat("Large-differential families written to: hog_gene_counts_large.tsv\n")
-  cat("Count:", length(large_ids), "\n")
+  setcolorder(counts_large, c('Desc', 'HOG', tree_leaves))
+  fwrite(counts_large, 'hog_gene_counts_large.tsv', sep = '\t')
+  cat("Large-differential families written to hog_gene_counts_large.tsv:",
+      length(large_ids), "\n")
 }
-
 cat("================================================\n")

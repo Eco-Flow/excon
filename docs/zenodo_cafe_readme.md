@@ -4,7 +4,7 @@ This archive contains the outputs from the EXCON pipeline, which runs CAFE5 to d
 expansion and contraction across a set of species, and follows up with GO
 enrichment analysis on the significantly evolving families.
 
-Pipeline version: EXCON v2.3.2  
+Pipeline version: EXCON v2.4.0  
 CAFE5 version: 4.2.1  
 OrthoFinder version: see `pipeline_info/software_versions.yml`
 
@@ -37,7 +37,7 @@ turnover rate (lambda) and fit an error model for annotation noise.
 | `SpeciesTree_rooted_ultra.txt` | Ultrametric rooted species tree (Newick) used by CAFE5. Branch lengths are in units scaled for CAFE5 (see `--tree_scale_factor` parameter). |
 | `lambda.txt` | Global lambda estimate from the base CAFE5 run. Lambda is the per-gene per-unit-time rate of gene gain and loss assumed under the birth-death model. |
 | `hog_filtering_report.tsv` | (optional) Summary of gene families filtered before CAFE5, if `--max_differential` filtering was applied. Columns: family ID, max pairwise species difference, kept/removed status. |
-| `hog_gene_counts_large.tsv` | (optional) Families excluded from the main run because their copy-number variance was too high for the standard CAFE5 model. These are analysed separately (see `cafe/large_families/`). |
+| `hog_gene_counts_large.tsv` | (optional) Families excluded from the main run because their copy-number variance was too high for one shared model to fit. Each is analysed on its own (see `cafe/large_families/`). |
 | `Out_cafe/Base_count.tab` | Gene counts at each node inferred by CAFE5 under the base (uniform-lambda) model during error-model fitting. |
 | `Out_cafe_errormodel/Base_error_model.txt` | Fitted error model parameters. CAFE5 uses this to account for gene-count errors caused by incomplete genome assemblies or annotation artefacts. |
 | `cafe_base.log` | CAFE5 stdout/stderr log from the baseline run. |
@@ -78,9 +78,18 @@ enrichment). Contents are identical to either `cafe/gamma/` or
 ### `cafe/large_families/`
 
 (optional) CAFE5 results for gene families that were excluded from the main run
-because of extreme copy-number variation between species. These families are
-re-run with CAFE5's `-p` flag (per-family rates). Same file structure as
-`cafe/gamma/`.
+because of extreme copy-number variation between species — one shared lambda
+cannot fit both a modest and an extreme size differential at once, so these
+are run independently, each fitting its own lambda:
+
+| File/dir | Description |
+|------|-------------|
+| `per_family/Out_cafe_large_<HOG>/` | Raw single-family CAFE5 output for each high-differential HOG, run on its own. |
+| `Out_cafe_large/` | All converged per-family runs stitched back into one CAFE5-shaped directory (same file structure as `cafe/gamma/`), so it can be read like an ordinary CAFE5 result by `cafe_plot_large/`, `cafe_go_large/`, etc. |
+| `large_family_lambda_summary.tsv` | Each family's own independently-fitted lambda and -lnL, so it is visible which rate was used where instead of one shared value. |
+
+Families that still fail to converge even on their own (rare) are dropped from
+`Out_cafe_large/` rather than causing the merge to fail.
 
 ---
 

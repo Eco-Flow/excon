@@ -11,19 +11,32 @@ MIN_SPECIES <- 2
 POS_FILE    <- "Go_summary_pos.tsv"
 NEG_FILE    <- "Go_summary_neg.tsv"
 
+# Write an SVG without hard-depending on svglite (absent from some containers).
+# Prefer svglite; else fall back to the cairo-based grDevices::svg(); else skip.
+save_svg <- function(plot, file, width, height) {
+  if (requireNamespace("svglite", quietly = TRUE)) {
+    ggsave(file, plot, width = width, height = height,
+           device = svglite::svglite, limitsize = FALSE)
+  } else if (capabilities("cairo")) {
+    grDevices::svg(file, width = width, height = height)
+    print(plot); dev.off()
+  } else {
+    message("svglite and cairo both unavailable — SVG skipped: ", file)
+  }
+}
+
 # ── Helper: save PDF + SVG + PNG ──────────────────────────────────────────────
 save_plot <- function(p, stem, width, height) {
   ggsave(paste0(stem, ".pdf"), p, width = width, height = height,
          device = cairo_pdf, limitsize = FALSE)
-  ggsave(paste0(stem, ".svg"), p, width = width, height = height,
-         device = svglite::svglite, limitsize = FALSE)
+  save_svg(p, paste0(stem, ".svg"), width, height)
   ggsave(paste0(stem, ".png"), p, width = width, height = height,
          dpi = 150, limitsize = FALSE)
 }
 
 # ── Load & reshape ─────────────────────────────────────────────────────────────
 read_go <- function(file, direction) {
-  read_tsv(file, show_col_types = FALSE) %>%
+  read_tsv(file, show_col_types = FALSE, quote = "") %>%
     pivot_longer(
       cols      = -c(GO_ID, GO_term, Count_significant),
       names_to  = "species",

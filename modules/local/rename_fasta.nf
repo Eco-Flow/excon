@@ -12,11 +12,17 @@ process RENAME_FASTA {
 
     output:
     tuple val(meta), path("${meta.id}.clean.fasta"), emit: fasta
+    tuple val(meta), path("${meta.id}.internal_stop_codons.tsv"), emit: internal_stop_report, optional: true
     tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), emit: versions, topic: versions
 
     script:
     """
     python3 <<EOF
+    # 'strip' (default) removes every '*' including internal ones, splicing the two
+    # flanking peptide fragments together; 'drop' discards the whole gene instead.
+    # See --internal_stop_action in nextflow.config for the reasoning.
+    INTERNAL_STOP_ACTION = "${params.internal_stop_action}"
+
     tran_to_gene = {}
     with open("${gff}") as f:
         for line in f:
@@ -53,25 +59,51 @@ process RENAME_FASTA {
                 tran_to_gene[tran_id.replace("rna-", "")] = gene_id
 
     seen = set()
+    internal_stop_genes = []
+
+    def flush(gene_id, seq_lines, fout):
+        if gene_id in seen:
+            print(f"WARNING: Duplicate gene ID skipped: {gene_id}", flush=True)
+            return
+        # gffread represents the true terminal stop codon as a trailing '*' —
+        # expected, and stripped below. A '*' anywhere else means the CDS has a
+        # premature stop (bad gene model: assembly/annotation error, or mixed
+        # annotation pipelines between species).
+        seq = "".join(seq_lines).replace(".", "")
+        body = seq[:-1] if seq.endswith("*") else seq
+        if "*" in body:
+            internal_stop_genes.append(gene_id)
+            if INTERNAL_STOP_ACTION == "drop":
+                return
+            body = body.replace("*", "")
+        seen.add(gene_id)
+        fout.write(f">{gene_id}\\n")
+        fout.write(body + "\\n")
+
     with open("${fasta}") as fin, open("${meta.id}.clean.fasta", "w") as fout:
-        skip = False
+        pending = None
         for line in fin:
             if line.startswith(">"):
+                if pending is not None:
+                    flush(pending[0], pending[1], fout)
                 seq_id = line[1:].strip().split()[0]
                 gene_id = tran_to_gene.get(seq_id, seq_id)
                 # Last resort: strip .tN suffix for Braker style
                 if gene_id == seq_id and "." in seq_id:
                     gene_id = seq_id.rsplit(".", 1)[0]
-                if gene_id in seen:
-                    skip = True
-                    print(f"WARNING: Duplicate gene ID skipped: {gene_id}", flush=True)
-                else:
-                    seen.add(gene_id)
-                    skip = False
-                    fout.write(f">{gene_id}\\n")
-            else:
-                if not skip:
-                    fout.write(line.replace(".", "").replace("*", ""))
+                pending = (gene_id, [])
+            elif pending is not None:
+                pending[1].append(line.rstrip("\\n"))
+        if pending is not None:
+            flush(pending[0], pending[1], fout)
+
+    if internal_stop_genes:
+        verb = "dropped" if INTERNAL_STOP_ACTION == "drop" else "kept (internal stop codon(s) stripped)"
+        print(f"WARNING: {len(internal_stop_genes)} gene(s) had a premature stop codon and were {verb}", flush=True)
+        with open("${meta.id}.internal_stop_codons.tsv", "w") as rep:
+            rep.write("gene_id\\taction\\n")
+            for g in internal_stop_genes:
+                rep.write(f"{g}\\t{INTERNAL_STOP_ACTION}\\n")
     EOF
     """
 }

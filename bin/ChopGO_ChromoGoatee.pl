@@ -85,7 +85,10 @@ plotting options:
     -min_genes_req   Choose minimum number of genes containing each GO term. Default=2.
     -max_genes_req   Choose maximum number of genes containing each GO term. Default=100000.
     -allow_inferred  Allow inferred parent (GO, not in original file) into final enrichment. Default=0=OFF.
-    -go_algo         topGO algorithm and statistic: classic_fisher (default), weight01_t, elim_ks, weight_ks.
+    -go_algo         topGO algorithm and statistic: classic_fisher (default), weight01_fisher, weight01_t, elim_ks, weight_ks.
+                     NOTE: weight01_t, elim_ks and weight_ks use score-based statistics (t/ks) which require
+                     per-gene numeric scores. The CAFE/chromosome GO input is a gene membership list, so only
+                     the Fisher-based options (classic_fisher, weight01_fisher) produce results with this input.
     -plot_only       Plot Only (BOOLEAN, optional), don't do GO enrichments. Default=0=OFF.
     -open_plot       Open plots once made (BOOLEAN, optional). Default=0=OFF.
 
@@ -150,7 +153,8 @@ my @ALL_made_files;
 my @methods=("holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none");
 
 my ($algo, $stat);
-if    ($go_algo eq "weight01_t") { $algo = "weight01"; $stat = "t"; }
+if    ($go_algo eq "weight01_fisher") { $algo = "weight01"; $stat = "fisher"; }
+elsif ($go_algo eq "weight01_t") { $algo = "weight01"; $stat = "t"; }
 elsif ($go_algo eq "elim_ks")    { $algo = "elim";     $stat = "ks"; }
 elsif ($go_algo eq "weight_ks")  { $algo = "weight";   $stat = "ks"; }
 else                             { $algo = "classic";  $stat = "fisher"; }

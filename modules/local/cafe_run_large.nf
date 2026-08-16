@@ -1,65 +1,70 @@
 process CAFE_RUN_LARGE {
-    label 'process_high'
-    label 'process_long'
+    tag "${hog_counts.baseName}"
+    label 'process_low'
     container 'ecoflowucl/cafe:r-4.3.1'
 
+    // A handful of families need many more Nelder-Mead iterations than most to
+    // pin down their own lambda, and can run past process_low's 2h/4GB (killed
+    // externally by the scheduler rather than exiting cleanly, so the script's
+    // own non-convergence handling below never gets a chance to run). This track
+    // is best-effort — retry with more time/memory a couple of times (task.attempt
+    // scales process_low's 2h/4GB up each retry), then drop the family from the
+    // merge rather than fail the whole run.
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
+    maxRetries 3
+
     input:
-    path  hog_counts_large
-    path  species_tree
-    path  error_model
-    val   lambda
+    // Bundled into one tuple (built with .combine() in main.nf) rather than three
+    // separate positional channels, so species_tree/error_model are unambiguously
+    // paired with every hog_counts item rather than relying on Nextflow's implicit
+    // broadcast of a singleton channel alongside a multi-item one.
+    tuple path(hog_counts), path(species_tree), path(error_model)
 
     output:
-    path "Out_cafe_large/",               emit: results
-    path "cafe_large.log",                emit: log
-    path "converged.txt", optional: true, emit: converged
+    path "Out_cafe_large_${hog_counts.baseName}/", emit: results, optional: true
+    path "cafe_large_${hog_counts.baseName}.log",  emit: log
     tuple val("${task.process}"), val('cafe'), val('4.2.1'), emit: versions_cafe, topic: versions
 
     script:
     def e_flag = error_model.size() > 0 ? "-e${error_model}" : ""
+    def z_flag = params.cafe_zero_root ? "-z" : ""
+    def outdir = "Out_cafe_large_${hog_counts.baseName}"
+    def logf   = "cafe_large_${hog_counts.baseName}.log"
     """
-    # Large-differential families often fail with the estimated lambda.
-    # Retry with progressively smaller lambda values as recommended in
-    # https://github.com/hahnlab/CAFE5/discussions/132
-    converged=false
-    for lambda_try in ${lambda} 0.005 0.001 0.0005 0.0001 0.00005 0.00001 0.000001 0.0000001; do
-        echo "Trying CAFE_RUN_LARGE with lambda=\${lambda_try}"
-        rm -rf Out_cafe_large
-        cafe5 \\
-            -i ${hog_counts_large} \\
-            -t ${species_tree} \\
-            --cores ${task.cpus} \\
-            -l \${lambda_try} \\
-            ${e_flag} \\
-            -o Out_cafe_large \\
-            2>&1 | tee cafe_large.log || true
+    # A shared lambda across every high-differential family at once is what made
+    # this module never converge (see git history / CAFE5 discussion #132): no
+    # single rate can explain both a modest and an extreme size differential in
+    # the same fit. Each family now runs on its own, free to find whatever
+    # lambda IT needs — a single family imposes no cross-family conflict, so
+    # CAFE5 almost always finds a finite-likelihood fit.
+    cafe5 \\
+        -i ${hog_counts} \\
+        -t ${species_tree} \\
+        --cores ${task.cpus} \\
+        ${e_flag} \\
+        ${z_flag} \\
+        -o ${outdir} \\
+        2>&1 | tee ${logf} || true
 
-        # Check if CAFE5 produced a usable result (finite likelihood)
-        if [ -f Out_cafe_large/Base_results.txt ] && \
-           grep -q "Final Likelihood" Out_cafe_large/Base_results.txt && \
-           ! grep -q "inf" Out_cafe_large/Base_results.txt; then
-            echo "Converged with lambda=\${lambda_try}"
-            converged=true
-            break
-        fi
-        echo "Did not converge with lambda=\${lambda_try}, trying next..."
-    done
-
-    if [ "\${converged}" = "true" ]; then
-        touch converged.txt
-    else
-        echo "WARNING: CAFE_RUN_LARGE did not converge with any lambda — downstream large-family steps will be skipped."
+    if [ ! -f ${outdir}/Base_results.txt ] || \\
+       ! grep -q "Final Likelihood" ${outdir}/Base_results.txt || \\
+       grep -q "inf" ${outdir}/Base_results.txt; then
+        echo "WARNING: ${hog_counts.baseName} did not converge even on its own — dropping it from the large-family merge." >&2
+        rm -rf ${outdir}
     fi
-
-    # Ensure output directory exists so downstream steps don't fail
-    mkdir -p Out_cafe_large
     """
 
     stub:
+    def outdir = "Out_cafe_large_${hog_counts.baseName}"
     """
-    mkdir -p Out_cafe_large
-    touch Out_cafe_large/Base_results.txt
-    touch cafe_large.log
-    touch converged.txt
+    mkdir -p ${outdir}
+    touch ${outdir}/Base_results.txt
+    touch ${outdir}/Base_asr.tre
+    touch ${outdir}/Base_branch_probabilities.tab
+    touch ${outdir}/Base_change.tab
+    touch ${outdir}/Base_count.tab
+    touch ${outdir}/Base_family_results.txt
+    touch ${outdir}/Base_clade_results.txt
+    touch cafe_large_${hog_counts.baseName}.log
     """
 }

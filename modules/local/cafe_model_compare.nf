@@ -15,31 +15,43 @@ process CAFE_MODEL_COMPARE {
 
     script:
     """
-    # Parse -lnL from a CAFE5 results directory
-    # Looks for: "Model * Final Likelihood (-lnL): X.X"
+    # Parse -lnL from a CAFE5 results directory.
+    # Line looks like: "Model Gamma Final Likelihood (-lnL): 185019.11912528"
+    # The value may be an integer, a decimal, or "inf" (failed to converge), so
+    # take everything after "-lnL):" rather than assuming a decimal point.
     parse_score() {
         grep -h "Final Likelihood" "\$1"/Base_results.txt "\$1"/Gamma_results.txt 2>/dev/null \\
             | head -1 \\
-            | grep -oE '[0-9]+\\.[0-9]+' \\
+            | sed -E 's/.*-lnL\\):[[:space:]]*//' \\
+            | grep -oE '^(inf|[0-9]+(\\.[0-9]+)?)' \\
             || true
     }
+
+    # A score is usable only if it is a finite number (not empty, not "inf"/"nan").
+    is_finite() { case "\$1" in ''|inf|-inf|nan) return 1 ;; *) return 0 ;; esac ; }
 
     uniform_score=\$(parse_score ${uniform_results})
     poisson_score=\$(parse_score ${poisson_results})
 
-    if [ -z "\$uniform_score" ] || [ -z "\$poisson_score" ]; then
-        echo "WARNING: Could not parse scores — defaulting to uniform model" >&2
-        echo "uniform" > best_model.txt
-        uniform_score=\${uniform_score:-NA}
-        poisson_score=\${poisson_score:-NA}
-    else
-        # Lower -lnL = better fit
+    # Choose the best model. Lower -lnL = better fit. Pick whichever has a usable
+    # score; only fall over if neither does.
+    if is_finite "\$uniform_score" && is_finite "\$poisson_score"; then
         best=\$(awk -v u="\$uniform_score" -v p="\$poisson_score" \\
             'BEGIN { print (p+0 < u+0) ? "poisson" : "uniform" }')
-        echo "\$best" > best_model.txt
+    elif is_finite "\$uniform_score"; then
+        best=uniform
+    elif is_finite "\$poisson_score"; then
+        best=poisson
+    else
+        echo "ERROR: neither model produced a usable -lnL (uniform='\$uniform_score' poisson='\$poisson_score')." >&2
+        echo "       The CAFE k-runs feeding CAFE_MODEL_COMPARE are empty or failed to converge." >&2
+        exit 1
     fi
+    echo "\$best" > best_model.txt
 
-    best=\$(cat best_model.txt)
+    # NA only for table display when a score was missing/inf
+    uniform_score=\${uniform_score:-NA}
+    poisson_score=\${poisson_score:-NA}
 
     # Write comparison table
     printf "model\tdirectory\tneg_lnL\tSelected\n"          > cafe_model_comparison.tsv
@@ -52,9 +64,23 @@ process CAFE_MODEL_COMPARE {
 
     # Copy the winning model's results directory for publishing
     if [ "\$best" = "uniform" ]; then
-        cp -rL ${uniform_results} best_cafe_results
+        src=${uniform_results}
     else
-        cp -rL ${poisson_results} best_cafe_results
+        src=${poisson_results}
+    fi
+    cp -rL "\$src" best_cafe_results
+
+    # Guard: the published best/ must contain a real CAFE result. An empty dir
+    # here means the staged input was empty (e.g. a stale -resume cache pointing
+    # at a CAFE run that hadn't populated yet) — fail loudly instead of silently
+    # publishing an empty best/.
+    if ! grep -q "Final Likelihood" best_cafe_results/Base_results.txt best_cafe_results/Gamma_results.txt 2>/dev/null; then
+        echo "ERROR: chosen model '\$best' (\$src) produced no usable results;" >&2
+        echo "       best_cafe_results has no *_results.txt with a likelihood." >&2
+        echo "       This usually means a stale -resume cache staged an empty CAFE run dir;" >&2
+        echo "       remove the cached CAFE_MODEL_COMPARE work dir and re-run." >&2
+        ls -la best_cafe_results >&2 || true
+        exit 1
     fi
     """
 

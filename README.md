@@ -1,4 +1,4 @@
-# EXCON (v2.3.2)
+# EXCON (v2.4.0)
 
 A Nextflow pipeline for gene family **EX**pansion and **CON**traction analysis 
 across multiple species using CAFE5.
@@ -17,7 +17,7 @@ It works with any set of species that have a genome (fasta) and annotation (gff)
 
 The general pipeline logic is as follows:
 
-<img width="398" alt="image" src="docs/images/excon_pipeline.3b.svg" align="right" />
+<img width="398" alt="image" src="docs/images/excon_pipeline.4.svg" align="right" />
 
 * Downloads genome and annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`, or you provide your own.
 * Unzips the files, if necessary `[GUNZIP]`
@@ -25,7 +25,9 @@ The general pipeline logic is as follows:
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
-* Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`.
+* Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[EXTRACT_SINGLE_COPY]`, `[ALIGN_SINGLE_COPY]`, `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
+* Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it with `ape::chronos` when node ages are supplied `[DATE_TREE]` (see `--tree_calibrations`).
+* Optionally restricts the analysis to one clade `[PRUNE_TREE]` (see `--cafe_clade` / `--cafe_species`).
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
 * Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
@@ -66,8 +68,7 @@ Nextflow pipelines require a few prerequisites. There is further documentation o
 
 - [Docker](https://docs.docker.com/engine/install/) or [Singularity](https://docs.sylabs.io/guides/3.11/admin-guide/installation.html).
 - [Java](https://www.java.com/en/download/help/download_options.html) and [openJDK](https://openjdk.org/install/) >= 8 (**Please Note:** When installing Java versions are `1.VERSION` so `Java 8` is `Java 1.8`).
-- [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html) >= `v25.10.0`.
-- When running nextflow with this pipeline, ideally run `NXF_VER=25.10.0` beforehand, to ensure functionality on this version.
+- [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html) >= `v26.04.6`. The pipeline uses the strict configuration/script syntax and typed parameter declarations, both of which require Nextflow 26. Older versions are rejected by the manifest.
 
 ### Install
 
@@ -120,6 +121,10 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--groups` | NCBI taxonomy group for genome download (e.g. `insects`, `bacteria`) | `insects` |
 | `--help` | Display help message | `false` |
 | `--custom_config` | Path to a custom Nextflow config file | `null` |
+| `--ncbi_max_forks` | Genome downloads to run concurrently. Each parses the full NCBI assembly summary for its taxonomic group, so fewer at once can be faster on a laptop; raise it on a cluster | `10` |
+| `--forks` | Cap on how many tasks of each process run in parallel | `null` (unlimited) |
+| `--publish_dir_mode` | How results are placed in `--outdir`: `copy`, `symlink`, `link`, … | `copy` |
+| `--clean` | Delete work directories when the pipeline completes | `false` |
 
 ### Quality statistics (optional)
 
@@ -131,6 +136,36 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--busco_lineages_path` | Path to local BUSCO lineage databases | `null` |
 | `--busco_config` | Path to BUSCO config file | `null` |
 
+### Internal stop codons (optional)
+
+`RENAME_FASTA` translates each species' CDS to protein and writes `results/proteomes/<species>.clean.fasta`,
+the input OrthoFinder actually receives. `gffread` marks a normal, in-frame stop codon with a
+trailing `*` — expected, and always removed. A `*` anywhere else in the sequence means the CDS
+has a **premature stop**: a common sign of a bad gene model (an assembly gap, a frameshift, an
+annotation error, or two species annotated by different pipelines with different stringency).
+`--internal_stop_action` controls what happens to that gene:
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--internal_stop_action` | `strip` or `drop` (see below) | `strip` |
+
+* **`strip`** (default) removes every `*` in the sequence, including internal ones, which splices
+  the peptide before and after the premature stop into one contiguous sequence. This keeps every
+  gene in the analysis, but the spliced sequence is not a real protein — it may not resemble the
+  gene's true product at all.
+* **`drop`** discards the whole gene instead — the behaviour [OrthoFinder's own documentation
+  recommends](https://github.com/davidemms/OrthoFinder) for genes with internal stops, and what
+  the CAFE5 tutorial's own filtering step assumes has already happened upstream. The gene is
+  absent from that species' proteome entirely, rather than present with a fabricated sequence.
+
+Either way, every affected gene is listed in `results/proteomes/<species>.internal_stop_codons.tsv`
+(`gene_id`, `action` taken), so the choice can be audited regardless of which one you pick. There
+is no universally correct default — `strip` keeps gene counts comparable across species (useful
+when internal stops are rare and you care more about not losing genes than about sequence purity),
+while `drop` is more defensible when you're specifically comparing gene *counts* between species
+with different annotation quality (e.g. CAFE5 itself), since a spliced fake sequence could still
+seed a spurious orthogroup membership that a dropped gene cannot.
+
 ### OrthoFinder options (optional)
 
 | Parameter | Description | Default |
@@ -140,8 +175,210 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 | `--orthofinder_search` | Sequence search program: `diamond`, `blast`, or `mmseqs2` | `diamond` |
 | `--orthofinder_msa_prog` | MSA program (requires `--orthofinder_method msa`): `mafft` or `muscle` | `mafft` |
 | `--orthofinder_tree` | Tree inference method (requires `--orthofinder_method msa`): `fasttree`, `raxml`, `raxml-ng`, or `iqtree` | `fasttree` |
+| `--orthofinder_blast_results` | Path to a blast `WorkingDirectory` from a previous `ORTHOFINDER_BLAST` run (published to `results/orthofinder_blast/`). Skips the DIAMOND search and runs only orthogroup inference and phylogeny — useful for resuming after a failed phylogeny stage or retrying with different tree options | `null` |
 
 > **Note:** `-A` and `-T` are only valid when `-M msa` is set. If you set `--orthofinder_msa_prog` or `--orthofinder_tree` without `--orthofinder_method msa`, OrthoFinder will error.
+
+### Species tree with IQ-TREE2 (optional)
+
+By default the species tree passed to CAFE5 is the one OrthoFinder infers itself (STAG/STRIDE
+over per-orthogroup gene trees, built with FastTree unless `--orthofinder_tree` says otherwise).
+`--iqtree_species_tree` replaces that with a supermatrix maximum-likelihood tree, which is the
+more standard approach for a published species phylogeny:
+
+1. `[EXTRACT_SINGLE_COPY]` writes one FASTA per strictly single-copy, complete orthogroup,
+   taking each sequence from the proteome of the species named in `Orthogroups.tsv`.
+2. `[ALIGN_SINGLE_COPY]` aligns each of those orthogroups with MAFFT.
+3. `[CONCAT_SINGLE_COPY]` concatenates them into one supermatrix, writing a partition file
+   with one partition per orthogroup.
+4. `[IQTREE_SPECIES_TREE]` runs IQ-TREE2 on that supermatrix under the edge-proportional
+   partition model (`-spp partitions.txt`) with per-partition model selection (`-m MFP`),
+   1000 ultrafast bootstrap and 1000 SH-aLRT replicates.
+5. `[ROOT_TREE]` roots the result, because IQ-TREE2 returns an unrooted tree and CAFE5 requires
+   a rooted one.
+
+The rooted tree then feeds the normal `RESCALE_TREE` → `CAFE_PREP` path, so `--tree_scale_factor`
+and the rest of the CAFE options behave exactly as before.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--iqtree_species_tree` | Infer the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment instead of using the OrthoFinder tree. Works with any `--orthofinder_method`. | `false` |
+| `--iqtree_outgroup` | Comma-separated tip name(s) to root the tree on, matching the sample names in your input CSV. Must be monophyletic in the inferred tree. If unset, the tree is midpoint-rooted. | `null` (midpoint) |
+| `--iqtree_args` | Extra arguments appended to the IQ-TREE2 command line, e.g. `-mset LG,WAG,JTT` to restrict ModelFinder's candidate matrices, or `--gcf` for gene concordance factors. | `null` |
+| `--iqtree_partition_file` | Reuse an existing partition file instead of the generated one, so model selection is not repeated. A previous run's `iqtree/species_tree.best_scheme` records the model chosen for each partition; the coordinates must match the supermatrix, so only use a file produced from the same orthogroups. Supplying it suppresses the default `-m MFP` | `null` |
+| `--iqtree_partition_model` | Model written per partition. `AA` lets ModelFinder pick one per orthogroup; set e.g. `LG+F+G4` to fix it and skip model selection. With a partition file the model has to be set here rather than through `--iqtree_args '-m ...'`. | `AA` |
+
+```bash
+nextflow run main.nf \
+  --input input.csv \
+  --iqtree_species_tree \
+  --iqtree_outgroup Drosophila_yakuba \
+  -profile docker
+```
+
+Outputs are written to `results/species_tree/`:
+
+| File | Description |
+|------|-------------|
+| `SpeciesTree_rooted.nwk` | The rooted tree used for CAFE5 |
+| `iqtree/species_tree.treefile` | Unrooted IQ-TREE2 ML tree with support values |
+| `iqtree/species_tree.iqtree` | IQ-TREE2 report, including the model chosen per partition |
+| `supermatrix/supermatrix.faa` | Concatenated alignment |
+| `supermatrix/partitions.txt` | Partition boundaries, one per orthogroup |
+
+> **No particular `--orthofinder_method` is needed.** The single-copy orthogroups are aligned
+> by the pipeline itself, so this works with OrthoFinder's default (DendroBLAST) mode as well
+> as `-M msa`. The default is considerably faster, since `-M msa` aligns *every* orthogroup and
+> builds a gene tree for each, while only the single-copy ones are needed here.
+> `--iqtree_species_tree` cannot be combined with `--input_tree`/`--input_orthogroups`, since
+> those skip OrthoFinder entirely.
+
+### Reusing a finished run
+
+`--orthofinder_results` points at the results directory of a completed OrthoFinder run, so it
+is not repeated and the orthogroup/HOG identifiers are preserved exactly. With
+`--iqtree_species_tree` it also needs `--proteome_dir`, holding the proteomes those gene IDs
+refer to (`results/proteomes/`, written by `RENAME_FASTA`). Add `--skip_cafe` to build a
+species tree and nothing else:
+
+```bash
+nextflow run main.nf \
+  --iqtree_species_tree --skip_cafe \
+  --orthofinder_results /path/to/results/orthofinder_cafe/ortho_cafe \
+  --proteome_dir /path/to/results/proteomes \
+  -profile docker
+```
+
+If the run predates `results/proteomes/`, or its work directory has been deleted, two scripts
+in `bin/` rebuild the proteomes from published output. Both reproduce the originals exactly:
+
+| script | needs | use when |
+|--------|-------|----------|
+| `proteomes_from_orthofinder.py -r <orthofinder results> -o proteomes` | the OrthoFinder `WorkingDirectory/` | preferred — these are the exact sequences OrthoFinder was given |
+| `rename_fasta_standalone.py -f results/gffread -g results/agat -o proteomes` | published GFFREAD + AGAT output | the OrthoFinder directory is incomplete |
+
+> **Give `IQTREE_SPECIES_TREE` plenty of memory on a scheduler.** IQ-TREE rejects its own
+> `-mem` flag when a partition model is in use, so the pipeline cannot cap its memory and
+> IQ-TREE will use what it needs. On SGE/SLURM, request generously (the `withName` block sets
+> 8 CPUs / 16 GB by default, which a large supermatrix will outgrow) or the scheduler will
+> kill the job.
+
+> **Per-partition model selection dominates the runtime.** `-m MFP` fits every candidate
+> amino-acid model to every partition independently, so a few hundred orthogroups means tens of
+> thousands of model fits before tree search even starts. If that is too slow, narrow the
+> candidate set with `--iqtree_args '-mset LG,WAG,JTT'`, or skip selection entirely with
+> `--iqtree_partition_model LG+F+G4`. Note IQ-TREE rejects `-m <model>` alongside a partition
+> file, so the fixed model must go in the partition file via that parameter.
+
+> **Only orthogroups present exactly once in every species are used.** With many species, or
+> with fragmented annotations, this set can get small — `CONCAT_SINGLE_COPY` reports how many
+> orthogroups it kept and why the rest were dropped, so check that count in the log.
+
+> **A better tree is not automatically a correctly placed taxon.** Supermatrix ML concatenation
+> is exactly the setting where incomplete lineage sorting and gene-tree conflict can produce a
+> strongly supported but wrong branch. If a specific node is in question, check gene concordance
+> factors (`--iqtree_args '--gcf ...'`) or compare against a coalescent method, rather than
+> assuming the ML tree settles it.
+
+### Analysing one clade at a time (optional)
+
+Including distantly related outgroups is often good for orthology inference but bad for CAFE5:
+families absent from the outgroups are empty at the analysis root, and CAFE5 discards those —
+which tends to remove exactly the lineage-specific families of interest (odorant receptors,
+P450s and so on). Running CAFE on a clade at a time avoids that, without re-running OrthoFinder
+and without changing orthogroup identifiers.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--cafe_clade` | Two or more tip names; everything descended from their most recent common ancestor is analysed, e.g. `Drosophila_yakuba,Drosophila_santomea` | `null` |
+| `--cafe_species` | An explicit set of tips instead: a comma-separated list, or a path to a file with one name per line | `null` |
+
+Give one or the other, not both. The species tree is pruned to the selection and `cafe_prep.R`
+subsets the gene-count table to match, so the same OrthoFinder output can be analysed clade by
+clade by changing one option:
+
+```bash
+# same inputs, one clade per run
+nextflow run main.nf --input_tree species_tree.nwk --input_orthogroups N0.tsv \
+  --tree_calibrations calibrations.tsv \
+  --cafe_clade "Drosophila_yakuba,Drosophila_simulans" --outdir clade_a -profile docker
+
+nextflow run main.nf --input_tree species_tree.nwk --input_orthogroups N0.tsv \
+  --tree_calibrations calibrations.tsv \
+  --cafe_clade "Drosophila_yakuba,Drosophila_santomea" --outdir clade_b -profile docker
+```
+
+`results/species_tree/pruned_tree_species.tsv` records which species were retained and dropped.
+
+> **Pruning happens after time-calibration, deliberately.** The tree is dated once using every
+> species, so calibrations may reference taxa that fall outside the clade being analysed, and
+> both subsets inherit the same ages. Pruning preserves node ages and ultrametricity, so a
+> calibrated tree stays calibrated.
+
+> **Defining a clade by an MRCA can capture more than you expect.** Pick two tips that span the
+> group: for a genus, two of its most divergent members, not two close relatives. Check
+> `pruned_tree_species.tsv` to confirm the selection is what you intended.
+
+### Time-calibrating the species tree (optional)
+
+CAFE5 estimates λ per unit of branch length, so λ is only a rate *per million years* if the
+tree is on a time axis. Without calibrations the pipeline makes the tree ultrametric with
+`chronoMPL()` and scales it by `--tree_scale_factor`, which is enough for CAFE5 to run but
+leaves λ in arbitrary units and can distort branch-specific significance.
+
+`--tree_calibrations` instead time-calibrates the tree with `ape::chronos` using node ages you
+supply. It applies to whichever species tree is in use — OrthoFinder's or the one from
+`--iqtree_species_tree` — and the calibrated tree is then passed to **every** CAFE5 stage
+unchanged (no `chronoMPL()`, no `--tree_scale_factor`), exactly as `--input_tree_is_dated` does
+for an externally dated tree.
+
+The calibration file is a TSV with a header:
+
+```tsv
+clade	tips	age_min	age_max
+crown_group	Species_A,Species_F	120	120
+subclade_1	Species_A,Species_C	64	64
+subclade_2	Species_D,Species_F	38	45
+```
+
+The names and ages above are placeholders: use your own tip names and calibrations.
+
+| column | meaning |
+|--------|---------|
+| `clade` | label used in the report; not interpreted |
+| `tips` | two or more tip names — the calibrated node is their **most recent common ancestor** |
+| `age_min` / `age_max` | age bounds in millions of years; set them equal to fix the age |
+
+Naming nodes by an MRCA rather than a node number means the file stays valid across trees, and
+tip names may be given with or without the internal `.clean` suffix.
+
+```bash
+nextflow run main.nf \
+  --input input.csv \
+  --iqtree_species_tree \
+  --tree_calibrations calibrations.tsv \
+  -profile docker
+```
+
+Outputs are written to `results/species_tree/`:
+
+| File | Description |
+|------|-------------|
+| `SpeciesTree_dated.nwk` | Ultrametric tree, branch lengths in millions of years, used for CAFE5 |
+| `dating_calibrations.tsv` | Each calibration with the node it resolved to and the age actually fitted |
+| `dating_qc.tsv` | Model settings, root age, shortest branch, ultrametric/binary checks |
+
+`--chronos_model` (`discrete`, `correlated`, `relaxed`), `--chronos_lambda` and
+`--chronos_rate_categories` tune the fit.
+
+> **Dating failures are fatal, by design.** `ape::chronos` reports non-convergence as a
+> *warning* and still returns a tree, so the pipeline treats any chronos warning as an error
+> rather than publishing a tree that did not converge. It also checks that the fitted node ages
+> match the calibrations you asked for, and that the result is ultrametric and binary.
+
+> **Calibrations are yours to justify.** The pipeline applies the ages you give it; it has no
+> opinion on which fossils or published estimates are appropriate. Record their provenance —
+> `dating_calibrations.tsv` is published to make that easy.
 
 ### CAFE gene family evolution
 
@@ -149,10 +386,72 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 |-----------|-------------|---------|
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
-| `--cafe_max_differential` | Maximum gene count differential for CAFE filtering on retry | `50` |
-| `--tree_scale_factor` | Factor to multiply all OrthoFinder branch lengths by before `chronos()` converts the tree to a time tree for CAFE5. Lower values can cause numerical issues. | `1000` |
+| `--cafe_max_differential` | Maximum gene count differential (max − min copies) for CAFE filtering. `CAFE_PREP` retries with this threshold, halving it on each subsequent retry | `50` |
+| `--cafe_filter_first` | Apply that threshold from the **first** attempt rather than only on retries | `false` |
+| `--tree_calibrations` | TSV of node ages used to time-calibrate the species tree with `ape::chronos`, so CAFE5's λ is per million years. See [Time-calibrating the species tree](#time-calibrating-the-species-tree-optional). Skips `--tree_scale_factor` and `chronoMPL()`. | `null` |
+| `--chronos_model` | `ape::chronos` rate model: `discrete`, `correlated` or `relaxed` | `discrete` |
+| `--chronos_lambda` | `ape::chronos` rate-smoothing parameter | `1` |
+| `--chronos_rate_categories` | Rate categories for the `discrete` model | `10` |
+| `--tree_scale_factor` | Factor to multiply all species-tree branch lengths by before `chronoMPL()` converts the tree to a time tree for CAFE5. Applied once, by `RESCALE_TREE`. Lower values can cause numerical issues. CAFE5's λ is per unit branch length, so changing this rescales λ by the same factor. | `1000` |
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
-| `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
+| `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv`/`N0.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
+| `--input_tree_is_dated` | Treat `--input_tree` as an already time-calibrated, ultrametric tree (branch lengths in Myr). Passed to every CAFE5 stage unchanged (no `RESCALE_TREE`, no `chronoMPL()`, no rescaling). λ is then per-Myr. | `false` |
+| `--cafe_zero_root` | Pass CAFE5's `-z/--zero_root` to all CAFE5 calls, retaining families with zero inferred copies at the root (sensitivity analysis). | `false` |
+| `--cafe_focus_clades` | Focus node(s) for alignment/gene-tree retrieval: CAFE node label(s) or `\|`-separated tip-species sets whose MRCA defines a node (robust to CAFE renumbering). | `null` |
+| `--orthofinder_msa_dir` | OrthoFinder `MultipleSequenceAlignments/` dir; with `--orthofinder_genetree_dir` and `--cafe_focus_clades`, copies out alignments/trees of families significantly expanded at the focus node(s). | `null` |
+| `--orthofinder_genetree_dir` | OrthoFinder `Resolved_Gene_Trees/` directory. See `--orthofinder_msa_dir`. | `null` |
+
+> **Species-subset CAFE with a dated tree.** To run CAFE on a subset of species while reusing the
+> HOG definitions of a larger OrthoFinder v2 analysis, supply the full `N0.tsv`
+> together with a smaller time-calibrated tree and `--input_tree_is_dated`. `cafe_prep.R` subsets the
+> `N0.tsv` columns to exactly the tree's species (keeping the original HOG identifiers), removes HOGs
+> that become empty after subsetting, then removes single-species families — recording the reason for
+> every exclusion in `hog_filtering_report.tsv`. Run the pipeline once per subset:
+> ```
+> nextflow run main.nf --orthofinder_v2 \
+>   --input_orthogroups N0.tsv \
+>   --input_tree subset_dated.nwk --input_tree_is_dated \
+>   --cafe_focus_clades "Species_A,Species_B|Species_A,Species_D" \
+>   --orthofinder_msa_dir MultipleSequenceAlignments/ \
+>   --orthofinder_genetree_dir Resolved_Gene_Trees/ \
+>   --outdir results_subset
+> ```
+> Add `--cafe_zero_root` for the parallel sensitivity run that keeps zero-at-root families (odorant/
+> gustatory receptors etc.). Set `--cafe_max_differential 20` to match Vizueta et al. 2025.
+
+> **When CAFE5 fails to converge.** Families spanning a very wide range of copy numbers give
+> infinite likelihoods, and CAFE5 reports this as `Failed to initialize any reasonable values`
+> alongside a list of the families with the largest differentials. `CAFE_PREP` responds by
+> retrying with progressively stricter filtering — by default the first attempt is unfiltered so
+> that nothing is discarded unnecessarily, then `--cafe_max_differential`, then half that, then a
+> quarter. If you already know the data need filtering, `--cafe_filter_first` starts at the
+> threshold immediately: the unfiltered attempt would otherwise be a guaranteed failure costing a
+> full CAFE5 run, which on a large analysis is expensive.
+>
+> ```bash
+> --cafe_max_differential 20 --cafe_filter_first   # thresholds: 20 -> 10 -> 5 -> 2
+> ```
+>
+> Each attempt escalates its time and memory request, so check that your scheduler permits the
+> escalated wall time — a retry asking for more than the queue maximum is rejected at submission
+> and fails instantly, which looks like a convergence failure but is not one.
+
+> **What happens to the filtered-out families.** Families above the differential threshold are
+> not discarded — `hog_gene_counts_large.tsv` is analysed separately in `cafe/large_families/`.
+> Each family is run **independently**, fitting its own λ, rather than as one shared batch: a
+> single shared λ cannot explain both a modest and an extreme size differential at once, so
+> lumping every high-differential family together into one CAFE5 call tends to be unfittable
+> regardless of λ. Running them one at a time removes that conflict, since a single family
+> imposes none. The converged per-family runs are stitched back into one CAFE5-shaped directory
+> (`cafe/large_families/Out_cafe_large/`) so `cafe_plot_large/` and `cafe_go_large/` read it exactly
+> like an ordinary CAFE5 result; `large_family_lambda_summary.tsv` records each family's own fitted
+> λ and -lnL, since there is no longer one shared value to report. `CAFE_SIG_FAMILIES` also runs on
+> this merged result, and its output is concatenated with the main model's into
+> `cafe/significant_families/combined_changes_per_node.tsv` /
+> `combined_significant_changes_per_node.tsv`, tagged by a `source` column (`main_model` vs
+> `large_family_own_lambda`) — one report spanning every orthogroup CAFE5 could fit at all. A
+> family that still fails to converge even on its own is dropped from the merge with a warning,
+> rather than failing the run.
 
 > **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it
 > (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs.
@@ -239,7 +538,8 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 | `docker` | Run with Docker containers |
 | `singularity` | Run with Singularity containers |
 | `conda` | Run with Conda environments |
-| `test_bacteria` | Test run with small bacterial genomes |
+| `test_bacteria` | Fastest smoke test: 4 small bacterial genomes. Exercises every step, but CAFE5 does not converge on it (see below) |
+| `test_chlamydia` | 10 *Chlamydia* genomes. Slower than `test_bacteria`, but closely related enough for CAFE5 to fit a model, so it exercises the CAFE stages end to end |
 | `test_small` | Test run with small insect genomes |
 
 
@@ -260,7 +560,13 @@ Please select one of the following profiles when running the pipeline.
 * `local` - This profile is used if you are running the pipeline on your local machine.
 * `aws_batch` - This profile is used if you are running the pipeline on AWS utilising the AWS Batch functionality. **Please Note:** You must use the `Docker` profile with with AWS Batch.
 * `test_small` - This profile is used if you want to test running the pipeline on your infrastructure, running from predownloaded go files. **Please Note:** You do not provide any input parameters if this profile is selected but you still provide a container profile.
-* `test_biomart` - This profile is used if you want to test running the pipeline on your infrastructure, running from the biomart input. **Please Note:** You do not provide any input parameters if this profile is selected but you still provide a container profile.
+
+> **Which test profile to use.** `test_bacteria` (4 *Mycoplasmoides*) is the quickest way to check the
+> pipeline runs, but those species are too divergent for CAFE5: about half the orthogroups are identical
+> across all four, leaving almost no copy-number variation across just two internal branches, so
+> `CAFE_PREP` exhausts its retries and the error is ignored. That is a property of the dataset, not a
+> pipeline fault. Use `test_chlamydia` (10 species in one genus) when you need the CAFE stages
+> themselves to be exercised.
 
 ## Custom Configuration
 
@@ -336,7 +642,7 @@ results/
 │   │   ├── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
 │   │   └── SpeciesTree_rooted_ultra.txt  # Ultrametric tree used by CAFE5
 │   ├── best/                        # Full CAFE5 results for the winning model (uniform or Poisson)
-│   ├── large_families/              # CAFE run on high-differential families (retry path only)
+│   ├── large_families/              # High-differential families, each run independently under its own lambda
 │   └── model_comparison/
 │       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
 │       └── best_model.txt            # "uniform" or "poisson"

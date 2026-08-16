@@ -2,11 +2,14 @@ work
 nextflow
 .nextflow
 **/.nextflow.log*
+.nextflow*.log
+**/.nextflow*.log
 **/history
 nf-test
 .nextflow.pid
 /.nextflow/history
 results
+results*
 lib
 Focal_targets/*
 RESUME*
@@ -25,3 +28,5 @@ input.csv
 benchmark_metrics.tsv
 benchmark_per_process.tsv
 benchmark/example_test_data/traces_only2/figures
+__pycache__/
+
