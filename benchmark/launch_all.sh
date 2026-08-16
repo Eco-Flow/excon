@@ -11,8 +11,12 @@
 # script needs to `wait` on it to know when a slot frees up), with output
 # redirected to launch.log inside that run's own directory.
 #
-# Safe to re-run: any directory already containing output/ or .nextflow.log is
-# skipped, so runs already started (by this script or manually) are left alone.
+# Safe to re-run: a directory is skipped only if its run actually completed
+# successfully, or a Nextflow process is currently running in it — anything
+# else (failed, interrupted, never checked its own exit code) is relaunched.
+# Merely checking whether output/ or .nextflow.log exist isn't enough: a run
+# that failed early (e.g. a bad NCBI accession, an OOM'd task) still creates
+# both, and would otherwise be silently treated as done forever.
 #
 # Usage:
 #   ./benchmark/launch_all.sh [--max-concurrent N] [--results-dir DIR]
@@ -48,6 +52,20 @@ if [[ ! -d "$RESULTS_DIR" ]]; then
     exit 1
 fi
 
+# True if a `nextflow run` process is currently running with its cwd inside
+# $1 — matched by cwd (via /proc, Linux-only, fine on Myriad) rather than a
+# PID this script itself tracked, so it also recognises runs started by hand
+# or by an earlier, separate invocation of this script.
+is_active() {
+    local target
+    target=$(cd "$1" && pwd) || return 1
+    local pid
+    for pid in $(pgrep -f 'nextflow run' 2>/dev/null); do
+        [[ "$(readlink -f "/proc/$pid/cwd" 2>/dev/null)" == "$target" ]] && return 0
+    done
+    return 1
+}
+
 echo "$(date '+%H:%M:%S')  Starting — max $MAX_CONCURRENT concurrent Nextflow session(s), results dir: $RESULTS_DIR"
 
 pids=()
@@ -58,10 +76,20 @@ for d in "$RESULTS_DIR"/*/; do
     [[ -f "$d/run.sh" ]] || continue
     run_id=$(basename "$d")
 
-    if [[ -d "$d/output" || -f "$d/.nextflow.log" ]]; then
-        echo "SKIP   [$run_id]: already started (output/ or .nextflow.log exists)"
+    if [[ -f "$d/.nextflow.log" ]] && grep -q "Execution complete" "$d/.nextflow.log" 2>/dev/null; then
+        echo "SKIP   [$run_id]: completed successfully"
         skipped=$((skipped + 1))
         continue
+    fi
+
+    if is_active "$d"; then
+        echo "SKIP   [$run_id]: a Nextflow session is currently running in this directory"
+        skipped=$((skipped + 1))
+        continue
+    fi
+
+    if [[ -f "$d/.nextflow.log" ]]; then
+        echo "$(date '+%H:%M:%S')  RETRY  [$run_id]: previous attempt neither completed nor is running — relaunching"
     fi
 
     # Throttle: poll for a free slot before launching the next one. Polling

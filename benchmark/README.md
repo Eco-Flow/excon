@@ -88,9 +88,10 @@ nohup ./benchmark/launch_all.sh --max-concurrent 3 > benchmark/launch_all.log 2>
 disown
 tail -f benchmark/launch_all.log
 ```
-Skips any run directory that already has `output/` or `.nextflow.log` (already
-started, by this or a manual `./run.sh`), so it's safe to re-run if interrupted
-or to mix with runs you started by hand.
+Skips a run directory only if it already completed successfully, or a Nextflow
+session is currently active in it (started by this script or by hand) — a run
+that failed or was interrupted is relaunched rather than silently left as-is,
+so it's always safe to re-run on the same results directory.
 
 The process hierarchy for each run:
 ```
