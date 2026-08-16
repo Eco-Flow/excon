@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased] - dated-tree & species-subset CAFE
+## [v2.4.0] - 2026-08-16 - Subsettable
 
 ### Fixed
 - **The species tree reaching CAFE5 was scaled by `--tree_scale_factor` twice, i.e. by the factor squared.** `RESCALE_TREE` multiplied every branch length by `--tree_scale_factor`, and `CAFE_PREP` then passed the same factor to `cafe_prep.R`/`cafe_prep_filtered.R`, which multiplied again after `chronoMPL()`. At the default of 1000 the tree handed to CAFE5 was therefore 1,000,000× the substitution-unit tree instead of 1000×, so every λ reported so far is smaller than intended by the same factor. `CAFE_PREP` now passes a scale factor of 1, leaving `RESCALE_TREE` as the single place scaling is applied; `chronoMPL()` is linear, so scaling before or after it is equivalent. **λ values change by `tree_scale_factor` relative to previous runs**; model selection, significance and the expansion/contraction counts are unaffected, as they depend on likelihood ratios rather than the absolute rate. The `--input_tree_is_dated` path was never affected, since it skips both scaling steps.
@@ -62,6 +62,13 @@
 
 ### Added
 - **New `--internal_stop_action` parameter** (`strip` (default) or `drop`) controlling what happens to a gene once an internal stop is found. `strip` matches the (now-fixed) historic behaviour — splice around every `*`, keep the gene. `drop` discards the gene entirely instead, matching OrthoFinder's own recommendation for genes with internal stops. Neither is universally correct, so this is a user choice rather than a hardcoded behaviour — see the README's "Internal stop codons" section. Either way, every affected gene is now recorded in `results/proteomes/<species>.internal_stop_codons.tsv` (`gene_id`, `action`), which did not exist before at all.
+
+### Changed
+- **Bulky per-family CAFE outputs are now archived into single `.tar.gz` files instead of publishing hundreds of loose files.** `CAFE_GO_RUN`/`CAFE_GO_RUN_LARGE` are no longer published directly — `SUMMARIZE_CAFE_GO`/`SUMMARIZE_CAFE_GO_LARGE` now also take the per-species TopGO PDFs/SVGs as input and archive them into `cafe_go_pos.tar.gz`/`cafe_go_neg.tar.gz` alongside the summary tables they already built from the same files. `CAFE_PLOT`'s per-family plots are archived into `cafe_plotter/gene_family.tar.gz` (the summary plot and `result_summary.tsv` are left as loose files, since those are the ones worth browsing directly). `CAFE_SIG_FAMILIES`'s `focus_families/` output is now `focus_families.tar.gz`. `MERGE_CAFE_LARGE_RESULTS` additionally publishes `per_family_results.tar.gz`, the per-family audit trail behind the merged `Out_cafe_large/`. Extract any of these with `tar -xzf <file>.tar.gz` to browse the originals — a large species set could otherwise publish thousands of small files across these steps.
+- `CAFE_RUN_LARGE` now retries on failure (up to 3 attempts, `process_low` resources scaling with `task.attempt`) instead of failing outright the first time a family needs more time/memory than `process_single`'s defaults to converge on its own λ. A family that still fails after 3 attempts is dropped from the merge with a warning, matching the non-convergence handling already used elsewhere in this track.
+
+### Added
+- New `bin/add_family_pvalue.py`: a standalone post-processing script, not wired into the pipeline, that joins each CAFE5 run's family-wide p-value (`Base_family_results.txt`/`Gamma_family_results.txt`) onto `combined_changes_per_node.tsv` by HOG. This lets a family-wide cutoff (default `p < 0.01`, i.e. this family's rate differs from the background model) be required alongside the existing branch-level cutoff (default `p <= 0.05`, i.e. this specific branch drove the change) when interpreting significant expansions/contractions. Run it after a pipeline run finishes, pointed at its `--outdir`; it writes `combined_changes_per_node.with_family_pvalue.tsv` and `combined_significant_changes_per_node.dual_cutoff.tsv` into `cafe/significant_families/`.
 
 ## [v2.3.2] -
 

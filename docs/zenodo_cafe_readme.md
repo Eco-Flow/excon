@@ -4,7 +4,7 @@ This archive contains the outputs from the EXCON pipeline, which runs CAFE5 to d
 expansion and contraction across a set of species, and follows up with GO
 enrichment analysis on the significantly evolving families.
 
-Pipeline version: EXCON v2.3.2  
+Pipeline version: EXCON v2.4.0  
 CAFE5 version: 4.2.1  
 OrthoFinder version: see `pipeline_info/software_versions.yml`
 
