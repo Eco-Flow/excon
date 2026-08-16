@@ -72,9 +72,11 @@ def rename(fasta_path, mapping, out_path, internal_stop_action='longest_orf'):
         if gene_id in seen:
             duplicates += 1
             return
-        # gffread represents the true terminal stop codon as a trailing '*' —
-        # expected, and stripped below. A '*' anywhere else means the CDS has a
-        # premature stop (bad gene model).
+        # Assumes GFFREAD was run with -S (pipeline default), so gffread marks
+        # stop codons with '*' rather than its own default '.'. gffread never
+        # prints the true terminal stop itself — trimmed internally before
+        # output — so any '*' actually found in the body is a premature stop
+        # (bad gene model).
         seq = ''.join(seq_lines).replace('.', '')
         body = seq[:-1] if seq.endswith('*') else seq
         if '*' in body:

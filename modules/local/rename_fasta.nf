@@ -67,10 +67,13 @@ process RENAME_FASTA {
         if gene_id in seen:
             print(f"WARNING: Duplicate gene ID skipped: {gene_id}", flush=True)
             return
-        # gffread represents the true terminal stop codon as a trailing '*' —
-        # expected, and stripped below. A '*' anywhere else means the CDS has a
-        # premature stop (bad gene model: assembly/annotation error, or mixed
-        # annotation pipelines between species).
+        # GFFREAD is run with -S, so gffread marks every stop codon with '*' rather
+        # than its own default '.' (without -S this whole check never fires, since
+        # gffread's default output has no '*' in it at all). gffread itself never
+        # prints the true terminal stop — it's trimmed internally before output — so
+        # the endswith('*') guard below only matters for non-gffread inputs; any '*'
+        # actually found in the body is therefore a premature stop (bad gene model:
+        # assembly/annotation error, or mixed annotation pipelines between species).
         seq = "".join(seq_lines).replace(".", "")
         body = seq[:-1] if seq.endswith("*") else seq
         if "*" in body:

@@ -139,11 +139,13 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 ### Internal stop codons (optional)
 
 `RENAME_FASTA` translates each species' CDS to protein and writes `results/proteomes/<species>.clean.fasta`,
-the input OrthoFinder actually receives. `gffread` marks a normal, in-frame stop codon with a
-trailing `*` — expected, and always removed. A `*` anywhere else in the sequence means the CDS
-has a **premature stop**: a common sign of a bad gene model (an assembly gap, a frameshift, an
-annotation error, or two species annotated by different pipelines with different stringency).
-`--internal_stop_action` controls what happens to that gene:
+the input OrthoFinder actually receives. `GFFREAD` is run with `-S`, so gffread marks every stop
+codon it translates with `*` (its own default is `.`, which this pipeline's detection can't see —
+without `-S` a premature stop would pass through silently). gffread never prints the true terminal
+stop itself, trimming it internally before output, so any `*` found in the translated sequence
+means the CDS has a **premature stop**: a common sign of a bad gene model (an assembly gap, a
+frameshift, an annotation error, or two species annotated by different pipelines with different
+stringency). `--internal_stop_action` controls what happens to that gene:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
