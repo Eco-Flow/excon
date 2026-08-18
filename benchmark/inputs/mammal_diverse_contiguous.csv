@@ -60,9 +60,9 @@ Equus_quagga,GCF_021613505.1
 Meles_meles,GCF_922984935.2
 Marmota_flaviventris,GCF_047511675.1
 Eptesicus_fuscus,GCF_027574615.1
-Panthera_onca,GCF_046562885.1
+Panthera_onca,GCF_046562875.1
 Rhinolophus_sinicus,GCF_036562045.2
-Zalophus_californianus,GCF_900631625.1
+Zalophus_californianus,GCF_009762305.2
 Lutra_lutra,GCF_902655055.1
 Sciurus_carolinensis,GCF_902686445.1
 Trichosurus_vulpecula,GCF_011100635.1
@@ -97,7 +97,7 @@ Mustela_erminea,GCF_009829155.1
 Phocoena_sinus,GCF_008692025.1
 Tamandua_tetradactyla,GCF_023851605.1
 Lynx_canadensis,GCF_007474595.2
-Callospermophilus_lateralis,GCF_048772825.1
+Callospermophilus_lateralis,GCF_048772815.1
 Apodemus_sylvaticus,GCF_947179515.1
 Halichoerus_grypus,GCF_964656455.1
 Globicephala_melas,GCF_963455315.2
@@ -107,7 +107,7 @@ Muscardinus_avellanarius,GCF_963383645.1
 Onychomys_torridus,GCF_903995425.1
 Martes_martes,GCF_963455335.1
 Macrotis_lagotis,GCF_037893015.1
-Theropithecus_gelada,GCF_003255815.1
+Theropithecus_gelada,GCF_040869185.1
 Mus_pahari,GCF_900095145.1
 Leopardus_geoffroyi,GCF_018350155.1
 Capricornis_sumatraensis,GCF_032405125.1
@@ -132,7 +132,7 @@ Plecotus_auritus,GCF_963455305.1
 Peromyscus_eremicus,GCF_949786415.1
 Neomonachus_schauinslandi,GCF_002201575.2
 Piliocolobus_tephrosceles,GCF_002776525.5
-Mus_caroli,GCF_900094665.2
+Mus_caroli,GCF_978045245.1
 Mastomys_coucha,GCF_008632895.1
 Cnephaeus_nilssonii,GCF_951640355.1
 Gracilinanus_agilis,GCF_016433145.1
@@ -140,7 +140,7 @@ Moschus_berezovskii,GCF_022376915.1
 Phascolarctos_cinereus,GCF_003287225.1
 Mirounga_angustirostris,GCF_029215605.1
 Rousettus_aegyptiacus,GCF_014176215.1
-Puma_concolor,GCF_003327715.1
+Puma_concolor,GCF_028749965.1
 Peromyscus_californicus_insignis,GCF_007827085.1
 Myotis_myotis,GCF_014108235.1
 Monodon_monoceros,GCF_005190385.1
