@@ -40,6 +40,21 @@ process ORTHOFINDER_PHYLO {
         ln -s "\$item" "local_blast_wd/\$name"
     done
 
+    # OrthoFinder v3's "Initial processing of each species" step has a 200s
+    # STALL_TIMEOUT (gathering.DoOrthogroups's default kwarg, never overridden
+    # by any caller in __main__.py) that misfires as a failure on any species
+    # whose own processing genuinely takes longer than that -- not an actual
+    # hang. No CLI flag exists to raise it (davidemms/OrthoFinder#1024), and the
+    # container's site-packages is read-only, so patch the function's default
+    # via a sitecustomize.py on PYTHONPATH instead of editing the installed file.
+    mkdir pypatch
+    cat > pypatch/sitecustomize.py <<'PYEOF'
+import orthofinder.orthogroups.gathering as _gathering
+_defaults = _gathering.DoOrthogroups.__defaults__
+_gathering.DoOrthogroups.__defaults__ = _defaults[:-1] + (3600.,)
+PYEOF
+    export PYTHONPATH="\$PWD/pypatch\${PYTHONPATH:+:\$PYTHONPATH}"
+
     orthofinder \\
         -t $task.cpus \\
         -a ${[task.cpus, 4].min()} \\
