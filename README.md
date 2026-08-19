@@ -51,7 +51,9 @@ The general pipeline logic is as follows:
 ### Optional — chromosome GO enrichment (`--chromo_go`, requires GO annotation)
 
 * Optionally plots GO enrichment of genes by chromosome `[CHROMO_GO]`.
-* Optionally summarizes GO enrichment by chromosome `[SUMMARIZE_CHROMO_GO]`.
+* Optionally summarizes GO enrichment by chromosome `[SUMMARIZE_CHROMO_GO]`, plotting the
+  `--chromo_go_max_chroms` (default 15) most significant chromosomes/scaffolds — the full
+  per-chromosome results are always written to the CSV outputs regardless of this cap.
 
 ### Optional — genome quality statistics (`--stats`)
 
@@ -536,6 +538,7 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `--chromo_go` | Run GO enrichment analysis by chromosome | `null` |
+| `--chromo_go_max_chroms` | Max chromosomes/scaffolds shown per chromosome-GO summary plot, ranked by significant-term count. Trims the plots only — full per-chromosome results are always in the CSV outputs. | `15` |
 | `--go_cutoff` | P-value cutoff for GO enrichment | `0.05` |
 | `--go_type` | GO test type (e.g. `none`) | `none` |
 | `--go_max_plot` | Maximum number of GO terms to plot | `10` |

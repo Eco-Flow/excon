@@ -154,6 +154,11 @@
           "type": "boolean",
           "description": "A flag to optionally choose to run GO analysis on each chromosome"
         },
+        "chromo_go_max_chroms": {
+          "type": "integer",
+          "description": "Maximum number of chromosomes/scaffolds shown per chromosome-GO summary plot, ranked by significant-term count. Above this, a large karyotype or fragmented assembly can produce a heatmap tall enough to exceed ggsave()'s 50in limit and fail outright. Trims the plots only -- every chromosome's full results are still written to the CSV outputs.",
+          "default": 15
+        },
         "go_expansion": {
           "type": "boolean",
           "description": "A flag optionally choose to run a basic expansion/contraction analysis"

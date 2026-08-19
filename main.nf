@@ -61,6 +61,7 @@ params {
     outdir                    : String
     input                     : String
     chromo_go                 : Boolean
+    chromo_go_max_chroms      : Integer
     go_cutoff                 : Float
     go_type                   : String
     go_max_plot               : Integer

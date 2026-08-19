@@ -19,7 +19,7 @@ process SUMMARIZE_CHROMO_GO {
     if [ "\$n_files" -eq 0 ]; then
         echo "No *_res.tab files found in ${res_dir} — skipping summarization (no significant GO terms)."
     else
-        summarize_chromosome_go.R --input ${res_dir}
+        summarize_chromosome_go.R --input ${res_dir} --max_chroms ${params.chromo_go_max_chroms}
     fi
     """
 }
