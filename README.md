@@ -256,7 +256,11 @@ Outputs are written to `results/species_tree/`:
 ### Reusing a finished run
 
 `--orthofinder_results` points at the results directory of a completed OrthoFinder run, so it
-is not repeated and the orthogroup/HOG identifiers are preserved exactly. With
+is not repeated and the orthogroup/HOG identifiers are preserved exactly. The gene-count table
+is picked up automatically — `Phylogenetic_Hierarchical_Orthogroups/N0.tsv` if present (an
+OrthoFinder v2 run), otherwise `Orthogroups/Orthogroups.tsv` (v3, where N0.tsv was folded into
+it as of v3.1.0 — see the "Skipping OrthoFinder" note below for why). Pass `--input_orthogroups`
+alongside `--orthofinder_results` to override this and pin a specific file instead. With
 `--iqtree_species_tree` it also needs `--proteome_dir`, holding the proteomes those gene IDs
 refer to (`results/proteomes/`, written by `RENAME_FASTA`). Add `--skip_cafe` to build a
 species tree and nothing else:
