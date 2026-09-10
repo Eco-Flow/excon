@@ -76,19 +76,19 @@ save_stacked_plot <- function(p_top, p_bottom, stem, width, height_top, height_b
 }
 
 # ── Helper: build a unique, readable label per GO term ────────────────────────
-# GO term names are shown close to full length rather than aggressively cut, so
-# two different terms don't silently collide into the same-looking label (which
-# previously could also merge their data into one heatmap row). Only when two
-# terms still tie at `width` characters is the GO ID appended to disambiguate;
-# `disambig_width` is kept generous so that fallback still shows real
-# distinguishing text, not just an opaque accession number.
-make_go_labels <- function(ids_df, width = 70, disambig_width = 55) {
+# Terms are wrapped onto multiple lines rather than truncated, so no text is
+# ever lost — some GO term names are genuinely longer than any single-line
+# label could show, and cutting them off is exactly the "can't tell two terms
+# apart, or recover the missing words" problem this replaces. The GO ID is only
+# appended (on its own line) in the rare case where two terms are identical
+# even before wrapping — a safety net, not something normal GO naming should
+# ever trigger.
+make_go_labels <- function(ids_df, width = 40) {
   ids_df %>%
-    mutate(GO_label_raw = str_trunc(GO_term, width)) %>%
+    mutate(GO_label_raw = str_wrap(GO_term, width = width)) %>%
     group_by(GO_label_raw) %>%
     mutate(
-      GO_label = if (n() > 1) paste0(str_trunc(GO_term, disambig_width), " [", GO_ID, "]")
-                 else GO_label_raw
+      GO_label = if (n() > 1) paste0(GO_label_raw, "\n[", GO_ID, "]") else GO_label_raw
     ) %>%
     ungroup() %>%
     select(GO_ID, GO_term, GO_label)
@@ -127,6 +127,13 @@ if (nrow(sig_terms) == 0) {
 all_sig_ids <- sig_terms %>% distinct(GO_ID, GO_term)
 label_map   <- make_go_labels(all_sig_ids)
 sig_terms   <- sig_terms %>% left_join(label_map, by = c("GO_ID", "GO_term"))
+
+# Wrapped labels can span multiple lines. Scaling every row's height by the
+# single longest label (e.g. doubling all of them because a handful wrap to 2
+# lines) wastes huge amounts of space around the majority that fit on one —
+# only the average extra-line burden actually needs to be reclaimed. Capped so
+# even a dataset with unusually long terms can't blow the figure up further.
+label_lines <- min(1 + 0.6 * mean(str_count(label_map$GO_label, "\n")), 1.5)
 
 plot_dat <- dat %>%
   semi_join(sig_terms, by = c("GO_ID", "GO_term", "direction")) %>%
@@ -281,7 +288,7 @@ make_aligned_heatmap <- function(data, title_suffix = "") {
 
 # All terms
 p3 <- make_aligned_heatmap(aligned_plot_dat, " (all terms)")
-h_all <- max(4, nrow(all_sig_ids) * 0.25 + 2)
+h_all <- max(4, nrow(all_sig_ids) * 0.25 * label_lines + 2)
 save_plot(p3, "heatmaps/go_enrichment_heatmap_aligned", 18, h_all)
 cat("Aligned heatmap (all) saved\n")
 
@@ -292,7 +299,7 @@ if (nrow(shared_ids) > 0) {
     filter(aligned_plot_dat, GO_ID %in% shared_ids$GO_ID),
     " (shared terms only)"
   )
-  h_shared <- max(4, nrow(shared_ids) * 0.25 + 2)
+  h_shared <- max(4, nrow(shared_ids) * 0.25 * label_lines + 2)
   save_plot(p3b, "heatmaps/go_enrichment_heatmap_aligned_shared", 18, h_shared)
   cat("Aligned heatmap (shared) saved\n")
 }
@@ -317,7 +324,7 @@ if (nrow(exp_only_ids) > 0) {
     theme_minimal(base_size = 9) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7),
           axis.text.y = element_text(size = 7), panel.grid = element_blank())
-  h_exp <- max(4, nrow(exp_only_ids) * 0.25 + 2)
+  h_exp <- max(4, nrow(exp_only_ids) * 0.25 * label_lines + 2)
   save_plot(p_exp_only, "heatmaps/go_enrichment_heatmap_expanding_only", 14, h_exp)
   cat("Expanding-only heatmap saved\n")
 }
@@ -342,7 +349,7 @@ if (nrow(cont_only_ids) > 0) {
     theme_minimal(base_size = 9) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7),
           axis.text.y = element_text(size = 7), panel.grid = element_blank())
-  h_cont <- max(4, nrow(cont_only_ids) * 0.25 + 2)
+  h_cont <- max(4, nrow(cont_only_ids) * 0.25 * label_lines + 2)
   save_plot(p_cont_only, "heatmaps/go_enrichment_heatmap_contracting_only", 14, h_cont)
   cat("Contracting-only heatmap saved\n")
 }
@@ -390,7 +397,7 @@ p4 <- ggplot(aligned_dot_dat, aes(x = n_sig, y = GO_label, colour = direction, s
     panel.spacing = unit(2, "cm")
   )
 
-h_dot <- max(4, nrow(all_sig_ids) * 0.2 + 2)
+h_dot <- max(4, nrow(all_sig_ids) * 0.2 * label_lines + 2)
 save_plot(p4, "dotplots/go_enrichment_dotplot_aligned", 12, h_dot)
 cat("Aligned dot plot saved\n")
 
