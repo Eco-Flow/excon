@@ -34,6 +34,25 @@ save_plot <- function(p, stem, width, height) {
          dpi = 150, limitsize = FALSE)
 }
 
+# ── Helper: build a unique, readable label per GO term ────────────────────────
+# GO term names are shown close to full length rather than aggressively cut, so
+# two different terms don't silently collide into the same-looking label (which
+# previously could also merge their data into one heatmap row). Only when two
+# terms still tie at `width` characters is the GO ID appended to disambiguate;
+# `disambig_width` is kept generous so that fallback still shows real
+# distinguishing text, not just an opaque accession number.
+make_go_labels <- function(ids_df, width = 70, disambig_width = 55) {
+  ids_df %>%
+    mutate(GO_label_raw = str_trunc(GO_term, width)) %>%
+    group_by(GO_label_raw) %>%
+    mutate(
+      GO_label = if (n() > 1) paste0(str_trunc(GO_term, disambig_width), " [", GO_ID, "]")
+                 else GO_label_raw
+    ) %>%
+    ungroup() %>%
+    select(GO_ID, GO_term, GO_label)
+}
+
 # ── Load & reshape ─────────────────────────────────────────────────────────────
 read_go <- function(file, direction) {
   read_tsv(file, show_col_types = FALSE, quote = "") %>%
@@ -63,17 +82,22 @@ if (nrow(sig_terms) == 0) {
   quit(status = 0)
 }
 
+# Built once, up front, so every plot below uses the same non-colliding labels.
+all_sig_ids <- sig_terms %>% distinct(GO_ID, GO_term)
+label_map   <- make_go_labels(all_sig_ids)
+sig_terms   <- sig_terms %>% left_join(label_map, by = c("GO_ID", "GO_term"))
+
 plot_dat <- dat %>%
   semi_join(sig_terms, by = c("GO_ID", "GO_term", "direction")) %>%
   filter(!is.na(pvalue)) %>%
+  left_join(label_map, by = c("GO_ID", "GO_term")) %>%
   mutate(
     neg_log10_p = -log10(pvalue),
-    sig         = pvalue < PVAL_CUTOFF,
-    GO_label    = str_trunc(GO_term, 45)
+    sig         = pvalue < PVAL_CUTOFF
   )
 
 term_order <- sig_terms %>%
-  group_by(GO_label = str_trunc(GO_term, 45), direction) %>%
+  group_by(GO_label, direction) %>%
   summarise(n_sig = max(n_sig), .groups = "drop") %>%
   arrange(direction, desc(n_sig))
 
@@ -125,7 +149,7 @@ cat("Heatmap saved\n")
 
 # ── Dot plot ───────────────────────────────────────────────────────────────────
 dot_dat <- sig_terms %>%
-  mutate(GO_label = factor(str_trunc(GO_term, 45), levels = rev(unique(term_order$GO_label))))
+  mutate(GO_label = factor(GO_label, levels = rev(unique(term_order$GO_label))))
 
 p2 <- ggplot(dot_dat, aes(x = n_sig, y = GO_label, colour = direction, size = n_sig)) +
   geom_point(alpha = 0.8) +
@@ -144,8 +168,8 @@ save_plot(p2, "go_enrichment_dotplot", 10, 6)
 cat("Dot plot saved\n")
 
 # ── Aligned figures ────────────────────────────────────────────────────────────
-all_sig_ids <- sig_terms %>% distinct(GO_ID, GO_term)
-
+# all_sig_ids and label_map were already built above, right after sig_terms,
+# so every plot (including this one) uses the same non-colliding labels.
 exp_ids  <- sig_terms %>% filter(direction == "expanding")   %>% distinct(GO_ID)
 cont_ids <- sig_terms %>% filter(direction == "contracting") %>% distinct(GO_ID)
 
@@ -155,15 +179,6 @@ term_class <- all_sig_ids %>%
     GO_ID %in% exp_ids$GO_ID                              ~ "expanding only",
     TRUE                                                   ~ "contracting only"
   ))
-
-label_map <- all_sig_ids %>%
-  mutate(GO_label_raw = str_trunc(GO_term, 45)) %>%
-  group_by(GO_label_raw) %>%
-  mutate(
-    GO_label = if (n() > 1) paste0(str_trunc(GO_term, 35), " [", GO_ID, "]") else GO_label_raw
-  ) %>%
-  ungroup() %>%
-  select(GO_ID, GO_term, GO_label)
 
 all_species <- dat %>% distinct(species)
 complete_grid <- all_sig_ids %>%
