@@ -58,6 +58,23 @@ if (is_dated) {
     cat("Tree is not ultrametric — applying chronoMPL().\n")
     tre <- chronoMPL(tre)
   }
+  # chronoMPL() derives each node's age from the mean path length to its
+  # descendant tips (Britton et al. 2002) and sets edge lengths as the age
+  # difference between parent and child — on trees that deviate from a strict
+  # molecular clock this can go non-positive (a documented ape limitation,
+  # more likely on larger or more unbalanced trees). CAFE5 rejects such a tree
+  # outright ("Invalid branch length"), and no amount of downstream family
+  # filtering can fix a broken tree, so retrying only reproduces the same
+  # failure. Clamp any non-positive branch to a small positive value instead.
+  n_nonpositive <- sum(tre$edge.length <= 0)
+  if (n_nonpositive > 0) {
+    positive_lengths <- tre$edge.length[tre$edge.length > 0]
+    epsilon <- if (length(positive_lengths) > 0) min(positive_lengths) * 0.01 else 1e-6
+    cat("WARNING: chronoMPL() produced", n_nonpositive,
+        "non-positive branch length(s) — clamping to", signif(epsilon, 4),
+        "so CAFE5 can proceed.\n")
+    tre$edge.length[tre$edge.length <= 0] <- epsilon
+  }
   tre$edge.length <- tre$edge.length * scale_factor
 }
 

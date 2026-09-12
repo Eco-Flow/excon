@@ -167,7 +167,7 @@ stage_order <- c(
   # Annotation preparation
   "AGAT_SPKEEPLONGESTISOFORM", "GFFREAD", "RENAME_FASTA",
   # Orthology
-  "ORTHOFINDER_CAFE", "ORTHOFINDER_V2_CAFE",
+  "ORTHOFINDER_BLAST_CAFE", "ORTHOFINDER_PHYLO_CAFE", "ORTHOFINDER_V2_CAFE",
   # Tree
   "RESCALE_TREE",
   # CAFE
@@ -261,7 +261,7 @@ message("Saved: fig3_efficiency")
 complete_run_ids <- perproc_key |>
   group_by(run_id, genome_size, phylogeny, quality, n_species) |>
   summarise(
-    is_complete = any(process %in% c("ORTHOFINDER_CAFE", "ORTHOFINDER_V2_CAFE")),
+    is_complete = any(process %in% c("ORTHOFINDER_PHYLO_CAFE", "ORTHOFINDER_V2_CAFE")),
     .groups = "drop"
   ) |>
   filter(is_complete)
@@ -292,7 +292,8 @@ stage_cols <- c(
   "GFFREAD"                   = "#44AA99",  # green-teal
   "RENAME_FASTA"              = "#117733",  # dark green
   # Orthology — oranges
-  "ORTHOFINDER_CAFE"          = "#E69F00",  # orange
+  "ORTHOFINDER_BLAST_CAFE"    = "#E69F00",  # orange
+  "ORTHOFINDER_PHYLO_CAFE"    = "#FDB863",  # amber
   "ORTHOFINDER_V2_CAFE"       = "#D55E00",  # vermillion
   # Tree
   "RESCALE_TREE"              = "#999999",  # grey
