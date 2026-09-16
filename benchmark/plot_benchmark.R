@@ -431,7 +431,7 @@ p_guidance <- ggplot() +
             lineheight = 0.85, colour = "grey20",
             inherit.aes = FALSE) +
   scale_size_continuous(name = "n species", range = c(3, 8),
-                        breaks = c(10, 30, 70, 100)) +
+                        breaks = c(10, 30, 50)) +
   scale_x_log10(
     name   = "Genome size (Mb)",
     labels = label_comma(),

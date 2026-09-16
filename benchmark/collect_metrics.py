@@ -175,16 +175,43 @@ CAFE_STAGE_ORDER = [
 ]
 
 
+# A -resume after a multi-day interruption (e.g. a cluster outage, or a bug
+# fix requiring a manual rerun) leaves cached tasks with their *original*
+# submit timestamp, so a naive max(end) - min(submit) span across the whole
+# trace includes the entire idle gap as if it were active run time. Gaps
+# longer than this are assumed to be exactly that kind of interruption rather
+# than legitimate scheduler queue wait, and are excluded from wall time.
+GAP_THRESHOLD_S = 3 * 3600  # 3 hours
+
+
+def _active_wall_seconds(tasks: list, gap_threshold_s: float = GAP_THRESHOLD_S) -> float:
+    """Total wall-clock time actually spent on a set of tasks: the union of
+    each task's [submit, submit+duration] interval, with any gap between
+    consecutive intervals longer than gap_threshold_s excluded as idle time."""
+    intervals = sorted(
+        (t['submit'], t['submit'] + timedelta(seconds=t['duration_s']))
+        for t in tasks if t['submit']
+    )
+    if not intervals:
+        return 0.0
+    total = 0.0
+    session_start, session_end = intervals[0]
+    for start, end in intervals[1:]:
+        gap = (start - session_end).total_seconds()
+        if gap > gap_threshold_s:
+            total += (session_end - session_start).total_seconds()
+            session_start, session_end = start, end
+        else:
+            session_end = max(session_end, end)
+    total += (session_end - session_start).total_seconds()
+    return total
+
+
 def compute_run_metrics(tasks: list, n_species: int, max_cpus: int) -> dict:
     if not tasks:
         return {}
 
-    submits   = [t['submit'] for t in tasks if t['submit']]
-    end_times = [
-        t['submit'] + timedelta(seconds=t['duration_s'])
-        for t in tasks if t['submit']
-    ]
-    total_wall_s = (max(end_times) - min(submits)).total_seconds() if submits else 0.0
+    total_wall_s = _active_wall_seconds(tasks)
     total_wall_h = total_wall_s / 3600
 
     cpu_seconds = sum(t['realtime_s'] * t['cpu_frac'] for t in tasks)
@@ -224,14 +251,10 @@ def compute_per_process(tasks: list) -> dict:
     result = {}
     for proc, ts in groups.items():
         realtime_total = sum(t['realtime_s'] for t in ts)
-        submits   = [t['submit'] for t in ts if t['submit']]
-        end_times = [
-            t['submit'] + timedelta(seconds=t['duration_s'])
-            for t in ts if t['submit']
-        ]
+        has_submits = any(t['submit'] for t in ts)
         wall_s = (
-            (max(end_times) - min(submits)).total_seconds()
-            if submits else sum(t['duration_s'] for t in ts)
+            _active_wall_seconds(ts) if has_submits
+            else sum(t['duration_s'] for t in ts)
         )
         # max_duration_s: the slowest individual task duration.
         # For parallel per-species stages this is the stage bottleneck time
