@@ -328,10 +328,7 @@ p_stack <- ggplot(stacked,
                     drop = TRUE) +
   labs(
     x        = NULL,
-    y        = "Slowest task duration (min)",
-    title    = "Pipeline time composition across all complete runs",
-    subtitle = paste0("Each segment = slowest individual task for that stage",
-                      " (single-task stages show full duration)")
+    y        = "Slowest task duration (min)"
   ) +
   theme_bench() +
   theme(
@@ -453,15 +450,6 @@ p_guidance <- ggplot() +
     labels = c("TRUE" = "Yes", "FALSE" = "No")
   ) +
   facet_wrap(~phylogeny, labeller = label_both) +
-  labs(
-    title    = "Will the pipeline work for your data?",
-    subtitle = paste0(
-      "Genome size and scaffold N50 are representative values defined in ",
-      "benchmark/inputs/metadata.tsv — not measured from assemblies.\n",
-      "Locate your organism relative to the labelled benchmark clades to ",
-      "estimate run time and likelihood of CAFE convergence."
-    )
-  ) +
   theme_bench() +
   theme(legend.box = "horizontal")
 
