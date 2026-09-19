@@ -4,12 +4,12 @@ nextflow_pipeline {
     script "../main.nf"
     tag "pipeline"
 
-    test("-profile test_bacteria,docker") {
+    test("-profile test_chlamydia,docker") {
 
         when {
             params {
                 outdir = "$outputDir"
-                // test_bacteria.config's own limits (10 CPU/24GB) assume a real
+                // test_chlamydia.config's own limits (10 CPU/24GB) assume a real
                 // HPC allocation; cap to what the CI runner actually has.
                 max_cpus = 4
                 max_memory = '14.GB'

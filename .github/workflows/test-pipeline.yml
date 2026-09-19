@@ -1,8 +1,10 @@
 name: Run Pipeline Tests
 
-# Real end-to-end run of the pipeline on the smallest test dataset
-# (test_bacteria: 4 tiny Mycoplasmoides genomes), on every PR targeting main,
-# via nf-test's pipeline-level snapshot test (tests/default.nf.test). Checks
+# Real end-to-end run of the pipeline on test_chlamydia (10 Chlamydia
+# genomes, close enough for CAFE5 to actually converge — see README's test
+# profile table; test_bacteria is faster but never converges), on every PR
+# targeting main, via nf-test's pipeline-level snapshot test
+# (tests/default.nf.test). Checks
 # workflow.success plus that output structure/content matches the committed
 # snapshot (tests/default.nf.test.snap), not just that nothing crashed.
 #
