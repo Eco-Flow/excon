@@ -23,7 +23,12 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # CAFE_RUN_K requests 8 CPUs/task (process_high) but only 4 real cores
+    # exist on this runner, so the 6-way k-sweep that's designed to run in
+    # parallel instead runs fully serially, roughly 6x a single fit's
+    # duration. Generous margin here rather than risk another ~45min
+    # round-trip to a too-tight timeout.
+    timeout-minutes: 180
 
     steps:
       - uses: actions/checkout@v4.1.1
