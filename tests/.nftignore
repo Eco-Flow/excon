@@ -1,0 +1,21 @@
+.DS_Store
+
+# Timestamped filenames and content (execution_trace_<timestamp>.tsv etc,
+# see nextflow.config's trace_report_suffix) — excluded from structure too.
+pipeline_info/*
+
+# OrthoFinder gene trees/alignments/species tree have known run-to-run
+# variance from tree-building/tie-breaking (documented in the old,
+# now-removed orthofinder.nf.test). Existence/structure is still checked
+# via stable_path; only content is skipped here.
+orthofinder_cafe/**/*.txt
+orthofinder_cafe/**/*.tre
+orthofinder_cafe/**/*.nwk
+orthofinder_cafe/**/MultipleSequenceAlignments/**
+orthofinder_cafe/**/Gene_Trees/**
+orthofinder_cafe/**/Resolved_Gene_Trees/**
+
+# CAFE5's Nelder-Mead optimizer can land on slightly different numeric
+# results (lambda, -lnL) run to run even on identical input.
+cafe/**/*.txt
+cafe/**/*log*

@@ -1,10 +1,13 @@
 name: Run Pipeline Tests
 
 # Real end-to-end run of the pipeline on the smallest test dataset
-# (test_bacteria: 4 tiny Mycoplasmoides genomes), on every PR targeting main.
+# (test_bacteria: 4 tiny Mycoplasmoides genomes), on every PR targeting main,
+# via nf-test's pipeline-level snapshot test (tests/default.nf.test). Checks
+# workflow.success plus that output structure/content matches the committed
+# snapshot (tests/default.nf.test.snap), not just that nothing crashed.
+#
 # Not a stub run — most CAFE/GO modules don't have stub: blocks yet, so a
 # -stub-run would feed real downstream processes with fake upstream output.
-# Runs for real instead, small enough to still be fast.
 
 on:
   pull_request:
@@ -13,6 +16,7 @@ on:
 
 env:
   NXF_VER: 26.04.6
+  NFT_VER: 0.9.5
 
 jobs:
   test:
@@ -34,9 +38,23 @@ jobs:
           sudo mv nextflow /usr/local/bin/
           nextflow -v
 
-      - name: Run pipeline on test_bacteria
+      - name: Install nf-test
         run: |
-          nextflow run main.nf \
-            -profile test_bacteria,docker \
-            --max_cpus 2 \
-            --max_memory 6.GB
+          curl -fsSL https://code.askimed.com/install/nf-test | bash
+          sudo mv nf-test /usr/local/bin/
+          nf-test version
+
+      - name: Run nf-test
+        run: nf-test test tests/default.nf.test --ci --verbose
+
+      # Always upload, whether or not a committed snapshot exists yet — lets a
+      # freshly (re)generated snapshot be pulled down and reviewed/committed,
+      # and gives something to inspect when a comparison against an existing
+      # snapshot fails.
+      - name: Upload snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nf-test-snapshot
+          path: tests/default.nf.test.snap
+          if-no-files-found: warn

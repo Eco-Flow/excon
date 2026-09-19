@@ -1,0 +1,38 @@
+nextflow_pipeline {
+
+    name "Test pipeline"
+    script "../main.nf"
+    tag "pipeline"
+
+    test("-profile test_bacteria,docker") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            // stable_path: every file/dir under outdir with a stable relative path.
+            // pipeline_info is excluded entirely — its filenames are timestamped
+            // (execution_trace_<timestamp>.tsv etc, see nextflow.config's
+            // trace_report_suffix), so even the *paths* differ between runs.
+            def stable_path = getAllFilesFromDir(params.outdir, relative: true, includeDir: true,
+                ignore: ['pipeline_info/*'])
+
+            // stable_content: content of files whose content should be identical
+            // run to run. tests/.nftignore excludes OrthoFinder trees/alignments
+            // and CAFE5's numeric fits, both have known run-to-run variance
+            // (random seeding / optimizer path) unrelated to correctness.
+            def stable_content = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')
+
+            assert workflow.success
+            assertAll(
+                { assert snapshot(
+                    stable_path,
+                    stable_content
+                ).match() }
+            )
+        }
+    }
+}
