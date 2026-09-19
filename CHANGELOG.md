@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [v2.5.0] - 2026-09-19 - Semiquincentennial
 
 ### Fixed
 - **`--orthofinder_results` without an explicit `--input_orthogroups` always looked for `Phylogenetic_Hierarchical_Orthogroups/N0.tsv`, which does not exist for a v3.1.x OrthoFinder run.** OrthoFinder v3.1.0 folded the old root-level `N0.tsv` into `Orthogroups/Orthogroups.tsv` (confirmed against [OrthoFinder/OrthoFinder#39](https://github.com/OrthoFinder/OrthoFinder/issues/39)) — `Phylogenetic_Hierarchical_Orthogroups/` now only holds N1 upward. This pipeline's own default (v3) live-run path already accounts for that (`ORTHOFINDER_PHYLO`'s `orthologues` emit is `Orthogroups.tsv`, not N0.tsv), and the README's `--input_tree`/`--input_orthogroups` guidance already documented the v2-vs-v3 distinction correctly — only the `--orthofinder_results` reuse branch still assumed N0.tsv unconditionally, so reusing any v3 run this way failed with a missing-file error. It now checks whether `N0.tsv` exists (a v2.5.5 run, which predates the merge and still writes a real one) and falls back to `Orthogroups.tsv` otherwise, matching what the live run paths already do for each version. An explicit `--input_orthogroups` still overrides both.
