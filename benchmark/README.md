@@ -371,7 +371,7 @@ benchmark/results/
             └── execution_report_<timestamp>.html   # resource summary
 ```
 
-After all runs complete, the runner calls `collect_metrics.py` automatically.
+Neither `run_benchmark.sh` nor `launch_all.sh` calls `collect_metrics.py` automatically — run it yourself once enough runs have completed (see the workflow example below).
 
 ### Metrics files
 
