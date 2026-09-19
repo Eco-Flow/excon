@@ -43,6 +43,17 @@ if (is_dated) {
   }
 } else {
   if (!is.ultrametric(tre)) tre <- chronoMPL(tre)
+  # See cafe_prep.R for why chronoMPL() can produce non-positive branch
+  # lengths and why clamping (not re-filtering) is the correct fix.
+  n_nonpositive <- sum(tre$edge.length <= 0)
+  if (n_nonpositive > 0) {
+    positive_lengths <- tre$edge.length[tre$edge.length > 0]
+    epsilon <- if (length(positive_lengths) > 0) min(positive_lengths) * 0.01 else 1e-6
+    cat("WARNING: chronoMPL() produced", n_nonpositive,
+        "non-positive branch length(s) — clamping to", signif(epsilon, 4),
+        "so CAFE5 can proceed.\n")
+    tre$edge.length[tre$edge.length <= 0] <- epsilon
+  }
   tre$edge.length <- tre$edge.length * scale_factor
 }
 tree_leaves <- tre$tip.label

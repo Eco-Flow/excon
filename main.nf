@@ -61,6 +61,7 @@ params {
     outdir                    : String
     input                     : String
     chromo_go                 : Boolean
+    chromo_go_max_chroms      : Integer
     go_cutoff                 : Float
     go_type                   : String
     go_max_plot               : Integer
@@ -178,8 +179,8 @@ workflow {
       error "ERROR: give either --cafe_clade or --cafe_species, not both."
    }
 
-   if (!(params.internal_stop_action in ['strip', 'drop'])) {
-      error "ERROR: --internal_stop_action must be 'strip' or 'drop', got '${params.internal_stop_action}'."
+   if (!(params.internal_stop_action in ['strip', 'drop', 'longest_orf'])) {
+      error "ERROR: --internal_stop_action must be 'strip', 'drop' or 'longest_orf', got '${params.internal_stop_action}'."
    }
 
    if (params.proteome_dir && !params.orthofinder_results) {
@@ -355,9 +356,18 @@ workflow {
             ch_orthofinder_dir = Channel.fromPath(params.orthofinder_results, type: 'dir', checkIfExists: true)
                 .map { d -> [ [id: "ortho_cafe"], d ] }
             ch_speciestree = Channel.fromPath("${params.orthofinder_results}/Species_Tree/SpeciesTree_rooted_node_labels.txt", checkIfExists: true)
+            // OrthoFinder v3.1.0 folded the old root-level N0.tsv into Orthogroups.tsv (the
+            // file the live v3 run path already uses for ch_orthologues, via
+            // ORTHOFINDER_PHYLO's own 'orthologues' emit) -- Phylogenetic_Hierarchical_
+            // Orthogroups/ now only holds N1 upward. A v2.5.5 run (ORTHOFINDER_V2, predating
+            // that change) still writes a real N0.tsv, so prefer it when present rather than
+            // assuming either OrthoFinder version produced the directory being reused.
+            ch_n0_fn = "${params.orthofinder_results}/Phylogenetic_Hierarchical_Orthogroups/N0.tsv"
             ch_orthologues = params.input_orthogroups ?
                 Channel.fromPath(params.input_orthogroups, checkIfExists: true) :
-                Channel.fromPath("${params.orthofinder_results}/Phylogenetic_Hierarchical_Orthogroups/N0.tsv", checkIfExists: true)
+                file(ch_n0_fn).exists() ?
+                    Channel.fromPath(ch_n0_fn, checkIfExists: true) :
+                    Channel.fromPath("${params.orthofinder_results}/Orthogroups/Orthogroups.tsv", checkIfExists: true)
         } else if (params.input_tree && params.input_orthogroups) {
             ch_speciestree = Channel.fromPath(params.input_tree, checkIfExists: true)
             ch_orthologues = Channel.fromPath(params.input_orthogroups, checkIfExists: true)

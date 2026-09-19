@@ -51,7 +51,9 @@ The general pipeline logic is as follows:
 ### Optional — chromosome GO enrichment (`--chromo_go`, requires GO annotation)
 
 * Optionally plots GO enrichment of genes by chromosome `[CHROMO_GO]`.
-* Optionally summarizes GO enrichment by chromosome `[SUMMARIZE_CHROMO_GO]`.
+* Optionally summarizes GO enrichment by chromosome `[SUMMARIZE_CHROMO_GO]`, plotting the
+  `--chromo_go_max_chroms` (default 15) most significant chromosomes/scaffolds — the full
+  per-chromosome results are always written to the CSV outputs regardless of this cap.
 
 ### Optional — genome quality statistics (`--stats`)
 
@@ -139,32 +141,50 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 ### Internal stop codons (optional)
 
 `RENAME_FASTA` translates each species' CDS to protein and writes `results/proteomes/<species>.clean.fasta`,
-the input OrthoFinder actually receives. `gffread` marks a normal, in-frame stop codon with a
-trailing `*` — expected, and always removed. A `*` anywhere else in the sequence means the CDS
-has a **premature stop**: a common sign of a bad gene model (an assembly gap, a frameshift, an
-annotation error, or two species annotated by different pipelines with different stringency).
-`--internal_stop_action` controls what happens to that gene:
+the input OrthoFinder actually receives. `GFFREAD` is run with `-S`, so gffread marks every stop
+codon it translates with `*` (its own default is `.`, which this pipeline's detection can't see —
+without `-S` a premature stop would pass through silently). gffread never prints the true terminal
+stop itself, trimming it internally before output, so any `*` found in the translated sequence
+means the CDS has a **premature stop**: a common sign of a bad gene model (an assembly gap, a
+frameshift, an annotation error, or two species annotated by different pipelines with different
+stringency). `--internal_stop_action` controls what happens to that gene:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--internal_stop_action` | `strip` or `drop` (see below) | `strip` |
+| `--internal_stop_action` | `longest_orf`, `strip` or `drop` (see below) | `longest_orf` |
 
-* **`strip`** (default) removes every `*` in the sequence, including internal ones, which splices
-  the peptide before and after the premature stop into one contiguous sequence. This keeps every
-  gene in the analysis, but the spliced sequence is not a real protein — it may not resemble the
-  gene's true product at all.
+* **`longest_orf`** (default) keeps only the single longest stretch of sequence between stops —
+  still within the reading frame the annotation already defines (this is not a 3-/6-frame search
+  for an alternative ORF, just the longest real fragment of the one CDS translation gffread
+  produced). A gene that is mostly correct with one truncating error near an end keeps most of its
+  length and is likely to still resolve to the right orthogroup, rather than being spliced into a
+  chimera (`strip`) or lost outright (`drop`). It is the weakest option when the true premature
+  stop is near the start or middle of the gene, since the surviving fragment may then be too short
+  to place reliably.
+* **`strip`** removes every `*` in the sequence, including internal ones, which splices the
+  peptide before and after the premature stop into one contiguous sequence. This keeps every gene
+  in the analysis, but the spliced sequence is not a real protein — it may not resemble the gene's
+  true product at all, and could coincidentally resemble something else entirely (the two flanking
+  fragments are, in general, unrelated to each other).
 * **`drop`** discards the whole gene instead — the behaviour [OrthoFinder's own documentation
   recommends](https://github.com/davidemms/OrthoFinder) for genes with internal stops, and what
   the CAFE5 tutorial's own filtering step assumes has already happened upstream. The gene is
-  absent from that species' proteome entirely, rather than present with a fabricated sequence.
+  absent from that species' proteome entirely, rather than present with a fabricated sequence. The
+  cost is the mirror image of `strip`'s: a real ortholog with an otherwise-correct gene model can
+  vanish from that species' count purely because of one annotation-error stop, which for CAFE5
+  looks indistinguishable from a genuine lineage-specific loss.
 
 Either way, every affected gene is listed in `results/proteomes/<species>.internal_stop_codons.tsv`
-(`gene_id`, `action` taken), so the choice can be audited regardless of which one you pick. There
-is no universally correct default — `strip` keeps gene counts comparable across species (useful
-when internal stops are rare and you care more about not losing genes than about sequence purity),
-while `drop` is more defensible when you're specifically comparing gene *counts* between species
-with different annotation quality (e.g. CAFE5 itself), since a spliced fake sequence could still
-seed a spurious orthogroup membership that a dropped gene cannot.
+(`gene_id`, `action` taken, `original_length`, `kept_length`), so the choice can be audited
+regardless of which one you pick — `kept_length` in particular shows how much of `longest_orf`'s
+output actually survived per gene, which the action label alone doesn't convey. `longest_orf` is
+the default because it is the best general-purpose compromise for count-based analyses like
+CAFE5 — it avoids `strip`'s chimera risk while, unlike `drop`, not zeroing out a species for a
+gene that is mostly real. `strip` is still worth choosing if you specifically want to keep every
+gene present regardless of sequence purity (e.g. feeding a downstream step that only cares about
+gene presence/absence, not the sequence); `drop` if you want counts free of any fabricated or
+truncated sequence at all, and can accept the corresponding risk of losing real genes to
+annotation noise.
 
 ### OrthoFinder options (optional)
 
@@ -236,7 +256,11 @@ Outputs are written to `results/species_tree/`:
 ### Reusing a finished run
 
 `--orthofinder_results` points at the results directory of a completed OrthoFinder run, so it
-is not repeated and the orthogroup/HOG identifiers are preserved exactly. With
+is not repeated and the orthogroup/HOG identifiers are preserved exactly. The gene-count table
+is picked up automatically — `Phylogenetic_Hierarchical_Orthogroups/N0.tsv` if present (an
+OrthoFinder v2 run), otherwise `Orthogroups/Orthogroups.tsv` (v3, where N0.tsv was folded into
+it as of v3.1.0 — see the "Skipping OrthoFinder" note below for why). Pass `--input_orthogroups`
+alongside `--orthofinder_results` to override this and pin a specific file instead. With
 `--iqtree_species_tree` it also needs `--proteome_dir`, holding the proteomes those gene IDs
 refer to (`results/proteomes/`, written by `RENAME_FASTA`). Add `--skip_cafe` to build a
 species tree and nothing else:
@@ -518,6 +542,7 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `--chromo_go` | Run GO enrichment analysis by chromosome | `null` |
+| `--chromo_go_max_chroms` | Max chromosomes/scaffolds shown per chromosome-GO summary plot, ranked by significant-term count. Trims the plots only — full per-chromosome results are always in the CSV outputs. | `15` |
 | `--go_cutoff` | P-value cutoff for GO enrichment | `0.05` |
 | `--go_type` | GO test type (e.g. `none`) | `none` |
 | `--go_max_plot` | Maximum number of GO terms to plot | `10` |

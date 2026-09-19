@@ -25,6 +25,7 @@ go_results_dir       <- parse_arg(args, "--input")
 bonferroni_threshold <- as.double(parse_arg(args, "--bonferroni", 0.01))
 min_annotated        <- as.integer(parse_arg(args, "--min_annotated", 10))
 top_n_hits           <- as.integer(parse_arg(args, "--top_n_hits", 5))
+max_chroms           <- as.integer(parse_arg(args, "--max_chroms", 15))
 
 if (is.null(go_results_dir)) stop("--input is required")
 if (!dir.exists(go_results_dir)) stop(sprintf("Input directory not found: %s", go_results_dir))
@@ -87,6 +88,32 @@ sig_per_chrom <- significant_go %>%
 
 print(sig_per_chrom)
 
+# Plots below are capped to the --max_chroms most significant chromosomes.
+# Without this, a genome with many scaffolds (a fragmented assembly, or just a
+# species with a large karyotype — birds routinely have 30-80 chromosomes)
+# produces a heatmap tall enough to exceed ggsave()'s 50-inch sanity limit and
+# fail outright; even short of that ceiling, a plot with dozens of chromosomes
+# stops being readable well before it stops being drawable. This only trims
+# the *plots* — every chromosome's full results are still in the CSV outputs.
+n_chroms_total <- nrow(sig_per_chrom)
+chroms_to_plot <- sig_per_chrom %>%
+  slice_head(n = max_chroms) %>%
+  pull(Chromosome)
+n_chroms_dropped <- n_chroms_total - length(chroms_to_plot)
+
+if (n_chroms_dropped > 0) {
+  cat(sprintf(
+    "Plots show the top %d of %d chromosomes by significant-term count (%d omitted from plots only — full data still in the CSV outputs; adjust with --max_chroms)\n",
+    length(chroms_to_plot), n_chroms_total, n_chroms_dropped
+  ))
+}
+
+plot_subtitle_suffix <- if (n_chroms_dropped > 0) {
+  sprintf(" | top %d of %d chromosomes shown", length(chroms_to_plot), n_chroms_total)
+} else {
+  ""
+}
+
 # ============================================================================
 # TOP HITS
 # ============================================================================
@@ -100,7 +127,7 @@ top_hits <- significant_go %>%
 # PLOT 1 — SIGNIFICANT TERMS PER CHROMOSOME
 # ============================================================================
 
-p1 <- ggplot(sig_per_chrom,
+p1 <- ggplot(sig_per_chrom %>% filter(Chromosome %in% chroms_to_plot),
              aes(x = reorder(Chromosome, N_Significant),
                  y = N_Significant)) +
   geom_col(fill = "#377EB8") +
@@ -108,8 +135,9 @@ p1 <- ggplot(sig_per_chrom,
   theme_minimal() +
   labs(
     title    = "Significant GO Terms per Chromosome",
-    subtitle = sprintf("Bonferroni < %.2f | Annotated >= %d",
+    subtitle = paste0(sprintf("Bonferroni < %.2f | Annotated >= %d",
                        bonferroni_threshold, min_annotated),
+                       plot_subtitle_suffix),
     x = "Chromosome",
     y = "Count"
   )
@@ -122,6 +150,7 @@ ggsave(paste0(prefix, "_go_summary_per_chromosome.pdf"), p1,
 # ============================================================================
 
 heatmap_data <- top_hits %>%
+  filter(Chromosome %in% chroms_to_plot) %>%
   mutate(
     Term_Label           = paste0(substr(Term, 1, 40), " (", GO.ID, ")"),
     Neg_log10_P          = -log10(bonferroni),
@@ -140,15 +169,18 @@ p2 <- ggplot(heatmap_data,
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(
     title    = "GO Enrichment Heatmap",
-    subtitle = sprintf("Bonferroni < %.2e | Annotated >= %d",
+    subtitle = paste0(sprintf("Bonferroni < %.2e | Annotated >= %d",
                        bonferroni_threshold, min_annotated),
+                       plot_subtitle_suffix),
     x = "Chromosome",
     y = "GO Term"
   )
 
 ggsave(paste0(prefix, "_go_heatmap.pdf"), p2,
        width  = 12,
-       height = max(6, nrow(heatmap_data) * 0.3))
+       # Capped at 48in regardless of --max_chroms/--top_n_hits, so a generous
+       # setting densifies the plot instead of exceeding ggsave()'s 50in limit.
+       height = min(48, max(6, nrow(heatmap_data) * 0.3)))
 
 # ============================================================================
 # PLOT 3 — ONTOLOGY DISTRIBUTION
@@ -157,7 +189,7 @@ ggsave(paste0(prefix, "_go_heatmap.pdf"), p2,
 ontology_summary <- significant_go %>%
   count(Chromosome, ontology)
 
-p3 <- ggplot(ontology_summary,
+p3 <- ggplot(ontology_summary %>% filter(Chromosome %in% chroms_to_plot),
              aes(x = Chromosome,
                  y = n,
                  fill = ontology)) +
@@ -166,8 +198,9 @@ p3 <- ggplot(ontology_summary,
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(
     title    = "GO Ontology Distribution",
-    subtitle = sprintf("Bonferroni < %.2f | Annotated >= %d",
+    subtitle = paste0(sprintf("Bonferroni < %.2f | Annotated >= %d",
                        bonferroni_threshold, min_annotated),
+                       plot_subtitle_suffix),
     x = "Chromosome",
     y = "Count"
   )
@@ -208,4 +241,5 @@ cat("\n=== DONE ===\n")
 cat(sprintf("  Output prefix          : %s\n", prefix))
 cat(sprintf("  Bonferroni threshold   : %.2f\n", bonferroni_threshold))
 cat(sprintf("  Min annotated          : %d\n",   min_annotated))
-cat(sprintf("  Top hits per chromosome: %d\n\n", top_n_hits))
+cat(sprintf("  Top hits per chromosome: %d\n", top_n_hits))
+cat(sprintf("  Max chromosomes plotted: %d\n\n", max_chroms))

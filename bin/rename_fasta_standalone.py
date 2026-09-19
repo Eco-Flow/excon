@@ -56,10 +56,12 @@ def transcript_to_gene(gff_path):
     return mapping
 
 
-def rename(fasta_path, mapping, out_path, internal_stop_action='strip'):
-    """internal_stop_action: 'strip' (default) removes every '*' including internal
-    ones, splicing the flanking peptide fragments together; 'drop' discards the
-    whole gene instead. Mirrors RENAME_FASTA's --internal_stop_action."""
+def rename(fasta_path, mapping, out_path, internal_stop_action='longest_orf'):
+    """internal_stop_action: 'longest_orf' (default) keeps only the single longest
+    stretch between stops (same reading frame as annotated); 'strip' removes every
+    '*' including internal ones, splicing the flanking peptide fragments together;
+    'drop' discards the whole gene instead. Mirrors RENAME_FASTA's
+    --internal_stop_action."""
     seen = set()
     written = 0
     duplicates = 0
@@ -70,16 +72,23 @@ def rename(fasta_path, mapping, out_path, internal_stop_action='strip'):
         if gene_id in seen:
             duplicates += 1
             return
-        # gffread represents the true terminal stop codon as a trailing '*' —
-        # expected, and stripped below. A '*' anywhere else means the CDS has a
-        # premature stop (bad gene model).
+        # Assumes GFFREAD was run with -S (pipeline default), so gffread marks
+        # stop codons with '*' rather than its own default '.'. gffread never
+        # prints the true terminal stop itself — trimmed internally before
+        # output — so any '*' actually found in the body is a premature stop
+        # (bad gene model).
         seq = ''.join(seq_lines).replace('.', '')
         body = seq[:-1] if seq.endswith('*') else seq
         if '*' in body:
             internal_stop_genes.append(gene_id)
             if internal_stop_action == 'drop':
                 return
-            body = body.replace('*', '')
+            elif internal_stop_action == 'longest_orf':
+                body = max(body.split('*'), key=len)
+                if not body:
+                    return
+            else:
+                body = body.replace('*', '')
         seen.add(gene_id)
         fout.write('>%s\n' % gene_id)
         fout.write(body + '\n')
@@ -118,10 +127,11 @@ def main():
                         help='Directory of AGAT GFF files (results/agat)')
     parser.add_argument('-o', '--out-dir', required=True,
                         help='Directory to write <species>.clean.fasta into')
-    parser.add_argument('--internal-stop-action', choices=['strip', 'drop'], default='strip',
+    parser.add_argument('--internal-stop-action', choices=['strip', 'drop', 'longest_orf'], default='longest_orf',
                         help="How to handle a premature stop codon in a translated CDS: "
-                             "'strip' (default) splices around every '*' including internal "
-                             "ones; 'drop' discards the whole gene. Matches the pipeline's "
+                             "'longest_orf' (default) keeps only the longest stretch between "
+                             "stops; 'strip' splices around every '*' including internal ones; "
+                             "'drop' discards the whole gene. Matches the pipeline's "
                              "--internal_stop_action, so use whichever value the run used.")
 
     args = parser.parse_args()
@@ -160,7 +170,8 @@ def main():
         if duplicates:
             notes.append('%d duplicate gene IDs skipped' % duplicates)
         if internal_stop_genes:
-            verb = 'dropped' if args.internal_stop_action == 'drop' else 'stripped'
+            verb = {'drop': 'dropped', 'longest_orf': 'longest-ORF-kept'}.get(
+                args.internal_stop_action, 'stripped')
             notes.append('%d internal stop codon(s) %s' % (len(internal_stop_genes), verb))
         note = '  (%s)' % '; '.join(notes) if notes else ''
         print("   %-45s %6d sequences%s" % (species + '.clean.fasta', written, note))

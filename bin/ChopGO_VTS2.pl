@@ -342,7 +342,7 @@ foreach my $key ( keys %Gene_Go_Hash ){
     #BP
     print $outhandle3 "GOdata <- new(\"topGOdata\", ontology=\"BP\", allGenes=inGenes, annot=annFUN.gene2GO, gene2GO=Chop.gene2GO)\n";
     print $outhandle3 "result <- runTest(GOdata, algorithm = \"$algo\", statistic = \"$stat\")\n";
-    print $outhandle3 "allRes_BP <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50)\n";
+    print $outhandle3 "allRes_BP <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50, numChar = 200)\n";
     foreach my $meths (@methods){
 	print $outhandle3 "allRes_BP\$",$meths,"<-p.adjust(allRes_BP\$topGOresult, method = \"",$meths,"\")\n";
     }
@@ -352,7 +352,7 @@ foreach my $key ( keys %Gene_Go_Hash ){
     #MF
     print $outhandle3 "GOdata <- new(\"topGOdata\", ontology=\"MF\", allGenes=inGenes, annot=annFUN.gene2GO, gene2GO=Chop.gene2GO)\n";
     print $outhandle3 "result <- runTest(GOdata, algorithm = \"$algo\", statistic = \"$stat\")\n";
-    print $outhandle3 "allRes_MF <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50)\n";
+    print $outhandle3 "allRes_MF <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50, numChar = 200)\n";
     foreach my $meths (@methods){
 	print $outhandle3 "allRes_MF\$",$meths,"<-p.adjust(allRes_MF\$topGOresult, method = \"",$meths,"\")\n";
     }
@@ -362,7 +362,7 @@ foreach my $key ( keys %Gene_Go_Hash ){
     #CC
     print $outhandle3 "GOdata <- new(\"topGOdata\", ontology=\"CC\", allGenes=inGenes, annot=annFUN.gene2GO, gene2GO=Chop.gene2GO)\n";
     print $outhandle3 "result <- runTest(GOdata, algorithm = \"$algo\", statistic = \"$stat\")\n";
-    print $outhandle3 "allRes_CC <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50)\n";
+    print $outhandle3 "allRes_CC <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50, numChar = 200)\n";
     foreach my $meths (@methods){
 	print $outhandle3 "allRes_CC\$",$meths,"<-p.adjust(allRes_CC\$topGOresult, method = \"",$meths,"\")\n";
     }

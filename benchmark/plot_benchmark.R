@@ -167,7 +167,7 @@ stage_order <- c(
   # Annotation preparation
   "AGAT_SPKEEPLONGESTISOFORM", "GFFREAD", "RENAME_FASTA",
   # Orthology
-  "ORTHOFINDER_CAFE", "ORTHOFINDER_V2_CAFE",
+  "ORTHOFINDER_BLAST_CAFE", "ORTHOFINDER_PHYLO_CAFE", "ORTHOFINDER_V2_CAFE",
   # Tree
   "RESCALE_TREE",
   # CAFE
@@ -261,7 +261,7 @@ message("Saved: fig3_efficiency")
 complete_run_ids <- perproc_key |>
   group_by(run_id, genome_size, phylogeny, quality, n_species) |>
   summarise(
-    is_complete = any(process %in% c("ORTHOFINDER_CAFE", "ORTHOFINDER_V2_CAFE")),
+    is_complete = any(process %in% c("ORTHOFINDER_PHYLO_CAFE", "ORTHOFINDER_V2_CAFE")),
     .groups = "drop"
   ) |>
   filter(is_complete)
@@ -292,7 +292,8 @@ stage_cols <- c(
   "GFFREAD"                   = "#44AA99",  # green-teal
   "RENAME_FASTA"              = "#117733",  # dark green
   # Orthology — oranges
-  "ORTHOFINDER_CAFE"          = "#E69F00",  # orange
+  "ORTHOFINDER_BLAST_CAFE"    = "#E69F00",  # orange
+  "ORTHOFINDER_PHYLO_CAFE"    = "#FDB863",  # amber
   "ORTHOFINDER_V2_CAFE"       = "#D55E00",  # vermillion
   # Tree
   "RESCALE_TREE"              = "#999999",  # grey
@@ -327,10 +328,7 @@ p_stack <- ggplot(stacked,
                     drop = TRUE) +
   labs(
     x        = NULL,
-    y        = "Slowest task duration (min)",
-    title    = "Pipeline time composition across all complete runs",
-    subtitle = paste0("Each segment = slowest individual task for that stage",
-                      " (single-task stages show full duration)")
+    y        = "Slowest task duration (min)"
   ) +
   theme_bench() +
   theme(
@@ -430,7 +428,7 @@ p_guidance <- ggplot() +
             lineheight = 0.85, colour = "grey20",
             inherit.aes = FALSE) +
   scale_size_continuous(name = "n species", range = c(3, 8),
-                        breaks = c(10, 30, 70, 100)) +
+                        breaks = c(10, 30, 50)) +
   scale_x_log10(
     name   = "Genome size (Mb)",
     labels = label_comma(),
@@ -452,15 +450,6 @@ p_guidance <- ggplot() +
     labels = c("TRUE" = "Yes", "FALSE" = "No")
   ) +
   facet_wrap(~phylogeny, labeller = label_both) +
-  labs(
-    title    = "Will the pipeline work for your data?",
-    subtitle = paste0(
-      "Genome size and scaffold N50 are representative values defined in ",
-      "benchmark/inputs/metadata.tsv — not measured from assemblies.\n",
-      "Locate your organism relative to the labelled benchmark clades to ",
-      "estimate run time and likelihood of CAFE convergence."
-    )
-  ) +
   theme_bench() +
   theme(legend.box = "horizontal")
 

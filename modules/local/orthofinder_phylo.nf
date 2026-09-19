@@ -40,6 +40,37 @@ process ORTHOFINDER_PHYLO {
         ln -s "\$item" "local_blast_wd/\$name"
     done
 
+    # OrthoFinder v3's "Initial processing of each species" step has a 200s
+    # STALL_TIMEOUT (gathering.DoOrthogroups's default kwarg, never overridden
+    # by any caller in __main__.py) that misfires as a failure on any species
+    # whose own processing genuinely takes longer than that -- not an actual
+    # hang. No CLI flag exists to raise it (davidemms/OrthoFinder#1024), and the
+    # container's site-packages is read-only, so patch the function's default
+    # via a sitecustomize.py on PYTHONPATH instead of editing the installed file.
+    #
+    # The `orthofinder` package isn't on the normal Python path at all -- the
+    # container's `orthofinder` launcher script adds its own src/ dir (next to
+    # the executable) to sys.path itself at runtime, after Python's own startup
+    # already tried (and, without this, silently failed) to import
+    # sitecustomize.py. Add that same src/ dir to PYTHONPATH ourselves so
+    # `orthofinder.orthogroups.gathering` is importable in time.
+    orthofinder_src="\$(dirname "\$(command -v orthofinder)")/src"
+    mkdir pypatch
+    cat > pypatch/sitecustomize.py <<'PYEOF'
+import orthofinder.orthogroups.gathering as _gathering
+_defaults = _gathering.DoOrthogroups.__defaults__
+_gathering.DoOrthogroups.__defaults__ = _defaults[:-1] + (3600.,)
+PYEOF
+    export PYTHONPATH="\${orthofinder_src}:\$PWD/pypatch\${PYTHONPATH:+:\$PYTHONPATH}"
+
+    # Fail fast if the patch can't actually load -- sitecustomize.py import errors are
+    # swallowed silently by Python's own startup (a warning, nothing more), which is how
+    # this went unnoticed before: it just ran unpatched with the original 200s timeout.
+    python3 -c "import orthofinder.orthogroups.gathering" || {
+        echo "ERROR: could not import orthofinder.orthogroups.gathering from '\${orthofinder_src}' -- the STALL_TIMEOUT patch would silently no-op. Container package layout may have changed." >&2
+        exit 1
+    }
+
     orthofinder \\
         -t $task.cpus \\
         -a ${[task.cpus, 4].min()} \\
