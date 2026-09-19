@@ -357,15 +357,18 @@ Then validate before running:
 After each run:
 ```
 benchmark/results/
-├── run_log.tsv                        # One row per run, completion status
-├── {run_id}.log                       # Raw Nextflow stdout/stderr
-├── {run_id}_input.csv                 # Subset CSV used for that run
-├── {run_id}/                          # Nextflow outdir
-│   └── pipeline_info/
-│       ├── execution_trace.tsv        # Per-task metrics (parsed below)
-│       ├── execution_timeline.html    # Gantt chart
-│       └── execution_report.html      # Resource summary
-└── {run_id}_work/                     # Nextflow work dir (for -resume)
+├── benchmark_metrics.tsv              # written by collect_metrics.py — one row per run
+├── benchmark_per_process.tsv          # written by collect_metrics.py — one row per run × process
+└── {run_id}/                          # one self-contained directory per run (e.g. bacteria_close_contiguous_n10)
+    ├── input.csv                      # subset CSV used for that run
+    ├── run.sh                         # generated launch script (see run_benchmark.sh)
+    ├── .nextflow.log                  # Nextflow's own log for this run
+    ├── work/                          # Nextflow work dir (for -resume)
+    └── output/                        # Nextflow --outdir
+        └── pipeline_info/
+            ├── execution_trace_<timestamp>.tsv     # per-task metrics (parsed by collect_metrics.py)
+            ├── execution_timeline_<timestamp>.html # Gantt chart
+            └── execution_report_<timestamp>.html   # resource summary
 ```
 
 After all runs complete, the runner calls `collect_metrics.py` automatically.
@@ -422,17 +425,19 @@ run benchmark batches whenever you like and collect/plot only when you have
 enough results to compare.
 
 ```bash
-# 1. Run some benchmarks (can be called multiple times, adds to run_log.tsv)
+# 1. Run some benchmarks (call run_benchmark.sh as many times as you like —
+#    it only writes run.sh files for combinations that don't already have one)
 ./benchmark/run_benchmark.sh --profile singularity --custom-config my_hpc.config \
     --genome-sizes bacteria --dataset-sizes 10,50
 
 ./benchmark/run_benchmark.sh --profile singularity --custom-config my_hpc.config \
     --genome-sizes insect --dataset-sizes 10,50
 
-# 2. Collect metrics from all COMPLETED runs so far
+# 2. Collect metrics from all COMPLETED runs so far — rescans --results-dir
+#    fresh each time (detected via output/pipeline_info/execution_trace*.tsv),
+#    so it's safe to rerun as more runs finish rather than accumulating a log
 python3 benchmark/collect_metrics.py \
     --results-dir benchmark/results \
-    --log         benchmark/results/run_log.tsv \
     --output      benchmark/results/benchmark_metrics.tsv \
     --max-cpus    16
 
