@@ -1,5 +1,7 @@
 # EXCON
 
+[![GitHub release](https://img.shields.io/github/v/release/Eco-Flow/excon)](https://github.com/Eco-Flow/excon/releases/latest)
+
 A Nextflow pipeline for gene family **EX**pansion and **CON**traction analysis 
 across multiple species using CAFE5.
 
