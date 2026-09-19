@@ -1,75 +1,62 @@
 name: Run Pipeline Tests
 
+# Real end-to-end run of the pipeline on test_chlamydia (10 Chlamydia
+# genomes, close enough for CAFE5 to actually converge — see README's test
+# profile table; test_bacteria is faster but never converges), on every PR
+# targeting main, via nf-test's pipeline-level snapshot test
+# (tests/default.nf.test). Checks
+# workflow.success plus that output structure/content matches the committed
+# snapshot (tests/default.nf.test.snap), not just that nothing crashed.
+#
+# Not a stub run — most CAFE/GO modules don't have stub: blocks yet, so a
+# -stub-run would feed real downstream processes with fake upstream output.
+
 on:
-  workflow_dispatch
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 env:
-  NEXTFLOW_VERSION: 23.10.1
-  NF_TEST_VERSION: 0.8.3
-  AWS_CLI_VERSION: 2.15.19
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_PUBLIC_KEY }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
-  AWS_DEFAULT_REGION: 'us-east-1'
+  NXF_VER: 26.04.6
+  NFT_VER: 0.9.5
 
 jobs:
-
-  build:
-
+  test:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
-    - name: Clean workspace before start
-      run: rm -rf $GITHUB_WORKSPACE/*
+      - uses: actions/checkout@v4.1.1
 
-    - uses: actions/checkout@v4.1.1
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4.0.0
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Set up JDK 11
-      uses: actions/setup-java@v4.0.0
-      with:
-        java-version: '11'
-        distribution: 'adopt'
+      - name: Install Nextflow
+        run: |
+          curl -s https://get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+          nextflow -v
 
-    - name: Install nextflow
-      run: sudo bash; cd /opt; wget "https://github.com/nextflow-io/nextflow/releases/download/v${NEXTFLOW_VERSION}/nextflow"; chmod +x nextflow;
+      - name: Install nf-test
+        run: |
+          curl -fsSL https://code.askimed.com/install/nf-test | bash
+          sudo mv nf-test /usr/local/bin/
+          nf-test version
 
-    - name: Install nf-test
-      run: sudo bash; cd /opt; wget "https://github.com/askimed/nf-test/releases/download/v${NF_TEST_VERSION}/nf-test-${NF_TEST_VERSION}.tar.gz"; tar -xvf "nf-test-${NF_TEST_VERSION}.tar.gz"; chmod +x nf-test; rm "/opt/nf-test-${NF_TEST_VERSION}.tar.gz"
+      - name: Run nf-test
+        run: nf-test test tests/default.nf.test --ci --verbose
 
-    - name: Install aws cli
-      run: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSION}.zip" -o "awscliv2.zip"; unzip awscliv2.zip; sudo ./aws/install --update
-
-    - name: Add software to path
-      run: echo "/opt" >> $GITHUB_PATH;
-
-    - name: Run ncbi_download test
-      run: nf-test test tests/modules/local/download_ncbi.nf.test
-
-    - name: Run gffread test
-      run: nf-test test tests/modules/local/gffread.nf.test
-
-    - name: Run get data test
-      run: nf-test test tests/modules/local/getdata.nf.test
-
-    - name: Run orthofinder test
-      run: nf-test test tests/modules/local/orthofinder.nf.test
-
-    - name: Run cafe test
-      run: nf-test test tests/modules/local/cafe.nf.test
-
-    - name: Run cafe_go test
-      run: nf-test test tests/modules/local/cafe_go.nf.test
-
-    #- name: Run chromo_go test (Not needed as this module is not in final pipeline [for now])
-    #  run: nf-test test tests/modules/local/chromo_go.nf.test
-
-    - name: Run go assign test
-      run: nf-test test tests/modules/local/go_assign.nf.test
-
-    #- name: Run go expansion test (Not needed as this module is not in final pipeline [for now])
-    #  run: nf-test test tests/modules/local/go_expansion.nf.test
-
-    #- name: Download aws module test cds files
-    #  run:  aws s3 cp s3://excon/data/Insect_data/fasta/* data/; aws s3 cp s3://excon/data/Insect_data/gofiles/* data/
-
-    - name: Clean workspace after finish
-      run: rm -rf $GITHUB_WORKSPACE/*
+      # Always upload, whether or not a committed snapshot exists yet — lets a
+      # freshly (re)generated snapshot be pulled down and reviewed/committed,
+      # and gives something to inspect when a comparison against an existing
+      # snapshot fails.
+      - name: Upload snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nf-test-snapshot
+          path: tests/default.nf.test.snap
+          if-no-files-found: warn
