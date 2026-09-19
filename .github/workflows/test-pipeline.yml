@@ -52,7 +52,11 @@ jobs:
           nf-test version
 
       - name: Run nf-test
-        run: nf-test test tests/default.nf.test --ci --verbose
+        # --ci refuses to ever write a snapshot, even on a passing run with
+        # none committed yet, it treats a missing baseline as failure. Until
+        # tests/default.nf.test.snap exists in the repo, omit --ci so this
+        # bootstrap run can record it; restore --ci once one is committed.
+        run: nf-test test tests/default.nf.test --verbose
 
       # Always upload, whether or not a committed snapshot exists yet — lets a
       # freshly (re)generated snapshot be pulled down and reviewed/committed,
