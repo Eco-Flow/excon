@@ -2,18 +2,24 @@ name: Run Pipeline Tests
 
 # Real end-to-end run of the pipeline on test_chlamydia (10 Chlamydia
 # genomes, close enough for CAFE5 to actually converge — see README's test
-# profile table; test_bacteria is faster but never converges), on every PR
-# targeting main, via nf-test's pipeline-level snapshot test
-# (tests/default.nf.test). Checks
+# profile table; test_bacteria is faster but never converges), via nf-test's
+# pipeline-level snapshot test (tests/default.nf.test). Checks
 # workflow.success plus that output structure/content matches the committed
 # snapshot (tests/default.nf.test.snap), not just that nothing crashed.
 #
 # Not a stub run — most CAFE/GO modules don't have stub: blocks yet, so a
 # -stub-run would feed real downstream processes with fake upstream output.
+#
+# Runs ~57-70min on a standard GitHub-hosted runner (CAFE's 6-way k-sweep
+# wants 8 CPUs/task but only 4 real cores exist, so it serialises rather
+# than running in parallel). Deliberately NOT triggered on every push to a
+# PR — too slow/expensive for iterative work. Runs on publishing a GitHub
+# Release, or manually anytime via workflow_dispatch (e.g. once you're
+# confident in a PR, right before merging it).
 
 on:
-  pull_request:
-    branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
 
 env:
