@@ -1,6 +1,8 @@
 # EXCON
 
 [![GitHub release](https://img.shields.io/github/v/release/Eco-Flow/excon)](https://github.com/Eco-Flow/excon/releases/latest)
+[![Pipeline Tests](https://github.com/Eco-Flow/excon/actions/workflows/test-pipeline.yml/badge.svg)](https://github.com/Eco-Flow/excon/actions/workflows/test-pipeline.yml)
+[![nf-test](https://img.shields.io/badge/unit_tests-nf--test-337ab7.svg)](https://www.nf-test.com)
 
 A Nextflow pipeline for gene family **EX**pansion and **CON**traction analysis 
 across multiple species using CAFE5.
