@@ -1,0 +1,20 @@
+.DS_Store
+
+# Timestamped filenames and content (execution_trace_<timestamp>.tsv etc,
+# see nextflow.config's trace_report_suffix) — excluded from structure too
+# (see tests/default.nf.test's stable_path ignore).
+pipeline_info/*
+
+# OrthoFinder (orthogroups, gene trees, species tree, comparative stats) has
+# documented run-to-run variance from tree-building/tie-breaking (the old,
+# now-removed orthofinder.nf.test flagged this explicitly). The BLAST/DIAMOND
+# search stage feeds it and can vary in result ordering under threading, so
+# it inherits the same risk. Existence/structure still checked via stable_path.
+orthofinder_blast/**
+orthofinder_cafe/**
+
+# CAFE5's Nelder-Mead optimizer (lambda, -lnL, model/k selection) and
+# anything derived from it (plots, summaries) can differ slightly run to
+# run even on identical input.
+cafe/**
+cafe_plot/**
