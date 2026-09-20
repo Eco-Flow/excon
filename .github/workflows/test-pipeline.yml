@@ -52,20 +52,16 @@ jobs:
           nf-test version
 
       - name: Run nf-test
-        # --ci refuses to ever write a snapshot, even on a passing run with
-        # none committed yet, it treats a missing baseline as failure. Until
-        # tests/default.nf.test.snap exists in the repo, omit --ci so this
-        # bootstrap run can record it; restore --ci once one is committed.
-        run: nf-test test tests/default.nf.test --verbose
+        run: nf-test test tests/default.nf.test --ci --verbose
 
-      # Always upload, whether or not a committed snapshot exists yet — lets a
-      # freshly (re)generated snapshot be pulled down and reviewed/committed,
-      # and gives something to inspect when a comparison against an existing
-      # snapshot fails.
-      - name: Upload snapshot
-        if: always()
+      # Only useful when a comparison fails (uploads whatever the run wrote,
+      # if anything) — tests/default.nf.test.snap is now committed, so a
+      # passing run doesn't rewrite it (--ci never does) and there's nothing
+      # new to grab in the normal case.
+      - name: Upload snapshot on failure
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: nf-test-snapshot
           path: tests/default.nf.test.snap
-          if-no-files-found: warn
+          if-no-files-found: ignore
