@@ -74,3 +74,34 @@ jobs:
           name: nf-test-snapshot
           path: tests/default.nf.test.snap
           if-no-files-found: ignore
+
+  # CHROMO_GO and CAFE_GO_RUN on a small BRAKER-style fixture, checked against an
+  # independent topGO run (tests/go_tables/). test_chlamydia doesn't run either
+  # step, so the job above can't catch GO table regressions. A few minutes.
+  go-tables:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4.1.1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4.0.0
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Nextflow
+        run: |
+          curl -s https://get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+          nextflow -v
+
+      - name: Install nf-test
+        run: |
+          curl -fsSL https://code.askimed.com/install/nf-test | bash
+          sudo mv nf-test /usr/local/bin/
+          nf-test version
+
+      - name: Run nf-test
+        run: nf-test test tests/go_tables/main.nf.test --ci --verbose

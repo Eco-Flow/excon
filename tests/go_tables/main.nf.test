@@ -1,0 +1,91 @@
+nextflow_workflow {
+
+    name "GO tables (CHROMO_GO, CAFE_GO_RUN)"
+    script "./main.nf"
+    workflow "GO_TABLES"
+    tag "go_tables"
+
+    // data/ is a small BRAKER-style annotation, the case behind the v2.5.1 fixes:
+    //   HiC_scaffold_1: 40 AUGUSTUS genes (gene + transcript lines) and 1 GeneMark gene
+    //                   (gene + mRNA + transcript), all annotated to mRNA splicing /
+    //                   RNA binding / spliceosomal complex, so P < 1e-30 there.
+    //   HiC_scaffold_2: 160 AUGUSTUS genes, 1 GeneMark gene (mRNA + transcript) and
+    //                   1 mRNA-only gene, cycling through unrelated terms.
+    // Every ontology has more than 50 tested terms, so a top-50 table would show.
+    // CAFE GO uses the scaffold 1 genes as the test set and every gene as background.
+    test("BRAKER-style annotation with a P < 1e-30 enrichment") {
+
+        when {
+            params {
+                max_cpus   = 2
+                max_memory = '6.GB'
+            }
+            workflow {
+                """
+                input[0] = file("${baseDir}/tests/go_tables/independent_topgo.R")
+                input[1] = channel.of(file("${baseDir}/tests/go_tables/data/Testsp.longest.gff"))
+                input[2] = channel.of(file("${baseDir}/tests/go_tables/data/Testsp.go.txt"))
+                input[3] = file("${baseDir}/tests/go_tables/data/Orthogroups.tsv")
+                input[4] = channel.of(file("${baseDir}/tests/go_tables/data/Testsp.pos.txt"))
+                input[5] = channel.of(file("${baseDir}/tests/go_tables/data/Testsp.BK.txt.uniq"))
+                input[6] = channel.of(file("${baseDir}/tests/go_tables/data/OG_GO_format.tsv"))
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+
+            def readTable = { File f ->
+                def lines  = f.readLines()
+                def header = lines[0].split('\t') as List
+                lines.drop(1).collect { [header, it.split('\t', -1) as List].transpose().collectEntries() }
+            }
+            def closeTo = { double a, double b -> Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b)) }
+            def independent = readTable(new File(workflow.out.independent[0]))
+
+            // A results table must hold exactly the terms with P < 0.05 in the independent
+            // run, with the same counts and P-values, and Bonferroni over every term tested.
+            def checkTable = { File table, String test, String group ->
+                def expected = independent.findAll { it.test == test && it.group == group }
+                def rows     = readTable(table)
+                assert expected.groupBy { it.ontology }.every { ont, terms -> (terms[0].n_tested as int) > 50 }
+                assert rows.collect { "${it.ontology} ${it['GO.ID']}" }.toSet() ==
+                       expected.findAll { (it.P as double) < 0.05 }.collect { "${it.ontology} ${it['GO.ID']}" }.toSet()
+                rows.each { row ->
+                    def exp = expected.find { it.ontology == row.ontology && it['GO.ID'] == row['GO.ID'] }
+                    assert row.Annotated   == exp.Annotated
+                    assert row.Significant == exp.Significant
+                    assert closeTo(row.topGOresult as double, exp.P as double)
+                    assert closeTo(row.bonferroni as double, Math.min(1d, (exp.P as double) * (exp.n_tested as int)))
+                }
+                rows
+            }
+
+            // go_r_file.txt (not a process output, so read from the task directory):
+            // every gene exactly once, on its own scaffold, including transcript-only genes
+            def unfiltDir = new File(workflow.out.chromo_unfilt[0][1])
+            def goR = new File(unfiltDir.parentFile, 'Testsp.go_r_file.txt').readLines()*.split('\t')
+            def geneScaffold = [:]
+            new File("${baseDir}/tests/go_tables/data/Testsp.longest.gff").eachLine { line ->
+                def c = line.split('\t')
+                if (c.size() >= 9 && c[2] == 'gene') geneScaffold[c[8] - 'ID='] = c[0]
+            }
+            assert goR.size() == 203
+            assert goR.collectEntries { [(it[0]): it[1]] } == geneScaffold
+
+            // Chromosome GO, unfiltered: both scaffolds, matching the independent run
+            def scaffold1 = checkTable(new File(unfiltDir, 'Testsp_HiC_scaffold_1_res.tab'), 'chromo', 'HiC_scaffold_1')
+            checkTable(new File(unfiltDir, 'Testsp_HiC_scaffold_2_res.tab'), 'chromo', 'HiC_scaffold_2')
+            assert (scaffold1.find { it['GO.ID'] == 'GO:0000398' }.topGOresult as double) < 1e-30
+
+            // Chromosome GO, filtered by orthogroup: the strong term is there too
+            def filtDir = new File(workflow.out.chromo_filt[0][1])
+            assert new File(filtDir, 'Testsp_HiC_scaffold_1_res.tab').text.contains('GO:0000398')
+
+            // CAFE GO (ChopGO_VTS2.pl): same checks on its table
+            def cafe = checkTable(new File(workflow.out.cafe[0][1]), 'cafe', 'target')
+            assert (cafe.find { it['GO.ID'] == 'GO:0000398' }.topGOresult as double) < 1e-30
+        }
+    }
+}
