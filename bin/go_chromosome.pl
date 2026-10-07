@@ -4,6 +4,20 @@ use strict;
 
 print "Please be in folder with focal gff3 file and GO hashes\n\n";
 
+# GFF3 column 9 as key => value, so ID/Parent are found whatever order they come in.
+sub parse_attributes {
+    my ($col9) = @_;
+    my %attr;
+    foreach my $bits (split("\;", $col9)){
+        my ($key, $value) = split("\=", $bits, 2);
+        next if !defined $value;
+        $key   =~ s/^\s+|\s+$//g;
+        $value =~ s/^\s+|\s+$//g;
+        $attr{$key} = $value;
+    }
+    return %attr;
+}
+
 my $go_algo = $ARGV[0] // "classic_fisher";
 
 my @goes=`ls *.go.txt`;
@@ -77,6 +91,11 @@ foreach my $species (@jobs){
     my $out2="$species_name\.go_r_file.noDuplicates.txt";
     open(my $fileout2, ">", $out2)   or die "Could not open $out2\n";
 
+    # A gene can have more than one transcript line (BRAKER writes GeneMark models
+    # as both an mRNA and a transcript), so only write each gene/OG to a scaffold once.
+    my %seen_gene_scaffold;
+    my %seen_og_scaffold;
+
     open(my $filein, "<", $gff)   or die "Could not open $gff\n";
     while (my $line=<$filein>){
         chomp $line;
@@ -86,43 +105,28 @@ foreach my $species (@jobs){
         my $scaffold=$split[0];
         # Make scaffold name R-safe (R can't handle purely numeric names)
         $scaffold =~ s/^(\d+)$/chr_$1/;
-        if ($line =~ /^#/){
+        if ($line =~ /^#/ || scalar(@split) < 9){
             #do nothing
         }
         else{
-            if ($split[2] eq "mRNA"){
-           
-                if ($split[1] eq "AUGUSTUS"){
-                    my @lsplit=split("\;", $split[8]);
-                    my @genesp=split("\=", $lsplit[1]);
-                    my @transp=split("\=", $lsplit[0]);
-                    $gene=$genesp[1];
-                    $tran=$transp[1];
-                }
-                elsif($split[1] eq "maker"){
-                    my @lsplit=split("\;", $split[8]);
-                    my %temp_h;
-                    foreach my $bits (@lsplit){
-                        my @spbit=split("\=", $bits);
-                        $temp_h{$spbit[0]}=$spbit[1];
-                    }
-                    $gene=$temp_h{"Parent"};
-                    $tran=$temp_h{"ID"};
+            # BRAKER/TSEBRA/AGAT annotations write AUGUSTUS models as "transcript"
+            # and only GeneMark models as "mRNA", so mRNA lines alone miss most genes.
+            if ($split[2] eq "mRNA" || $split[2] eq "transcript"){
+
+                my %attr = parse_attributes($split[8]);
+                if ($split[1] eq "AUGUSTUS" || $split[1] eq "maker"){
+                    $gene=$attr{"Parent"};
+                    $tran=$attr{"ID"};
                 }
                 else{
                     #Its probably a normal NCBI type:
-                    my @lsplit=split("\;", $split[8]);
-                    my %temp_h;
-                    foreach my $bits (@lsplit){
-                        my @spbit=split("\=", $bits);
-                        $temp_h{$spbit[0]}=$spbit[1];
-                    }
-                    my $fullgene=$temp_h{"Parent"};
-                    my @fullsp=split("\:", $fullgene);
+                    my $fullgene=$attr{"Parent"};
+                    my @fullsp=split("\:", $fullgene // "");
                     $gene=$fullsp[-1];
                     # Keep full transcript ID (including rna- prefix) for orthogroup lookup
-                    $tran=$temp_h{"ID"};
+                    $tran=$attr{"ID"};
                 }
+                next if !defined $gene;
 
                 # Try gene ID first in orthogroup hash, then full transcript ID as fallback
                 my $lookup_id = $gene;
@@ -142,7 +146,7 @@ foreach my $species (@jobs){
                     # Sanitise OG ID for R
                     $og_id =~ s/\-/\_/g;
                     $og_id =~ s/\:/\_/g;
-                    print $fileout2 "$og_id\t$scaffold\n";
+                    print $fileout2 "$og_id\t$scaffold\n" unless $seen_og_scaffold{"$og_id\t$scaffold"}++;
                 }
 
                 # Sanitise gene ID for R before writing to go_r_file.txt
@@ -150,7 +154,7 @@ foreach my $species (@jobs){
                 $gene_r =~ s/^gene-//;
                 $gene_r =~ s/\-/\_/g if $gene_r;
                 $gene_r =~ s/\:/\_/g if $gene_r;
-                print $fileout "$gene_r\t$scaffold\n";
+                print $fileout "$gene_r\t$scaffold\n" unless $seen_gene_scaffold{"$gene_r\t$scaffold"}++;
 
                 if ($Gene_tran_hash{$gene}){
                     my $old=$Gene_tran_hash{$gene};
