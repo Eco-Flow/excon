@@ -11,6 +11,8 @@ nextflow_workflow {
     //                   RNA binding / spliceosomal complex, so P < 1e-30 there.
     //   HiC_scaffold_2: 160 AUGUSTUS genes, 1 GeneMark gene (mRNA + transcript) and
     //                   1 mRNA-only gene, cycling through unrelated terms.
+    //   HiC_scaffold_3-5: 21 AUGUSTUS genes each, none GO-annotated. Enough genes to be
+    //                   tested, but topGO can't test them, and must not stop the others.
     // Every ontology has more than 50 tested terms, so a top-50 table would show.
     // CAFE GO uses the scaffold 1 genes as the test set and every gene as background.
     test("BRAKER-style annotation with a P < 1e-30 enrichment") {
@@ -71,13 +73,16 @@ nextflow_workflow {
                 def c = line.split('\t')
                 if (c.size() >= 9 && c[2] == 'gene') geneScaffold[c[8] - 'ID='] = c[0]
             }
-            assert goR.size() == 203
+            assert goR.size() == 266
             assert goR.collectEntries { [(it[0]): it[1]] } == geneScaffold
 
-            // Chromosome GO, unfiltered: both scaffolds, matching the independent run
+            // Chromosome GO, unfiltered: both annotated scaffolds, matching the independent
+            // run, whatever order the unannotated ones came in; those are skipped
             def scaffold1 = checkTable(new File(unfiltDir, 'Testsp_HiC_scaffold_1_res.tab'), 'chromo', 'HiC_scaffold_1')
             checkTable(new File(unfiltDir, 'Testsp_HiC_scaffold_2_res.tab'), 'chromo', 'HiC_scaffold_2')
             assert (scaffold1.find { it['GO.ID'] == 'GO:0000398' }.topGOresult as double) < 1e-30
+            assert unfiltDir.list().findAll { it.endsWith('_res.tab') }.sort() ==
+                   ['Testsp_HiC_scaffold_1_res.tab', 'Testsp_HiC_scaffold_2_res.tab']
 
             // Chromosome GO, filtered by orthogroup: the strong term is there too
             def filtDir = new File(workflow.out.chromo_filt[0][1])

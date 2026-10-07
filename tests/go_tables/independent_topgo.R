@@ -20,6 +20,8 @@ gene_sc <- setNames(genes$V1, sub(";.*", "", sub("^ID=", "", genes$V9)))
 test_terms <- function(test, group, selected, universe) {
   ann <- go[go$gene %in% universe, ]
   g2g <- lapply(split(ann$go, ann$gene), unique)
+  # Nothing to test for a group with no GO-annotated genes
+  if (!any(names(g2g) %in% selected)) return(NULL)
   in_genes <- factor(as.integer(names(g2g) %in% selected), levels = c(0, 1))
   names(in_genes) <- names(g2g)
   do.call(rbind, lapply(c("BP", "MF", "CC"), function(ont) {
