@@ -338,6 +338,11 @@ foreach my $key ( keys %Gene_Go_Hash ){
     print $outhandle3 "selGenes<-Chop.WGCNA2Gene\$",$key,"\n";
     print $outhandle3 "inGenes <- factor(as.integer(names(Chop.gene2GO) %in% selGenes))\n";
     print $outhandle3 "names(inGenes) <- names(Chop.gene2GO)\n";
+    # topGO stops with "allGenes must be a factor with 2 levels" if none of the group's genes
+    # has a GO annotation, which would end the R session and lose every group after it.
+    print $outhandle3 "if (nlevels(inGenes) < 2) {\n";
+    print $outhandle3 "    message(\"Skipping ",$key,": none of its genes has a GO annotation\")\n";
+    print $outhandle3 "} else {\n";
     
     # GenTable() returns every scored term, not a top N, so p.adjust() corrects over all
     # terms tested. Its topGOresult column is text (e.g. "< 1e-30", which p.adjust() turns
@@ -382,6 +387,7 @@ foreach my $key ( keys %Gene_Go_Hash ){
     print $outhandle3 "f.sub<-x.sub[sort.list(x.sub\$none),]\n";
     print $outhandle3 "e.sub <- subset(f.sub, FoldChange > ",$sort_enrich,")\n";
     print $outhandle3 "write.table(e.sub, \"",$key,"_TopGo_results_ALL.tab\", sep=\"\\t\", quote=FALSE, eol=\"\\n\", row.names=F)   \n";
+    print $outhandle3 "}\n";
     my $out_name="$key\_TopGo_results_ALL.tab";
     push (@ALL_made_files, $out_name);
 }
