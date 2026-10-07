@@ -1,0 +1,2 @@
+# Keep OrthoFinder's CRLF line endings: tests/go_tables checks they're handled
+tests/go_tables/data/Orthogroups.tsv -text

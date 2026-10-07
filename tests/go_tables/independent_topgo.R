@@ -4,18 +4,17 @@
 # rather than through excon's ChopGO scripts: classic Fisher, every scored term, and
 # the number of terms tested in each ontology.
 #
-# Usage: independent_topgo.R <gff> <gene-to-GO file> <CAFE target list> <CAFE background list>
+# Usage: independent_topgo.R <gff> <gene-to-GO file> [<CAFE target list> <CAFE background list>]
 
 suppressWarnings(suppressMessages(library(topGO)))
 
 args       <- commandArgs(trailingOnly = TRUE)
 gff        <- read.delim(args[1], header = FALSE, comment.char = "#", quote = "")
 go         <- read.delim(args[2], header = FALSE, col.names = c("gene", "go"), quote = "")
-target     <- readLines(args[3])
-background <- readLines(args[4])
 
 genes   <- gff[gff$V3 == "gene", ]
-gene_sc <- setNames(genes$V1, sub(";.*", "", sub("^ID=", "", genes$V9)))
+# Gene IDs as the GO file has them (NCBI's gene- prefix dropped)
+gene_sc <- setNames(genes$V1, sub("^gene-", "", sub(";.*", "", sub("^ID=", "", genes$V9))))
 
 test_terms <- function(test, group, selected, universe) {
   ann <- go[go$gene %in% universe, ]
@@ -39,8 +38,8 @@ res <- rbind(
   # Chromosome GO: each scaffold's genes against every GO-annotated gene
   do.call(rbind, lapply(unique(gene_sc), function(sc)
     test_terms("chromo", sc, names(gene_sc)[gene_sc == sc], go$gene))),
-  # CAFE GO: the target list against the background list
-  test_terms("cafe", "target", target, background)
+  # CAFE GO: the target list against the background list, if given
+  if (length(args) >= 4) test_terms("cafe", "target", readLines(args[3]), readLines(args[4]))
 )
 
 write.table(res, "independent.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
