@@ -15,7 +15,8 @@ process CHROMO_GO {
 
     script:
     """
-    # v2.5.1: BRAKER-style transcript lines are read, and GO tables cover every tested term.
+    # v2.5.1: BRAKER-style transcript lines are read, OrthoFinder's CRLF line endings are handled,
+    # and GO tables cover every tested term.
     # Nextflow does not hash bin/ scripts, so changing this script is what makes -resume re-run it.
 
     # Make R available to perl backtick calls
