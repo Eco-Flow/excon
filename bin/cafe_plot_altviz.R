@@ -21,15 +21,21 @@ if (length(tree_files) == 0) {
   message("No *_asr.tre found — skipping cafe_plot_altviz")
   quit(status = 0)
 }
-tree <- read.tree(tree_files[1])
+# CAFE5 writes *_asr.tre as NEXUS. read.tree() on it doesn't fail but returns a
+# tree with fewer than two tips, so every plot below errored and left a blank PDF.
+is_nexus <- grepl("^#nexus", readLines(tree_files[1], n = 1), ignore.case = TRUE)
+tree <- if (is_nexus) read.nexus(tree_files[1]) else read.tree(tree_files[1])
 # CAFE5 *_asr.tre holds one reconstructed tree per gene family (a multiPhylo).
 # They all share the species topology, so use the first for the tree scaffold.
 if (inherits(tree, "multiPhylo")) {
   message("asr file contains ", length(tree), " trees — using the first for topology")
   tree <- tree[[1]]
 }
-# Strip angle brackets and leading 'm' that CAFE5 sometimes puts on node labels
-tree$node.label <- gsub("^[<m]|[<>]$", "", tree$node.label)
+# CAFE5 labels carry its node id, a significance star and that family's count:
+# tips "Polistes_dominula<4>*_5", internal nodes "<14>*_8". Keep the species
+# name and the node id, which is how CAFE_summary.txt names them.
+tree$tip.label  <- sub("<.*$", "", tree$tip.label)
+tree$node.label <- sub("^<([0-9]+)>.*$", "\\1", tree$node.label)
 
 # ── CAFE_summary.txt ───────────────────────────────────────────────────────────
 if (!file.exists(summary_file)) {
