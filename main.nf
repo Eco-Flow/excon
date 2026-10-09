@@ -574,10 +574,14 @@ workflow {
         // Compare uniform vs Poisson at best k, emit the winning directory
         CAFE_MODEL_COMPARE (
             ch_best_uniform,
-            CAFE_RUN_BEST.out.results
+            CAFE_RUN_BEST.out.results,
+            CAFE_PREP.out.prepared_counts
         )
 
         ch_best_results = CAFE_MODEL_COMPARE.out.best_results
+
+        // Also published to cafe/model_comparison/; shown here so they aren't missed
+        CAFE_MODEL_COMPARE.out.warnings.flatten().subscribe { f -> log.warn(f.text.trim()) }
 
         CAFE_PLOT ( ch_best_results )
         CAFE_NODE_GUIDE ( ch_best_results )

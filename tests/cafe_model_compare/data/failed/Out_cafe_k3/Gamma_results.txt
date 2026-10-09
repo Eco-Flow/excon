@@ -1,0 +1,4 @@
+Model Gamma Final Likelihood (-lnL): nan
+Lambda: 0.0015
+Epsilon: 0.025
+Alpha: 0.35

@@ -75,9 +75,10 @@ jobs:
           path: tests/default.nf.test.snap
           if-no-files-found: ignore
 
-  # CHROMO_GO and CAFE_GO_RUN on a small BRAKER-style fixture, checked against an
-  # independent topGO run (tests/go_tables/). test_chlamydia doesn't run either
-  # step, so the job above can't catch GO table regressions. A few minutes.
+  # CHROMO_GO, SUMMARIZE_CHROMO_GO and CAFE_GO_RUN on small fixtures, checked against
+  # an independent topGO run (tests/go_tables/), and CAFE_MODEL_COMPARE on synthetic
+  # CAFE5 outputs (tests/cafe_model_compare/). test_chlamydia doesn't run the GO steps
+  # or exercise these model-comparison cases, so the job above can't catch them. A few minutes.
   go-tables:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -104,4 +105,4 @@ jobs:
           nf-test version
 
       - name: Run nf-test
-        run: nf-test test tests/go_tables/main.nf.test --ci --verbose
+        run: nf-test test tests/go_tables/main.nf.test tests/cafe_model_compare/main.nf.test --ci --verbose

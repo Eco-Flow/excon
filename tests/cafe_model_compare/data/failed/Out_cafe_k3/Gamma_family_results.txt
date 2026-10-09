@@ -1,0 +1,4 @@
+#FamilyID	pvalue	Significant at 0.05
+OG0000001	0.5	n
+OG0000002	0.5	n
+OG0000003	0.5	n

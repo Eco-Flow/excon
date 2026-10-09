@@ -1,0 +1,79 @@
+nextflow_process {
+
+    name "CAFE_MODEL_COMPARE"
+    script "../../modules/local/cafe_model_compare.nf"
+    process "CAFE_MODEL_COMPARE"
+    tag "cafe_model_compare"
+
+    // data/<case>/Out_cafe_k3{,_poisson}: synthetic CAFE5 outputs (results, family
+    // results, change table and a 3-family NEXUS *_asr.tre) for the uniform and Poisson
+    // root fits; data/<case>/hog_gene_counts.tsv: the families CAFE5 was given.
+
+    test("Selects by AIC and warns when one species is alone at the root") {
+        when {
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_model_compare/data/lone/Out_cafe_k3")
+                input[1] = file("${baseDir}/tests/cafe_model_compare/data/lone/Out_cafe_k3_poisson")
+                input[2] = file("${baseDir}/tests/cafe_model_compare/data/lone/hog_gene_counts.tsv")
+                """
+            }
+        }
+        then {
+            assert process.success
+            def rows = path(process.out.comparison_table[0]).readLines()*.split('\t')
+            assert rows[0] as List == ['model', 'directory', 'k', 'n_params', 'neg_lnL', 'AIC', 'BIC', 'n_families', 'Selected']
+            // uniform: lambda + alpha; Poisson root adds its mean. 3 families.
+            assert rows[1] as List == ['uniform', 'Out_cafe_k3', '3', '2', '104054', '208112.0000', '208110.1972', '3']
+            assert rows[2] as List == ['poisson', 'Out_cafe_k3_poisson', '3', '3', '56964.2', '113934.4000', '113931.6958', '3', 'BEST']
+            assert path(process.out.best_model[0]).text.trim() == 'poisson'
+            def warnings = process.out.warnings[0].collectEntries { [(new File(it).name): path(it).text] }
+            assert warnings['root_split_warning.txt'].contains('SpA is alone on one side of the root')
+            assert warnings['root_split_warning.txt'].contains('(CAFE5 node 1) and on the branch to the other 3 species (node 6)')
+            // OG0000004 has no SpA gene, so CAFE5 left it out
+            assert warnings['root_filter_warning.txt'].contains('CAFE5 left out 1 of the 4 families it was given')
+            assert path(process.out.not_modelled[0]).readLines() ==
+                   ['HOG\treason', 'OG0000004\tnot present at the root (no genes on one side of it)']
+        }
+    }
+
+    test("Never selects a fit that failed (nan)") {
+        when {
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_model_compare/data/failed/Out_cafe_k3")
+                input[1] = file("${baseDir}/tests/cafe_model_compare/data/failed/Out_cafe_k3_poisson")
+                input[2] = file("${baseDir}/tests/cafe_model_compare/data/failed/hog_gene_counts.tsv")
+                """
+            }
+        }
+        then {
+            assert process.success
+            def rows = path(process.out.comparison_table[0]).readLines()*.split('\t')
+            assert rows[1][4..6] as List == ['NA', 'NA', 'NA']
+            assert rows[2][-1] == 'BEST'
+            assert path(process.out.best_model[0]).text.trim() == 'poisson'
+            assert process.out.warnings == []
+            assert process.out.not_modelled == []
+        }
+    }
+
+    test("Prefers the uniform root when the Poisson fit gains less than its extra parameter") {
+        when {
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_model_compare/data/balanced/Out_cafe_k3")
+                input[1] = file("${baseDir}/tests/cafe_model_compare/data/balanced/Out_cafe_k3_poisson")
+                input[2] = file("${baseDir}/tests/cafe_model_compare/data/balanced/hog_gene_counts.tsv")
+                """
+            }
+        }
+        then {
+            assert process.success
+            // -lnL 100 vs 99.9: AIC 204 (2 params) vs 205.8 (3 params)
+            assert path(process.out.best_model[0]).text.trim() == 'uniform'
+            assert process.out.warnings == []
+            assert process.out.not_modelled == []
+        }
+    }
+}
