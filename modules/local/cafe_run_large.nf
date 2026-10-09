@@ -46,7 +46,10 @@ process CAFE_RUN_LARGE {
         -o ${outdir} \\
         2>&1 | tee ${logf} || true
 
-    if [ ! -f ${outdir}/Base_results.txt ] || \\
+    if grep -q "not present at the root from: 1 to 0" ${logf}; then
+        echo "WARNING: ${hog_counts.baseName} has no genes on one side of the root, so CAFE5 dropped it (--cafe_zero_root keeps such families) — not in the large-family merge." >&2
+        rm -rf ${outdir}
+    elif [ ! -f ${outdir}/Base_results.txt ] || \\
        ! grep -q "Final Likelihood" ${outdir}/Base_results.txt || \\
        grep -q "inf" ${outdir}/Base_results.txt; then
         echo "WARNING: ${hog_counts.baseName} did not converge even on its own — dropping it from the large-family merge." >&2

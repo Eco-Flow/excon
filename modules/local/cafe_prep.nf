@@ -27,7 +27,6 @@ process CAFE_PREP {
     path("Out_cafe/Base_count.tab"),                     emit: result_nftest
     path("Out_cafe_errormodel/Base_error_model.txt"),    emit: error_model
     path("hog_filtering_report.tsv"),                    emit: filtering_report
-    path("hog_gene_counts_large.tsv"),                   emit: large_counts,     optional: true
     path("lambda.txt"),                                  emit: lambda
     path("cafe_base.log"),                               emit: base_log
     path("cafe_errormodel.log"),                         emit: errormodel_log
