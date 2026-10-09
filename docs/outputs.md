@@ -98,12 +98,15 @@ The dot plot adds two extra dimensions: dot **size** encodes the number of signi
 
 ### Output Files
 
-| File | Description |
-|------|-------------|
-| `*_TopGo_results_ALL.tab` | Raw topGO results table with all p-value corrections and fold enrichment |
-| `TopGO_barplot_*.pdf` | Horizontal bar chart (ggplot2) |
-| `TopGO_dotplot_*.pdf` | Dot plot with fold enrichment and gene count (ggplot2) |
-| `TopGO_Pval_barplot_*.pdf` | Legacy bar chart (base R, retained for compatibility) |
+| File | Where | Description |
+|------|-------|-------------|
+| `*_TopGo_results_ALL.tab` | `cafe_go/<go_algo>_cutoff<go_cutoff>_type<go_type>/topgo_results/` | topGO results for each species/node and direction: every term with raw P below the cutoff, with all P-value corrections (over every term tested) and fold enrichment |
+| `*.pos.txt`, `*.neg.txt`, `*.BK.txt.uniq` | `cafe_go/…/go_inputs/` | The expanded/contracted families tested, and the background: the families CAFE5 modelled that contain the species |
+| `TopGO_barplot_*.pdf` | `cafe_go_summary/cafe_go/raw_plotting_files/cafe_go_{pos,neg}.tar.gz` | Horizontal bar chart (ggplot2) |
+| `TopGO_dotplot_*.pdf` | as above | Dot plot with fold enrichment and gene count (ggplot2) |
+| `TopGO_Pval_barplot_*.pdf` | as above | Legacy bar chart (base R, retained for compatibility) |
+
+The cross-species summaries and heatmaps are in `cafe_go_summary/cafe_go/`. Large-family results go to the matching `cafe_go_large/` and `cafe_go_summary/cafe_go_large/` folders.
 
 ---
 
@@ -130,8 +133,15 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 
 | File | Description |
 |------|-------------|
-| `cafe_model_comparison.tsv` | AIC scores for k=1 through k=N rate categories |
-| `best_model.txt` | Selected model: `uniform` or `poisson` at best k |
+| `model_selection.tsv` | -lnL, AIC and BIC for k = 1 to `--cafe_max_k` rate categories (uniform root); the best k by AIC |
+| `best_k.txt` | That k |
+| `cafe_model_comparison.tsv` | Uniform vs Poisson root at the best k: parameters, -lnL, AIC, BIC, number of families; selected by AIC |
+| `best_model.txt` | Selected model: `uniform` or `poisson`. Its CAFE5 output is in `results/cafe/best/` |
+| `root_split_warning.txt` | Only when one species is alone on one side of the root: the two branches next to the root, whose expansions/contractions mostly reflect the root-size prior |
+| `families_not_modelled.tsv` | Only when CAFE5 dropped families for having no genes on one side of the root: which ones (`--cafe_zero_root` keeps them) |
+| `root_filter_warning.txt` | How many families that was |
+
+Families left out of the main run for their size (`max_copies_ge_100`, `differential_gt_threshold` in `results/cafe/base/hog_filtering_report.tsv`) are fitted one at a time; their counts and merged results are in `results/cafe/large_families/`, and the run log says how many were fitted.
 
 ---
 

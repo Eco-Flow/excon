@@ -14,7 +14,7 @@ process CAFE_RUN_BEST {
     output:
     path "Out_cafe_${use_poisson ? "k${best_k}_poisson" : "k${best_k}"}/", emit: results
     path "cafe_${use_poisson ? "k${best_k}_poisson" : "k${best_k}"}.log",  emit: log
-    tuple val("${task.process}"), val('cafe'), val('4.2.1'),                emit: versions_cafe, topic: versions
+    tuple val("${task.process}"), val('cafe5'), val('1.1.0'),                emit: versions_cafe, topic: versions
 
     script:
     def run_label = use_poisson ? "k${best_k}_poisson" : "k${best_k}"

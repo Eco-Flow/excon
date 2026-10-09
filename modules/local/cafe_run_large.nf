@@ -23,7 +23,7 @@ process CAFE_RUN_LARGE {
     output:
     path "Out_cafe_large_${hog_counts.baseName}/", emit: results, optional: true
     path "cafe_large_${hog_counts.baseName}.log",  emit: log
-    tuple val("${task.process}"), val('cafe'), val('4.2.1'), emit: versions_cafe, topic: versions
+    tuple val("${task.process}"), val('cafe5'), val('1.1.0'), emit: versions_cafe, topic: versions
 
     script:
     def e_flag = error_model.size() > 0 ? "-e${error_model}" : ""

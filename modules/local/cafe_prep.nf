@@ -1,7 +1,7 @@
 process CAFE_PREP {
     label 'process_high'
     label 'process_long'
-    container 'ecoflowucl/cafe:r-4.3.1' //R version 4.3.1, cafe version 4.2.1 (confusing)
+    container 'ecoflowucl/cafe:r-4.3.1' // R 4.3.1; CAFE5 1.1.0 (cafe5 has no --version: from /opt/CAFE5/config.h)
 
 
     errorStrategy {
@@ -31,7 +31,7 @@ process CAFE_PREP {
     path("cafe_base.log"),                               emit: base_log
     path("cafe_errormodel.log"),                         emit: errormodel_log
     tuple val("${task.process}"), val('R'),    val('4.3.1'), emit: versions_R,    topic: versions
-    tuple val("${task.process}"), val('cafe'), val('4.2.1'), emit: versions_cafe, topic: versions
+    tuple val("${task.process}"), val('cafe5'), val('1.1.0'), emit: versions_cafe, topic: versions
 
     script:
     def base_differential = params.cafe_max_differential ?: 50
