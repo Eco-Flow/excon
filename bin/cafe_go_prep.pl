@@ -6,6 +6,9 @@ use Scalar::Util qw(looks_like_number);
 my $pval        = $ARGV[0];
 my $type        = $ARGV[1];
 my $go_max_plot = $ARGV[2];
+# "modelled_background": each species' GO background is only the families CAFE5
+# modelled (see where the backgrounds are written below)
+my $modelled_only = ($ARGV[3] // "") eq "modelled_background";
 
 
 #Set up output name
@@ -86,6 +89,7 @@ while (my $line = <$filein>){
 
 #Read in Pvalue and count file
 my %PVALUE_DATA;
+my %MODELLED;   # families CAFE5 modelled (every row of its *_change.tab)
 my %COUNT_DATA;
 
 # --- Auto-detect Out_* directory (e.g. Out_cafe, Out_gamma, Out_gamma_per_family) ---
@@ -149,6 +153,7 @@ while (my $line_count = <$filein3>){
     chomp $line_count;
     my @splitc=split("\t", $line_count);
     my $hog=$splitc[0];
+    $MODELLED{$hog}=1;   # *_change.tab lists every family; branch_probabilities only significant ones
     my $m=0;
     foreach my $col (@splitc){
         my $sp=$head_pval_simp[$m];
@@ -346,9 +351,16 @@ foreach my $species6 (keys %Background_OGs){
         }
         else{
             #print "ITS HERE: $species6 \n";
+            my $background = $Background_OGs{$species6};
+            if ($modelled_only){
+                # Families CAFE5 didn't model (single-species, very large, or absent on one
+                # side of the root) can't be called expanded or contracted, so they don't
+                # belong in the universe the significant ones are compared against.
+                $background = join("\n", grep { $MODELLED{$_} } split("\n", $background));
+            }
             my $out_back="$species6\.BK.txt";
             open(my $outb, ">", $out_back)   or die "Could not open $out_back\n";
-            print $outb "$Background_OGs{$species6}\n";
+            print $outb "$background\n";
             `sort $species6\.BK.txt | uniq > $species6\.BK.txt.uniq`;
         }
 
