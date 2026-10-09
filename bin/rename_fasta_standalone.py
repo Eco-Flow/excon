@@ -27,6 +27,8 @@ def transcript_to_gene(gff_path):
             if line.startswith('#'):
                 continue
             parts = line.rstrip('\n\r').split('\t')
+            # mRNA only, as in RENAME_FASTA (see the note there): BRAKER 'transcript'
+            # IDs (g1.t1) still reach the right gene via the .tN fallback in rename().
             if len(parts) < 9 or parts[2] != 'mRNA':
                 continue
             attrs = {}

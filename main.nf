@@ -38,6 +38,7 @@ include { IQTREE as IQTREE_SPECIES_TREE } from './modules/nf-core/iqtree/main.nf
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
 
 include { CAFE_PREP } from './modules/local/cafe_prep.nf'
+include { CAFE_LARGE_FAMILY_COUNTS } from './modules/local/cafe_large_family_counts.nf'
 include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
 include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
@@ -479,7 +480,18 @@ workflow {
             ch_tree_for_prep
         )
 
-        // High-differential families filtered out during prep are run one at a time,
+        // Families CAFE_PREP left out for their size (>= 100 copies in a species, or, on
+        // its retries, over the --cafe_max_differential spread) go to the large-family
+        // track. Built in its own step, from CAFE_PREP's outputs, so it can change without
+        // re-running CAFE_PREP and every CAFE5 run after it.
+        CAFE_LARGE_FAMILY_COUNTS (
+            CAFE_PREP.out.N0_table,
+            CAFE_PREP.out.filtering_report,
+            CAFE_PREP.out.cafe_tree
+        )
+        CAFE_LARGE_FAMILY_COUNTS.out.summary.subscribe { f -> log.info(f.text.trim()) }
+
+        // Large families are run one at a time,
         // each fitting its own lambda, rather than forcing one lambda to explain every
         // excluded family at once (which never converged). Split with splitCsv/
         // collectFile — entirely inside Nextflow's own dataflow engine — rather than
@@ -488,11 +500,9 @@ workflow {
         // glob can race the writes and see only some of the files. splitCsv/
         // collectFile emit each family as its own channel item directly, so there is
         // no separate directory listing step to race. Named by HOG id so CAFE_RUN_LARGE
-        // task tags and output directories stay readable. Only produces items when
-        // cafe_prep_filtered.R was triggered (attempt > 1) and found families above the
-        // differential threshold — otherwise large_counts is empty and nothing
-        // downstream of it fires.
-        ch_large_family_tables = CAFE_PREP.out.large_counts
+        // task tags and output directories stay readable. Produces nothing when no family
+        // was left out for its size, and then nothing downstream of it fires.
+        ch_large_family_tables = CAFE_LARGE_FAMILY_COUNTS.out.large_counts
             .splitCsv( header: true, sep: '\t' )
             .collectFile { row ->
                 def hog    = (row.HOG as String).replaceAll(/[^A-Za-z0-9_.-]/, '_')
@@ -520,6 +530,15 @@ workflow {
         MERGE_CAFE_LARGE_RESULTS (
             CAFE_RUN_LARGE.out.results.collect().filter { it.size() > 0 }
         )
+
+        // Say how the large-family track went, including when nothing converged
+        ch_large_family_tables.count()
+            .combine( CAFE_RUN_LARGE.out.results.count() )
+            .filter { n, fitted -> n > 0 }
+            .subscribe { n, fitted ->
+                def msg = "Large-family track: ${fitted} of ${n} families fitted; see cafe/large_families/ (CAFE_RUN_LARGE logs say why any were dropped)"
+                fitted < n ? log.warn(msg) : log.info(msg)
+            }
 
 
         k_values = Channel.of( 1..params.cafe_max_k )
@@ -555,10 +574,14 @@ workflow {
         // Compare uniform vs Poisson at best k, emit the winning directory
         CAFE_MODEL_COMPARE (
             ch_best_uniform,
-            CAFE_RUN_BEST.out.results
+            CAFE_RUN_BEST.out.results,
+            CAFE_PREP.out.prepared_counts
         )
 
         ch_best_results = CAFE_MODEL_COMPARE.out.best_results
+
+        // Also published to cafe/model_comparison/; shown here so they aren't missed
+        CAFE_MODEL_COMPARE.out.warnings.flatten().subscribe { f -> log.warn(f.text.trim()) }
 
         CAFE_PLOT ( ch_best_results )
         CAFE_NODE_GUIDE ( ch_best_results )

@@ -32,7 +32,8 @@ process EGGNOG_TO_GO {
             if line.startswith("#"):
                 continue
             parts = line.strip().split("\\t")
-            if len(parts) < 9 or parts[2] != "mRNA":
+            # BRAKER-style annotations write AUGUSTUS models as "transcript", not "mRNA"
+            if len(parts) < 9 or parts[2] not in ("mRNA", "transcript"):
                 continue
 
             attrs = {}

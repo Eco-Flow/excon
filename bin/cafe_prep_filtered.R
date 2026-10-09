@@ -3,8 +3,9 @@
 # CAFE input preparation WITH differential filtering.
 # Used on retry when the un-filtered base run fails on a large size differential.
 # Mirrors cafe_prep.R (subsetting, dated-tree handling, reasoned report) and adds
-# a max-minus-min differential filter, routing over-threshold families to a
-# fixed-lambda re-analysis (hog_gene_counts_large.tsv).
+# a max-minus-min differential filter. The families it leaves out for their size go
+# to the large-family track, whose count table CAFE_LARGE_FAMILY_COUNTS builds from
+# hog_filtering_report.tsv (bin/cafe_large_families.R).
 #
 # Positional args (supplied by cafe_prep.nf):
 #   args[1] = max_differential threshold (max-min copies) (default 50)
@@ -137,14 +138,4 @@ stopifnot("Tree tips must match gene-count columns" =
 write.tree(tre, 'cafe_input_tree.txt')
 write.tree(tre, 'SpeciesTree_rooted_ultra.txt')
 
-# High-differential families for fixed-lambda re-analysis
-large_ids <- stats[exclusion_reason == 'differential_gt_threshold', HOG]
-if (length(large_ids) > 0) {
-  counts_large <- counts[HOG %in% large_ids]
-  counts_large[, Desc := 'n/a']
-  setcolorder(counts_large, c('Desc', 'HOG', tree_leaves))
-  fwrite(counts_large, 'hog_gene_counts_large.tsv', sep = '\t')
-  cat("Large-differential families written to hog_gene_counts_large.tsv:",
-      length(large_ids), "\n")
-}
 cat("================================================\n")
