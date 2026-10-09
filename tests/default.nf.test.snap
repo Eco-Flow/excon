@@ -48,6 +48,8 @@
                 "cafe/best/Gamma_family_results.txt",
                 "cafe/best/Gamma_report.cafe",
                 "cafe/best/Gamma_results.txt",
+                "cafe/large_families",
+                "cafe/large_families/large_families.txt",
                 "cafe/model_comparison",
                 "cafe/model_comparison/best_k.txt",
                 "cafe/model_comparison/best_model.txt",

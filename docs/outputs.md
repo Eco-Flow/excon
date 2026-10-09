@@ -141,7 +141,7 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 | `families_not_modelled.tsv` | Only when CAFE5 dropped families for having no genes on one side of the root: which ones (`--cafe_zero_root` keeps them) |
 | `root_filter_warning.txt` | How many families that was |
 
-Families left out of the main run for their size (`max_copies_ge_100`, `differential_gt_threshold` in `results/cafe/base/hog_filtering_report.tsv`) are fitted one at a time; their counts and merged results are in `results/cafe/large_families/`, and the run log says how many were fitted.
+Families left out of the main run for their size (`max_copies_ge_100`, `differential_gt_threshold` in `results/cafe/base/hog_filtering_report.tsv`) are fitted one at a time; their counts and merged results are in `results/cafe/large_families/`, with `large_families.txt` saying how many there were (or that there were none), and the run log says how many were fitted.
 
 ---
 
