@@ -242,6 +242,7 @@ and the rest of the CAFE options behave exactly as before.
 | `--iqtree_outgroup` | Comma-separated tip name(s) to root the tree on, matching the sample names in your input CSV. Must be monophyletic in the inferred tree. If unset, the tree is midpoint-rooted. | `null` (midpoint) |
 | `--iqtree_args` | Extra arguments appended to the IQ-TREE2 command line, e.g. `-mset LG,WAG,JTT` to restrict ModelFinder's candidate matrices, or `--gcf` for gene concordance factors. | `null` |
 | `--iqtree_partition_file` | Reuse an existing partition file instead of the generated one, so model selection is not repeated. A previous run's `iqtree/species_tree.best_scheme` records the model chosen for each partition; the coordinates must match the supermatrix, so only use a file produced from the same orthogroups. Supplying it suppresses the default `-m MFP` | `null` |
+| `--iqtree_min_occupancy` | Smallest fraction of species a single-copy orthogroup must contain. `1` keeps only orthogroups with every species exactly once; with many species few pass, so e.g. `0.9` also keeps those lacking up to 10% of species (never fewer than 4 present) and fills the missing species with gaps. Species present must still have exactly one copy. | `1` |
 | `--iqtree_partition_model` | Model written per partition. `AA` lets ModelFinder pick one per orthogroup; set e.g. `LG+F+G4` to fix it and skip model selection. With a partition file the model has to be set here rather than through `--iqtree_args '-m ...'`. | `AA` |
 
 ```bash
