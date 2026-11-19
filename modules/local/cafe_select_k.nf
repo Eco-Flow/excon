@@ -13,7 +13,7 @@ process CAFE_SELECT_K {
 
     script:
     """
-    /usr/bin/python3.10 ${projectDir}/bin/cafe_select_k.py ${params.cafe_max_k}
+    /usr/bin/python3.10 ${projectDir}/bin/cafe_select_k.py ${params.cafe_max_k} ${params.cafe_fixed_lambda != null ? 'fixed_lambda' : ''} ${params.cafe_fixed_alpha != null ? 'fixed_alpha' : ''}
     """
 
     stub:

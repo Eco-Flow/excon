@@ -42,8 +42,10 @@ process CAFE_MODEL_COMPARE {
     # parameter, and with thousands of families the root-size prior can make up most of
     # the difference between them (see root_split_warning.txt when it is written).
     k=\$(echo "${uniform_results}" | sed -E 's/.*_k([0-9]+).*/\\1/')
-    n_uniform=\$([ "\$k" -gt 1 ] && echo 2 || echo 1)
-    n_poisson=\$((n_uniform + 1))
+    # Parameters reused from an earlier run (--cafe_fixed_lambda, --cafe_fixed_alpha,
+    # --cafe_poisson) are not estimated, so they don't count
+    n_uniform=\$(( ${params.cafe_fixed_lambda != null ? 0 : 1} + ( k > 1 ? ${params.cafe_fixed_alpha != null ? 0 : 1} : 0 ) ))
+    n_poisson=\$(( n_uniform + ${params.cafe_poisson != null ? 0 : 1} ))
     n_families=\$(cat ${uniform_results}/*_family_results.txt 2>/dev/null | grep -vc '^#' || true)
 
     # AIC = 2n + 2(-lnL); BIC = n ln(families) + 2(-lnL); "NA" when the fit failed

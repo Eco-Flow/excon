@@ -28,6 +28,11 @@ def parse_n_families(result_dir):
 # The largest k the sweep was asked to test (--cafe_max_k). Passed in rather than
 # read off the directories, so a failed fit at the top k still counts as tested.
 max_k = int(sys.argv[1]) if len(sys.argv) > 1 else None
+# Parameters reused from an earlier run are not estimated, so they don't count:
+# "fixed_lambda" (--cafe_fixed_lambda) and "fixed_alpha" (--cafe_fixed_alpha)
+flags = set(sys.argv[2:])
+lambda_free = 0 if "fixed_lambda" in flags else 1
+alpha_free  = 0 if "fixed_alpha" in flags else 1
 
 dirs = sorted(
     [d for d in os.listdir(".") if re.match(r"Out_cafe_k\d+", d) and os.path.isdir(d)],
@@ -46,7 +51,7 @@ for d in dirs:
         print(f"WARNING: no score found in {d} — skipping", file=sys.stderr)
         continue
 
-    n_params   = 1 if k == 1 else 2
+    n_params   = lambda_free + (alpha_free if k > 1 else 0)
     aic        = 2 * n_params + 2 * score
     n_families = parse_n_families(d)
     bic        = (n_params * math.log(n_families) + 2 * score) if n_families else None

@@ -1,0 +1,51 @@
+nextflow_process {
+
+    name "CAFE_PREP"
+    script "../../modules/local/cafe_prep.nf"
+    process "CAFE_PREP"
+    tag "cafe_prep"
+
+    // data/: 60 synthetic orthogroups over 4 species (N0.tsv), a rooted species tree,
+    // and an error model CAFE5 estimated on them (given_error_model.txt).
+
+    test("Reuses a lambda and an error model from an earlier run") {
+        when {
+            params {
+                cafe_fixed_lambda = 0.002
+                cafe_error_model  = "${baseDir}/tests/cafe_prep/data/given_error_model.txt"
+            }
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_prep/data/N0.tsv")
+                input[1] = file("${baseDir}/tests/cafe_prep/data/tree.nwk")
+                input[2] = file("${baseDir}/tests/cafe_prep/data/given_error_model.txt")
+                """
+            }
+        }
+        then {
+            assert process.success
+            // With lambda fixed nothing is optimised; the run must still count as converged
+            assert path(process.out.lambda[0]).text.trim() == '0.002'
+            assert path(process.out.errormodel_results[0]).readLines().find { it.startsWith('Lambda:') }.tokenize()[1] == '0.002'
+            // The error model used is the one given
+            assert path(process.out.error_model[0]).text == path("${baseDir}/tests/cafe_prep/data/given_error_model.txt").text
+        }
+    }
+
+    test("Estimates both by default") {
+        when {
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_prep/data/N0.tsv")
+                input[1] = file("${baseDir}/tests/cafe_prep/data/tree.nwk")
+                input[2] = file("${baseDir}/assets/NO_FILE")
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.lambda[0]).text.trim() != '0.002'
+            assert path(process.out.error_model[0]).readLines()[1] == 'cntdiff: -1 0 1'
+        }
+    }
+}

@@ -21,6 +21,9 @@ process CAFE_RUN_K {
     // Family-wide significance (--cafe_family_pvalue). Under the gamma model CAFE5
     // writes branch p-values only for families significant at this level.
     def P_flag = "--pvalue ${params.cafe_family_pvalue}"
+    // Parameters reused from an earlier run (--cafe_fixed_lambda / --cafe_fixed_alpha)
+    def l_flag = params.cafe_fixed_lambda != null ? "--fixed_lambda ${params.cafe_fixed_lambda}" : ""
+    def a_flag = (k > 1 && params.cafe_fixed_alpha != null) ? "--fixed_alpha ${params.cafe_fixed_alpha}" : ""
     """
     cafe5 \\
         -i ${hog_counts} \\
@@ -29,6 +32,8 @@ process CAFE_RUN_K {
         ${k_flag} \\
         ${e_flag} \\
         ${P_flag} \\
+        ${l_flag} \\
+        ${a_flag} \\
         -o Out_cafe_k${k} \\
         2>&1 | tee cafe_k${k}.log
     cafe5_exit=\${PIPESTATUS[0]}
