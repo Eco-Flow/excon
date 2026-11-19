@@ -1,5 +1,13 @@
 # Changelog
 
+## [v2.5.2] - unreleased
+
+### Added
+- **Checks on every pull request** (`.github/workflows/pr-checks.yml`). Until now nothing ran on a PR, and the tests that did run used Docker only, although most users run excon with Singularity or Apptainer on HPC. ([#152](https://github.com/Eco-Flow/excon/issues/152))
+  - `lint`: `nextflow lint` (errors fail), duplicate keys in `nextflow_schema.json` (Python's `json` keeps the last one silently, but Nextflow won't start), and the syntax of every Python, Perl, R and shell script in `bin/` and `utils/`.
+  - `module tests`: every `tests/*/main.nf.test`, once with Docker and once with Singularity (Apptainer). New module tests are picked up without editing the workflow. These tests moved here from `test-pipeline.yml`'s `go-tables` job, so they now also run on PRs.
+  - The full `test_chlamydia` run stays in `test-pipeline.yml` (on `main`, releases, or by hand: `gh workflow run test-pipeline.yml --ref <branch>`).
+
 ## [v2.5.1] - 2026-10-08 - GO corrected
 
 A bug-fix release for GO enrichment. **Chromosome GO (`--chromo_go`) and CAFE GO results from earlier versions should be regenerated.** Every adjusted P-value in both was corrected over the wrong number of terms, and the most significant terms were missing from both. Chromosome GO on BRAKER-style annotations also tested only a small subset of each chromosome's genes, and could silently skip whole chromosomes; and its duplicates-collapsed analysis lost most orthogroups of one species in every run. With these fixes, chromosome GO on a BRAKER-annotated genome matches an independent topGO run (every gene on each chromosome against all GO-annotated genes) exactly: the same chromosomes, and the same terms at P < 0.05 with the same counts, P-values and Bonferroni values. It also fixes several CAFE outputs that were empty, blank or misreported, and adds warnings about families and branches CAFE5 can't estimate well. Re-running an earlier run with `-resume` repeats only the GO steps and the CAFE steps after model fitting; OrthoFinder and the CAFE5 fits themselves come from the cache. `CHROMO_GO` and `CAFE_GO_RUN` re-run even with `--predownloaded_gofiles`, because their scripts now carry a note of the fix. Nextflow doesn't hash `bin/` scripts, so the `bin/` changes alone would have left the old results cached.
