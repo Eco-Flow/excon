@@ -597,6 +597,8 @@ Please select one of the following profiles when running the pipeline.
 * `singularity` - This profile uses the container software Singularity when running the pipeline. This container software does not require root permissions so is used when running on on-premise HPCs or you local machine (depending on permissions). **Please Note:** You must have Singularity installed to use this profile.
 * `apptainer` - This profile uses the container software Apptainer when running the pipeline. This container software does not require root permissions so is used when running on on-premise HPCs or you local machine (depending on permissions). **Please Note:** You must have Apptainer installed to use this profile.
 
+**No internet on your compute nodes?** See [docs/offline.md](docs/offline.md). `utils/pull_singularity_images.sh` downloads every container image the pipeline uses, so they can be used offline. Genomes, the eggNOG database and BUSCO lineages can all be supplied locally.
+
 ### Optional Profiles
 
 * `local` - This profile is used if you are running the pipeline on your local machine.
