@@ -11,6 +11,7 @@
   - **Development follows the nf-core branch model:** pull requests go to `dev`, and `main` only takes releases from `dev` (or an urgent fix from a branch named `patch`). The new `branch.yml` check fails any other pull request into `main`.
   - These replace `test-pipeline.yml`. Both workflows install Nextflow with `nf-core/setup-nextflow`, and nf-test from its GitHub releases (`nf-core/setup-nf-test`): the `code.askimed.com` installer no longer resolves, which would have failed every run.
 - **`--iqtree_min_occupancy`** (default `1`, unchanged behaviour): the smallest fraction of species a single-copy orthogroup must contain to go into the IQ-TREE supermatrix. With many divergent species few orthogroups are single-copy in every one; e.g. `0.9` also keeps those lacking up to 10% of the species (rounded up, never fewer than 4 present). The missing species are gaps in that orthogroup's partition, which IQ-TREE treats as missing data. Species that are present must still have exactly one copy. The run stops if a species is in none of the orthogroups kept, and `CONCAT_SINGLE_COPY` reports the share of gaps and the species with the lowest occupancy. ([#146](https://github.com/Eco-Flow/excon/issues/146))
+- **`tests/single_copy/` and `tests/single_copy_concat/`**, nf-tests of `EXTRACT_SINGLE_COPY` and `CONCAT_SINGLE_COPY` at the default occupancy and at 0.8. `test_chlamydia` doesn't build an IQ-TREE species tree, so nothing tested these steps before.
 
 ## [v2.5.1] - 2026-11-24 - GO corrected
 
