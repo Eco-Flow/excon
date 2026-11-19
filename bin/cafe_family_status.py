@@ -10,7 +10,7 @@ Usage:
   cafe_family_status.py --filtering-report hog_filtering_report.tsv \
       --best-results best_cafe_results \
       [--large-counts hog_gene_counts_large.tsv] [--large-status large_status_*.tsv ...] \
-      [--zero-root] -o cafe_family_status.tsv
+      -o cafe_family_status.tsv
 
 status is one of:
   modelled                     in the main CAFE5 model (the selected best model)
@@ -18,7 +18,8 @@ status is one of:
   excluded_single_species      genes in one species only; nothing to model
   excluded_empty_after_subset  no genes in the species analysed (--cafe_clade/--cafe_species)
   not_present_at_root          no genes on one side of the root, so CAFE5 dropped it
-                               (main model, without --cafe_zero_root)
+                               from the main model (--cafe_zero_root fits these in a
+                               separate sensitivity run, cafe/zero_root/)
   large_not_present_at_root    the same, in the large-family track
   large_did_not_converge       the large-family fit did not reach a finite likelihood
   large_task_failed            the large-family task failed on every attempt
@@ -69,8 +70,6 @@ def main():
                     help="hog_gene_counts_large.tsv: the families sent to the large-family track")
     ap.add_argument("--large-status", nargs="*", default=[],
                     help="large_status_*.tsv files written by CAFE_RUN_LARGE")
-    ap.add_argument("--zero-root", action="store_true",
-                    help="the main model ran with -z (--cafe_zero_root)")
     ap.add_argument("-o", "--output", required=True)
     ap.add_argument("--summary", default="cafe_family_status_summary.txt")
     args = ap.parse_args()
@@ -97,10 +96,10 @@ def main():
             track = "main"
             if hog in modelled:
                 status = "modelled"
-            elif not args.zero_root:
-                status = "not_present_at_root"
             else:
-                status = "not_in_results"
+                # The main model never runs with -z, so a retained family missing
+                # from its results had no genes on one side of the root
+                status = "not_present_at_root"
         elif is_large_reason(reason):
             track = "large"
             outcome = large_outcome.get(hog)

@@ -340,7 +340,7 @@
         "cafe_zero_root": {
             "type": "boolean",
             "default": false,
-            "description": "Pass CAFE5's -z/--zero_root option to every CAFE5 call (base, error-model, k-sweep, best-model and large-family runs), retaining families inferred to have zero copies at the analysis root. CAFE5 does not generally recommend this; use as a sensitivity analysis alongside the default run."
+            "description": "Also fit the families the main model drops for having no genes on one side of the root, in a separate sensitivity run with CAFE5's -z (λ fixed to the main estimate), published in cafe/zero_root/ and never merged into the main results. Before v2.5.2 this added -z to every CAFE5 call, including the main model."
         },
         "cafe_max_copies": {
             "type": "integer",

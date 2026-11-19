@@ -30,7 +30,6 @@ process CAFE_RUN_LARGE {
 
     script:
     def e_flag = error_model.size() > 0 ? "-e${error_model}" : ""
-    def z_flag = params.cafe_zero_root ? "-z" : ""
     // Family-wide significance (--cafe_family_pvalue). Under the gamma model CAFE5
     // writes branch p-values only for families significant at this level.
     def P_flag = "--pvalue ${params.cafe_family_pvalue}"
@@ -53,7 +52,6 @@ process CAFE_RUN_LARGE {
         --cores ${task.cpus} \\
         ${e_flag} \\
         ${l_flag} \\
-        ${z_flag} \\
         ${P_flag} \\
         -o ${outdir} \\
         2>&1 | tee ${logf} || true
@@ -62,7 +60,7 @@ process CAFE_RUN_LARGE {
     # outright writes nothing and is reported there as task_failed.
     hog=\$(awk -F'\t' 'NR == 2 { print \$2 }' ${hog_counts})
     if grep -q "not present at the root from: 1 to 0" ${logf}; then
-        echo "WARNING: ${hog_counts.baseName} has no genes on one side of the root, so CAFE5 dropped it (--cafe_zero_root keeps such families) — not in the large-family merge." >&2
+        echo "WARNING: ${hog_counts.baseName} has no genes on one side of the root, so CAFE5 dropped it (--cafe_zero_root fits such families in a separate sensitivity run) — not in the large-family merge." >&2
         rm -rf ${outdir}
         status=not_present_at_root
     elif [ ! -f ${outdir}/Base_results.txt ] || \\
