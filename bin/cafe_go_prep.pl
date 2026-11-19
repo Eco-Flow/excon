@@ -3,12 +3,18 @@ use warnings;
 use strict;
 use Scalar::Util qw(looks_like_number);
 
-my $cutoff      = $ARGV[0];   # branch p-value cutoff (--go_cutoff)
+my $cutoff      = $ARGV[0];   # branch p-value cutoff (--cafe_branch_pvalue)
 my $type        = $ARGV[1];
 my $go_max_plot = $ARGV[2];
-# "modelled_background": each species' GO background is only the families CAFE5
-# modelled (see where the backgrounds are written below)
-my $modelled_only = ($ARGV[3] // "") eq "modelled_background";
+# Optional flags after the first three arguments:
+#   modelled_background  each species' GO background is only the families CAFE5
+#                        modelled (see where the backgrounds are written below)
+#   family_pvalue=<p>    family-wide p-value cutoff (--cafe_family_pvalue); a family
+#                        counts on a branch only if it also passes this (default 0.05)
+my @flags         = @ARGV[3 .. $#ARGV];
+my $modelled_only = grep { $_ eq "modelled_background" } @flags;
+my $fam_cutoff    = 0.05;
+foreach my $f (@flags) { $fam_cutoff = $1 if $f =~ /^family_pvalue=(.+)$/; }
 
 
 #Set up output name
@@ -105,6 +111,7 @@ print "Using CAFE output directory: $out_dir\n";
 # --- Find required files dynamically ---
 my ($file2) = glob("$out_dir/*_branch_probabilities.tab");
 my ($file3) = glob("$out_dir/*_change.tab");
+my ($file4) = glob("$out_dir/*_family_results.txt");
 
 die "ERROR: Could not find branch probabilities file in $out_dir\n" unless $file2;
 die "ERROR: Could not find change file in $out_dir\n" unless $file3;
@@ -132,6 +139,21 @@ foreach my $colh (@head_pval){
         my @spo=split("\<", $colh);
         push (@head_pval_simp, $spo[0]);
     }
+}
+
+# Family-wide p-values: "#FamilyID<tab>pvalue<tab>Significant at ..."
+my %FAMILY_P;
+if ($file4) {
+    open(my $filein4, "<", $file4) or die "Could not open $file4\n";
+    <$filein4>;
+    while (my $line4 = <$filein4>) {
+        chomp $line4;
+        my @f = split("\t", $line4);
+        $FAMILY_P{$f[0]} = $f[1] if defined $f[1] && looks_like_number($f[1]);
+    }
+    close $filein4;
+} else {
+    print "WARNING: no *_family_results.txt in $out_dir; no family can pass the family-wide cutoff\n";
 }
 
 print "Reading in $file2\n";
@@ -187,7 +209,10 @@ foreach my $species (keys %PVALUE_DATA){
     foreach my $hog (keys %{$PVALUE_DATA{$species}}){
         my $pval=$PVALUE_DATA{$species}{$hog};
         #print "HOGGY $hog\n";
-        if (looks_like_number($pval) ){
+        # Significant on this branch: the family passes the family-wide cutoff and
+        # this branch passes the branch cutoff
+        my $fam_ok = exists $FAMILY_P{$hog} && $FAMILY_P{$hog} <= $fam_cutoff;
+        if (looks_like_number($pval) && $fam_ok){
             if($pval <= $cutoff){
                 my $direction=$COUNT_DATA{$species}{$hog};
                 #print "HERE $direction\n";
@@ -375,7 +400,7 @@ print "Print a summary table:\n";
 
 print $out1
 "# CAFE_summary.txt — per-species/node counts derived from CAFE5 output\n" .
-"# Sources: *_branch_probabilities.tab (p-values) and *_change.tab (gene count changes)\n" .
+"# Sources: *_family_results.txt (family-wide p-values), *_branch_probabilities.tab (branch p-values) and *_change.tab (gene count changes)\n" .
 "#\n" .
 "# Note on terminology: 'HOG' is used throughout as a generic term for gene family.\n" .
 "#   OrthoFinder v2 (--orthofinder_v2): families are Hierarchical Orthogroups (HOGs) from N0.tsv\n" .
@@ -384,9 +409,9 @@ print $out1
 "#\n" .
 "# Column definitions:\n" .
 "#   Species/Node                  : Leaf species or internal ancestral node (number matches cafe_node_label_guide.pdf)\n" .
-"#   Total_HOGs_significant        : Number of gene families with a significant branch p-value (p <= ${cutoff})\n" .
-"#   Expansion_HOGs_significant    : Significant gene families (p <= ${cutoff}) with a net positive gene count change (expansion)\n" .
-"#   Contraction_HOGs_significant  : Significant gene families (p <= ${cutoff}) with a net negative gene count change (contraction)\n" .
+"#   Total_HOGs_significant        : Number of gene families significant on this branch (family-wide p <= ${fam_cutoff} and branch p <= ${cutoff})\n" .
+"#   Expansion_HOGs_significant    : Significant gene families with a net positive gene count change (expansion)\n" .
+"#   Contraction_HOGs_significant  : Significant gene families with a net negative gene count change (contraction)\n" .
 "#   Expansion_genes_significant   : Sum of gene count changes across all significant expanding families (total genes gained)\n" .
 "#   Contraction_genes_significant : Sum of gene count changes across all significant contracting families (negative; total genes lost)\n" .
 "#   Expansion_HOGs_total          : Gene families with any positive gene count change, regardless of significance (no p-value filter)\n" .
