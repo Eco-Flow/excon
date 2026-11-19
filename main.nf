@@ -41,6 +41,7 @@ include { CAFE_PREP } from './modules/local/cafe_prep.nf'
 include { CAFE_LARGE_FAMILY_COUNTS } from './modules/local/cafe_large_family_counts.nf'
 include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
+include { CAFE_FAMILY_STATUS } from './modules/local/cafe_family_status.nf'
 include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
 include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
 include { MERGE_CAFE_LARGE_RESULTS } from './modules/local/merge_cafe_large_results.nf'
@@ -583,6 +584,16 @@ workflow {
 
         // Also published to cafe/model_comparison/; shown here so they aren't missed
         CAFE_MODEL_COMPARE.out.warnings.flatten().subscribe { f -> log.warn(f.text.trim()) }
+
+        // What became of every family: modelled, left out before CAFE5 and why,
+        // dropped at the root, or lost in the large-family track
+        CAFE_FAMILY_STATUS (
+            CAFE_PREP.out.filtering_report,
+            ch_best_results,
+            CAFE_LARGE_FAMILY_COUNTS.out.large_counts.ifEmpty( file("${projectDir}/assets/NO_FILE") ),
+            CAFE_RUN_LARGE.out.status.collect().ifEmpty( [] )
+        )
+        CAFE_FAMILY_STATUS.out.summary.subscribe { f -> log.info(f.text.trim()) }
 
         CAFE_PLOT ( ch_best_results )
         CAFE_NODE_GUIDE ( ch_best_results )
