@@ -104,10 +104,10 @@ jobs:
           nextflow -v
 
       - name: Install nf-test
-        run: |
-          curl -fsSL https://code.askimed.com/install/nf-test | bash -s "$NFT_VER"
-          sudo mv nf-test /usr/local/bin/
-          nf-test version
+        # From nf-test's GitHub releases. The code.askimed.com installer stopped resolving.
+        uses: nf-core/setup-nf-test@v2.1.0
+        with:
+          version: ${{ env.NFT_VER }}
 
       - name: Install Apptainer (provides the singularity command)
         if: matrix.engine == 'singularity'
