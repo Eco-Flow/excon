@@ -31,7 +31,10 @@ import os
 import sys
 from collections import Counter, OrderedDict
 
-LARGE_REASONS = {"max_copies_ge_100", "differential_gt_threshold"}
+def is_large_reason(reason):
+    """Left out of the main run for its size: max_copies_ge_<--cafe_max_copies> or
+    differential_gt_threshold."""
+    return reason.startswith("max_copies_ge_") or reason == "differential_gt_threshold"
 
 
 def read_tsv(path):
@@ -98,7 +101,7 @@ def main():
                 status = "not_present_at_root"
             else:
                 status = "not_in_results"
-        elif reason in LARGE_REASONS:
+        elif is_large_reason(reason):
             track = "large"
             outcome = large_outcome.get(hog)
             if outcome == "fitted":
