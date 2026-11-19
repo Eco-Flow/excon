@@ -16,6 +16,10 @@ process CAFE_MODEL_PARAMETERS {
     tuple val("${task.process}"), val('python'), val('3.10.13'), emit: versions_python, topic: versions
 
     script:
+    def fixed = [ params.cafe_fixed_lambda != null ? 'lambda'       : null,
+                  params.cafe_fixed_alpha  != null ? 'alpha'        : null,
+                  params.cafe_error_model          ? 'error_model'  : null,
+                  params.cafe_poisson      != null ? 'poisson_mean' : null ].findAll { it }.join(',')
     """
     /usr/bin/python3.10 ${projectDir}/bin/cafe_model_parameters.py \\
         --results ${k_results} ${poisson_results} \\
@@ -23,11 +27,12 @@ process CAFE_MODEL_PARAMETERS {
         --error-model ${error_model} \\
         --best-model ${best_model} \\
         --best-k ${best_k} \\
+        --fixed "${fixed}" \\
         -o cafe_model_parameters.tsv
     """
 
     stub:
     """
-    printf "directory\\tk\\troot_distribution\\tpoisson_mean\\tlambda\\talpha\\tepsilon\\tneg_lnL\\tmax_possible_lambda\\tselected\\n" > cafe_model_parameters.tsv
+    printf "directory\\tk\\troot_distribution\\tpoisson_mean\\tlambda\\talpha\\tepsilon\\tneg_lnL\\tmax_possible_lambda\\tselected\\tfixed_parameters\\n" > cafe_model_parameters.tsv
     """
 }

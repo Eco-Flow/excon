@@ -1,0 +1,61 @@
+Orthogroup	SpA	SpB	SpC	SpD
+OG0000000	spa_g0, spa_g1, spa_g2	spb_g3, spb_g4, spb_g5	spc_g6, spc_g7, spc_g8, spc_g9, spc_g10	spd_g11, spd_g12
+OG0000001	spa_g13, spa_g14	spb_g15	spc_g16	spd_g17, spd_g18
+OG0000002	spa_g19, spa_g20	spb_g21	spc_g22	spd_g23
+OG0000003	spa_g24, spa_g25, spa_g26, spa_g27	spb_g28, spb_g29, spb_g30	spc_g31, spc_g32, spc_g33, spc_g34	spd_g35, spd_g36, spd_g37
+OG0000004	spa_g38, spa_g39, spa_g40	spb_g41, spb_g42, spb_g43, spb_g44, spb_g45	spc_g46, spc_g47, spc_g48	spd_g49, spd_g50, spd_g51, spd_g52
+OG0000005	spa_g53, spa_g54	spb_g55, spb_g56	spc_g57	spd_g58
+OG0000006	spa_g59	spb_g60, spb_g61, spb_g62	spc_g63, spc_g64	spd_g65, spd_g66
+OG0000007	spa_g67, spa_g68, spa_g69, spa_g70	spb_g71, spb_g72, spb_g73, spb_g74, spb_g75	spc_g76, spc_g77, spc_g78	spd_g79, spd_g80, spd_g81, spd_g82, spd_g83
+OG0000008	spa_g84, spa_g85, spa_g86, spa_g87	spb_g88, spb_g89, spb_g90, spb_g91, spb_g92	spc_g93, spc_g94, spc_g95	spd_g96, spd_g97
+OG0000009	spa_g98, spa_g99	spb_g100	spc_g101, spc_g102, spc_g103	spd_g104, spd_g105, spd_g106, spd_g107
+OG0000010	spa_g108, spa_g109	spb_g110	spc_g111, spc_g112	spd_g113
+OG0000011	spa_g114, spa_g115, spa_g116, spa_g117, spa_g118, spa_g119	spb_g120, spb_g121, spb_g122, spb_g123, spb_g124	spc_g125, spc_g126, spc_g127, spc_g128	spd_g129, spd_g130, spd_g131, spd_g132
+OG0000012	spa_g133, spa_g134, spa_g135, spa_g136, spa_g137	spb_g138, spb_g139, spb_g140, spb_g141	spc_g142, spc_g143, spc_g144, spc_g145	spd_g146, spd_g147, spd_g148, spd_g149
+OG0000013	spa_g150, spa_g151	spb_g152, spb_g153, spb_g154, spb_g155	spc_g156, spc_g157	spd_g158
+OG0000014	spa_g159, spa_g160, spa_g161, spa_g162	spb_g163, spb_g164, spb_g165	spc_g166, spc_g167, spc_g168	spd_g169, spd_g170, spd_g171, spd_g172, spd_g173
+OG0000015	spa_g174, spa_g175, spa_g176, spa_g177	spb_g178, spb_g179, spb_g180, spb_g181, spb_g182	spc_g183, spc_g184, spc_g185	spd_g186, spd_g187, spd_g188
+OG0000016	spa_g189, spa_g190, spa_g191, spa_g192	spb_g193, spb_g194, spb_g195, spb_g196	spc_g197, spc_g198, spc_g199, spc_g200	spd_g201, spd_g202, spd_g203, spd_g204
+OG0000017	spa_g205, spa_g206, spa_g207	spb_g208, spb_g209, spb_g210, spb_g211, spb_g212, spb_g213	spc_g214, spc_g215, spc_g216	spd_g217, spd_g218, spd_g219, spd_g220, spd_g221
+OG0000018	spa_g222, spa_g223, spa_g224	spb_g225, spb_g226, spb_g227, spb_g228, spb_g229	spc_g230, spc_g231, spc_g232	spd_g233, spd_g234, spd_g235, spd_g236
+OG0000019	spa_g237, spa_g238, spa_g239, spa_g240, spa_g241	spb_g242, spb_g243, spb_g244, spb_g245	spc_g246, spc_g247, spc_g248	spd_g249, spd_g250, spd_g251
+OG0000020	spa_g252, spa_g253, spa_g254	spb_g255, spb_g256, spb_g257, spb_g258, spb_g259	spc_g260, spc_g261, spc_g262, spc_g263, spc_g264	spd_g265, spd_g266
+OG0000021	spa_g267, spa_g268, spa_g269	spb_g270, spb_g271, spb_g272	spc_g273	spd_g274, spd_g275, spd_g276
+OG0000022	spa_g277, spa_g278, spa_g279, spa_g280	spb_g281, spb_g282, spb_g283, spb_g284, spb_g285, spb_g286	spc_g287, spc_g288, spc_g289, spc_g290	spd_g291, spd_g292, spd_g293, spd_g294, spd_g295, spd_g296
+OG0000023	spa_g297, spa_g298	spb_g299, spb_g300, spb_g301	spc_g302, spc_g303, spc_g304	spd_g305, spd_g306, spd_g307
+OG0000024	spa_g308	spb_g309	spc_g310	spd_g311
+OG0000025	spa_g312, spa_g313, spa_g314, spa_g315	spb_g316, spb_g317	spc_g318, spc_g319	spd_g320, spd_g321
+OG0000026	spa_g322, spa_g323, spa_g324	spb_g325, spb_g326, spb_g327, spb_g328	spc_g329, spc_g330, spc_g331, spc_g332	spd_g333, spd_g334, spd_g335, spd_g336
+OG0000027	spa_g337, spa_g338, spa_g339	spb_g340, spb_g341, spb_g342	spc_g343, spc_g344, spc_g345, spc_g346	spd_g347, spd_g348, spd_g349
+OG0000028	spa_g350, spa_g351, spa_g352, spa_g353	spb_g354, spb_g355, spb_g356, spb_g357, spb_g358, spb_g359	spc_g360, spc_g361, spc_g362, spc_g363	spd_g364, spd_g365, spd_g366, spd_g367
+OG0000029	spa_g368	spb_g369, spb_g370	spc_g371, spc_g372	spd_g373, spd_g374
+OG0000030	spa_g375	spb_g376, spb_g377	spc_g378, spc_g379, spc_g380	spd_g381, spd_g382
+OG0000031	spa_g383, spa_g384, spa_g385	spb_g386, spb_g387	spc_g388, spc_g389, spc_g390	spd_g391, spd_g392, spd_g393
+OG0000032	spa_g394, spa_g395, spa_g396, spa_g397	spb_g398, spb_g399, spb_g400, spb_g401	spc_g402, spc_g403, spc_g404	spd_g405, spd_g406, spd_g407
+OG0000033	spa_g408	spb_g409, spb_g410, spb_g411	spc_g412, spc_g413	spd_g414
+OG0000034	spa_g415, spa_g416, spa_g417, spa_g418	spb_g419, spb_g420, spb_g421, spb_g422	spc_g423, spc_g424, spc_g425	spd_g426, spd_g427, spd_g428, spd_g429
+OG0000035	spa_g430, spa_g431, spa_g432	spb_g433, spb_g434, spb_g435, spb_g436	spc_g437, spc_g438, spc_g439	spd_g440, spd_g441, spd_g442, spd_g443
+OG0000036	spa_g444, spa_g445, spa_g446, spa_g447	spb_g448, spb_g449, spb_g450	spc_g451, spc_g452, spc_g453, spc_g454	spd_g455, spd_g456, spd_g457, spd_g458, spd_g459
+OG0000037	spa_g460	spb_g461	spc_g462, spc_g463	spd_g464
+OG0000038	spa_g465	spb_g466, spb_g467	spc_g468	spd_g469
+OG0000039	spa_g470, spa_g471, spa_g472	spb_g473, spb_g474	spc_g475, spc_g476	spd_g477, spd_g478, spd_g479, spd_g480
+OG0000040	spa_g481, spa_g482, spa_g483	spb_g484, spb_g485, spb_g486, spb_g487	spc_g488, spc_g489, spc_g490	spd_g491, spd_g492, spd_g493
+OG0000041	spa_g494	spb_g495	spc_g496	spd_g497
+OG0000042	spa_g498, spa_g499, spa_g500, spa_g501	spb_g502, spb_g503, spb_g504	spc_g505, spc_g506, spc_g507, spc_g508	spd_g509, spd_g510, spd_g511
+OG0000043	spa_g512, spa_g513, spa_g514, spa_g515, spa_g516	spb_g517, spb_g518, spb_g519	spc_g520, spc_g521, spc_g522	spd_g523, spd_g524, spd_g525, spd_g526, spd_g527
+OG0000044	spa_g528, spa_g529, spa_g530	spb_g531	spc_g532, spc_g533	spd_g534, spd_g535, spd_g536
+OG0000045	spa_g537, spa_g538, spa_g539	spb_g540, spb_g541, spb_g542, spb_g543, spb_g544	spc_g545, spc_g546, spc_g547, spc_g548	spd_g549, spd_g550
+OG0000046	spa_g551, spa_g552, spa_g553, spa_g554, spa_g555	spb_g556, spb_g557	spc_g558, spc_g559, spc_g560, spc_g561, spc_g562	spd_g563, spd_g564, spd_g565
+OG0000047	spa_g566, spa_g567, spa_g568	spb_g569, spb_g570, spb_g571	spc_g572, spc_g573, spc_g574	spd_g575, spd_g576, spd_g577, spd_g578
+OG0000048	spa_g579, spa_g580, spa_g581, spa_g582, spa_g583	spb_g584, spb_g585, spb_g586	spc_g587, spc_g588, spc_g589, spc_g590	spd_g591, spd_g592, spd_g593
+OG0000049	spa_g594, spa_g595	spb_g596, spb_g597, spb_g598, spb_g599	spc_g600, spc_g601	spd_g602, spd_g603
+OG0000050	spa_g604, spa_g605, spa_g606, spa_g607	spb_g608, spb_g609, spb_g610, spb_g611, spb_g612, spb_g613	spc_g614, spc_g615, spc_g616	spd_g617, spd_g618, spd_g619
+OG0000051	spa_g620, spa_g621, spa_g622	spb_g623, spb_g624, spb_g625	spc_g626, spc_g627, spc_g628	spd_g629, spd_g630, spd_g631, spd_g632, spd_g633
+OG0000052	spa_g634, spa_g635, spa_g636	spb_g637, spb_g638, spb_g639, spb_g640, spb_g641	spc_g642, spc_g643, spc_g644	spd_g645, spd_g646, spd_g647
+OG0000053	spa_g648		spc_g649	spd_g650
+OG0000054	spa_g651, spa_g652	spb_g653, spb_g654	spc_g655, spc_g656	spd_g657, spd_g658, spd_g659
+OG0000055	spa_g660	spb_g661, spb_g662, spb_g663	spc_g664	spd_g665, spd_g666, spd_g667
+OG0000056	spa_g668, spa_g669, spa_g670		spc_g671	spd_g672, spd_g673, spd_g674
+OG0000057	spa_g675, spa_g676	spb_g677, spb_g678	spc_g679, spc_g680	spd_g681, spd_g682, spd_g683, spd_g684
+OG0000058	spa_g685, spa_g686	spb_g687, spb_g688, spb_g689, spb_g690, spb_g691	spc_g692, spc_g693, spc_g694	spd_g695, spd_g696, spd_g697
+OG0000059	spa_g698, spa_g699, spa_g700, spa_g701, spa_g702, spa_g703	spb_g704, spb_g705, spb_g706	spc_g707, spc_g708, spc_g709, spc_g710, spc_g711, spc_g712	spd_g713, spd_g714, spd_g715, spd_g716

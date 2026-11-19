@@ -133,7 +133,7 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 
 | File | Description |
 |------|-------------|
-| `cafe_model_parameters.tsv` | The fitted parameters of every model compared (k = 1 to `--cafe_max_k` with a uniform root, and the best k with a Poisson root): k, root distribution, Poisson root mean, λ, α (k > 1), the error model's ε, -lnL, CAFE5's largest allowed λ for the tree, and `BEST` for the selected model |
+| `cafe_model_parameters.tsv` | The fitted parameters of every model compared (k = 1 to `--cafe_max_k` with a uniform root, and the best k with a Poisson root): k, root distribution, Poisson root mean, λ, α (k > 1), the error model's ε, -lnL, CAFE5's largest allowed λ for the tree, `BEST` for the selected model, and `fixed_parameters`: which were given rather than estimated (`--cafe_fixed_lambda`, `--cafe_fixed_alpha`, `--cafe_error_model`, `--cafe_poisson`) |
 | `model_selection.tsv` | -lnL, AIC and BIC for k = 1 to `--cafe_max_k` rate categories (uniform root); the best k by AIC. `Note` reads `best_k_at_cafe_max_k` when the best k is the largest tested |
 | `k_boundary_warning.txt` | Written only when the best k is the largest tested: a larger `--cafe_max_k` may fit better |
 | `best_k.txt` | That k |
