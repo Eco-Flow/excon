@@ -2,6 +2,9 @@
 
 ## [v2.6.0] - unreleased
 
+### Fixed
+- **CAFE GO ignored `--go_cutoff` when choosing significant families.** `bin/cafe_go_prep.pl` read the cutoff into `$pval`, then reused that name for each family's branch p-value, and compared against a hardcoded `0.05`. A family now counts as significant on a branch when its branch p-value is at most `--go_cutoff`, and the column notes in the summary state that cutoff. Runs with the default `--go_cutoff 0.05` are unaffected.
+
 ### Added
 - **CI on every pull request, laid out as in nf-core pipelines.** Until now nothing ran on a PR, and the tests that did run used Docker only, although most users run excon with Singularity or Apptainer on HPC. ([#152](https://github.com/Eco-Flow/excon/issues/152))
   - `linting.yml`: `nextflow lint` (errors fail), duplicate keys in `nextflow_schema.json` (Python's `json` keeps the last one silently, but Nextflow won't start), and the syntax of every Python, Perl, R and shell script in `bin/` and `utils/`. It runs on every PR.
@@ -10,6 +13,7 @@
   - **New `test` profile, which the pipeline test now uses.** It has the 10 *Chlamydia* species of `test_chlamydia`, with genomes and annotations fetched straight from NCBI's FTP site over HTTPS (`data/input_test.csv`, checked to give byte-identical data), two at a time because NCBI answers HTTP 503 to more. That skips ncbi-genome-download, which first fetches NCBI's 245 MB index of all bacterial assemblies. CAFE's k-sweep goes to k = 3 rather than 6, since its fits run one after another on a 4-CPU runner and k = 4-6 take longest. The snapshot only loses the download step's own outputs. CI also uploads the pipeline test's `pipeline_info/` (trace, timeline) on every run, to see what is slow. `test_chlamydia` is unchanged, for testing the download step.
   - **Development follows the nf-core branch model:** pull requests go to `dev`, and `main` only takes releases from `dev` (or an urgent fix from a branch named `patch`). The new `branch.yml` check fails any other pull request into `main`.
   - These replace `test-pipeline.yml`. Both workflows install Nextflow with `nf-core/setup-nextflow`, and nf-test from its GitHub releases (`nf-core/setup-nf-test`): the `code.askimed.com` installer no longer resolves, which would have failed every run.
+- **A warning when the best number of gamma rate categories is the largest tested.** If the best k by AIC equals `--cafe_max_k`, a larger k may fit better still. `cafe/model_comparison/model_selection.tsv` has a new `Note` column marking this (`best_k_at_cafe_max_k`), and `k_boundary_warning.txt` and the run log say to re-run with a larger `--cafe_max_k`. ([#147](https://github.com/Eco-Flow/excon/issues/147))
 
 ## [v2.5.1] - 2026-11-24 - GO corrected
 
