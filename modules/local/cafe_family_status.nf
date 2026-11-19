@@ -16,14 +16,12 @@ process CAFE_FAMILY_STATUS {
 
     script:
     def large  = large_counts.name != 'NO_FILE' ? "--large-counts ${large_counts}" : ''
-    def zero   = params.cafe_zero_root ? '--zero-root' : ''
     """
     /usr/bin/python3.10 ${projectDir}/bin/cafe_family_status.py \\
         --filtering-report ${filtering_report} \\
         --best-results ${best_results} \\
         ${large} \\
         --large-status \$(find -L large_status -name '*.tsv' 2>/dev/null) \\
-        ${zero} \\
         -o cafe_family_status.tsv
     """
 

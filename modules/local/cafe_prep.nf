@@ -49,7 +49,6 @@ process CAFE_PREP {
     // A tree from DATE_TREE is already ultrametric and in Myr, so it is handled
     // exactly like a user-supplied dated tree.
     def is_dated         = (params.input_tree_is_dated || params.tree_calibrations) ? 'true' : 'false'
-    def z_flag           = params.cafe_zero_root ? '-z' : ''
     // Matches maxRetries below: the final attempt must not exit 1, or the run ends
     // with no result at all rather than one lacking an error model.
     def can_retry        = task.attempt <= 3
@@ -86,7 +85,6 @@ process CAFE_PREP {
         -i hog_gene_counts.tsv \\
         -t cafe_input_tree.txt \\
         --cores ${task.cpus} \\
-        ${z_flag} \\
         -o Out_cafe \\
         2>&1 | tee cafe_base.log
     cafe5_exit=\${PIPESTATUS[0]}
@@ -131,7 +129,6 @@ process CAFE_PREP {
         -i hog_gene_counts.tsv \\
         -t cafe_input_tree.txt \\
         --cores ${task.cpus} \\
-        ${z_flag} \\
         -e \\
         -o Out_cafe_errormodel \\
         2>&1 | tee cafe_errormodel.log
