@@ -29,6 +29,9 @@ process CAFE_RUN_LARGE {
     script:
     def e_flag = error_model.size() > 0 ? "-e${error_model}" : ""
     def z_flag = params.cafe_zero_root ? "-z" : ""
+    // CAFE5's own default is 0.05; the flag is only added for another value, so the
+    // default doesn't change these tasks' cache keys.
+    def P_flag = params.cafe_family_pvalue != 0.05 ? "--pvalue ${params.cafe_family_pvalue}" : ""
     def outdir = "Out_cafe_large_${hog_counts.baseName}"
     def logf   = "cafe_large_${hog_counts.baseName}.log"
     """
@@ -44,6 +47,7 @@ process CAFE_RUN_LARGE {
         --cores ${task.cpus} \\
         ${e_flag} \\
         ${z_flag} \\
+        ${P_flag} \\
         -o ${outdir} \\
         2>&1 | tee ${logf} || true
 

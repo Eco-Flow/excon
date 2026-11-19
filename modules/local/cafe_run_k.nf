@@ -19,6 +19,9 @@ process CAFE_RUN_K {
     def k_flag = k > 1 ? "-k ${k}" : ""
     def e_flag = error_model.size() > 0 ? "-e${error_model}" : ""  // no space after -e
     def z_flag = params.cafe_zero_root ? "-z" : ""
+    // CAFE5's own default is 0.05; the flag is only added for another value, so the
+    // default doesn't change these tasks' cache keys.
+    def P_flag = params.cafe_family_pvalue != 0.05 ? "--pvalue ${params.cafe_family_pvalue}" : ""
     """
     cafe5 \\
         -i ${hog_counts} \\
@@ -27,6 +30,7 @@ process CAFE_RUN_K {
         ${k_flag} \\
         ${e_flag} \\
         ${z_flag} \\
+        ${P_flag} \\
         -o Out_cafe_k${k} \\
         2>&1 | tee cafe_k${k}.log
     cafe5_exit=\${PIPESTATUS[0]}
