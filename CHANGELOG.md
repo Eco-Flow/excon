@@ -7,6 +7,7 @@
   - `lint`: `nextflow lint` (errors fail), duplicate keys in `nextflow_schema.json` (Python's `json` keeps the last one silently, but Nextflow won't start), and the syntax of every Python, Perl, R and shell script in `bin/` and `utils/`.
   - `module tests`: every `tests/*/main.nf.test`, once with Docker and once with Singularity (Apptainer). New module tests are picked up without editing the workflow. These tests moved here from `test-pipeline.yml`'s `go-tables` job, so they now also run on PRs.
   - The full `test_chlamydia` run stays in `test-pipeline.yml` (on `main`, releases, or by hand: `gh workflow run test-pipeline.yml --ref <branch>`).
+  - Both workflows now install nf-test from its GitHub releases (`nf-core/setup-nf-test`). The `code.askimed.com` installer they used no longer resolves, which would have failed every run.
 
 ## [v2.5.1] - 2026-10-08 - Spliceosome
 
