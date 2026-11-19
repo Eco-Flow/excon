@@ -15,6 +15,7 @@ include { CAFE_NODE_GUIDE } from './modules/local/cafe_node_guide.nf'
 include { CAFE_SIG_FAMILIES } from './modules/local/cafe_sig_families.nf'
 include { CAFE_PLOT_ALTVIZ } from './modules/local/cafe_plot_altviz.nf'
 include { RENAME_FASTA } from './modules/local/rename_fasta.nf'
+include { PREPARE_PROTEINS } from './modules/local/prepare_proteins.nf'
 include { EGGNOG_DOWNLOAD } from './modules/local/eggnog_download.nf'
 include { EGGNOG_TO_GO } from './modules/local/eggnog_to_go.nf'
 include { EGGNOG_TO_OG_GO } from './modules/local/eggnog_to_og_go.nf'
@@ -61,6 +62,7 @@ include { OG_ANNOTATION_SUMMARY } from './modules/local/og_annotation_summary.nf
 params {
     outdir                    : String
     input                     : String?
+    input_proteins            : String?
     chromo_go                 : Boolean
     chromo_go_max_chroms      : Integer
     go_cutoff                 : Float
@@ -172,8 +174,15 @@ workflow {
       error "ERROR: --input_orthogroups also needs --input_tree (the species tree for those gene counts)."
    }
 
-   if (needs_genomes && !params.input) {
-      error "ERROR: --input (samplesheet CSV) is required when not using pre-computed OrthoFinder results, or when --run_eggnog / --stats is set."
+   if (needs_genomes && !params.input && !params.input_proteins) {
+      error "ERROR: --input (genomes and annotations) or --input_proteins (proteomes) is required when not using pre-computed OrthoFinder results, or when --run_eggnog / --stats is set."
+   }
+   // --stats and --chromo_go work on genomes and their annotations, which a proteome lacks
+   if (params.input_proteins && !params.input && (params.stats || params.chromo_go)) {
+      error "ERROR: --stats and --chromo_go need genomes and annotations (--input); --input_proteins supplies proteomes only."
+   }
+   if (params.input_proteins && params.input && (params.stats || params.chromo_go)) {
+      log.warn "--stats and --chromo_go cover only the species in --input, not those given as proteomes in --input_proteins."
    }
 
    if (params.cafe_clade && params.cafe_species) {
@@ -207,7 +216,12 @@ workflow {
       }
    }
 
-   if (needs_genomes) {
+   // Proteomes for OrthoFinder and eggNOG, from genomes (--input), proteomes
+   // (--input_proteins) or both; and the GFF that maps each protein to its gene
+   merge_ch = Channel.empty()
+   ch_gff   = Channel.empty()
+
+   if (needs_genomes && params.input) {
 
       Channel
       .fromPath(params.input)
@@ -269,6 +283,24 @@ workflow {
 
    } // end if needs_genomes
 
+   // --input_proteins: one proteome per species, one protein per gene, used as given
+   // (internal stop codons handled as --internal_stop_action says)
+   if (needs_genomes && params.input_proteins) {
+      ch_input_proteins = Channel
+         .fromPath(params.input_proteins)
+         .splitCsv()
+         .filter { row -> row && row[0]?.trim() && !row[0].trim().startsWith('#') }
+         .map { row ->
+            if (row.size() != 2) {
+               error "ERROR: each --input_proteins line must be species,proteins.fasta; got: ${row.join(',')}"
+            }
+            [ [id: row[0].trim()], file(row[1].trim(), checkIfExists: true) ]
+         }
+      PREPARE_PROTEINS ( ch_input_proteins )
+      merge_ch = merge_ch.mix( PREPARE_PROTEINS.out.fasta )
+      ch_gff   = ch_gff.mix( PREPARE_PROTEINS.out.gff )
+   }
+
 
    // --- Eggnog GO annotation ---
 
@@ -282,7 +314,7 @@ workflow {
       }
 
       EGGNOGMAPPER (
-         RENAME_FASTA.out.fasta,
+         merge_ch,
          channel.value([ 'diamond', [] ]),
          ch_eggnog_data
       )

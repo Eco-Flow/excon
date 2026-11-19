@@ -116,6 +116,27 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 
 > **Note:** Genomes should be chromosome-level, not contig-level. RefSeq IDs must be used (not GenBank IDs).
 
+### Starting from proteins (`--input_proteins`)
+
+If you have proteomes rather than genomes and annotations, give them in a separate 2-field CSV
+with `--input_proteins`, instead of `--input` or as well as it:
+
+```
+Species_A,/path/to/Species_A.proteins.fa.gz
+Species_B,/path/to/Species_B.proteins.fa
+```
+
+Each proteome should hold **one protein per gene** (e.g. the longest isoform), named by the ID
+you want for that gene. The pipeline uses the proteins as they are, apart from stop codons:
+- A final stop is removed.
+- Internal stops are handled as `--internal_stop_action` says (`longest_orf` by default; see
+  [Internal stop codons](#internal-stop-codons-optional)). Both `*` and `.` count as stops;
+  `gffread -y` writes `.` unless run with `-S`.
+- Repeated IDs and empty sequences are skipped with a warning.
+
+`--stats` and `--chromo_go` need genomes and annotations, so they only cover species given in
+`--input`.
+
 ## Parameters
 
 ### Core options
