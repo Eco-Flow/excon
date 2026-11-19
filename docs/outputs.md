@@ -72,6 +72,20 @@ For each significantly evolving orthogroup, a tree shows the gene count at each 
 
 ---
 
+## KEGG Pathway Enrichment (`results/cafe_kegg/`, with `--cafe_kegg`)
+
+| File | Description |
+|------|-------------|
+| `kegg_enrichment.tsv` | Every pathway found in at least one significantly changed family, per node and direction |
+| `kegg_enrichment_significant.tsv` | The rows with `padj_BH` ≤ `--cafe_kegg_padj` |
+| `kegg_enrichment_summary.txt` | How many sets were tested and how many pathways passed (also in the run log) |
+
+Columns: `node` (species or CAFE5 node id), `direction` (`expansion` / `contraction`), `pathway` (KEGG `map#####` id), `pathway_name`, `fg_with_pathway` / `fg_annotated` (significant families with this pathway / with any pathway), `bg_with_pathway` / `bg_annotated` (the same for the background: modelled families, for a species those containing it), `fold_enrichment`, `pvalue` (one-sided hypergeometric), `padj_BH` (Benjamini-Hochberg over every pathway in the background) and `families` (the significant families with the pathway).
+
+`OG_annotation_summary.tsv` (with `--run_eggnog`) also has a new `KEGG_Pathway` column: the representative gene's `map#####` pathways.
+
+---
+
 ## GO Enrichment Plots (`results/cafe_go/`)
 
 GO enrichment is run per species per direction (expanded/contracted gene families). Two publication-quality plot types are produced for each.
