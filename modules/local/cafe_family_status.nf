@@ -5,6 +5,7 @@ process CAFE_FAMILY_STATUS {
 
     input:
     path filtering_report                       // hog_filtering_report.tsv from CAFE_PREP
+    path te_report, stageAs: 'te_report/*'      // te_families.tsv (--cafe_te_filter), or NO_FILE
     path best_results                           // the selected main model's CAFE5 results
     path large_counts                           // hog_gene_counts_large.tsv, or NO_FILE
     path large_status, stageAs: 'large_status/*' // large_status_*.tsv from CAFE_RUN_LARGE (may be none)
@@ -16,11 +17,13 @@ process CAFE_FAMILY_STATUS {
 
     script:
     def large  = large_counts.name != 'NO_FILE' ? "--large-counts ${large_counts}" : ''
+    def te     = params.cafe_te_filter ? "--te-report ${te_report}" : ''
     """
     /usr/bin/python3.10 ${projectDir}/bin/cafe_family_status.py \\
         --filtering-report ${filtering_report} \\
         --best-results ${best_results} \\
         ${large} \\
+        ${te} \\
         --large-status \$(find -L large_status -name '*.tsv' 2>/dev/null) \\
         -o cafe_family_status.tsv
     """

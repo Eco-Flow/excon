@@ -428,6 +428,9 @@ Outputs are written to `results/species_tree/`:
 | `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
 | `--cafe_max_copies` | Families with at least this many copies in one species are left out of the main CAFE5 run and fitted by the large-family track instead | `100` |
 | `--cafe_large_mode` | How the large-family track fits them: `fixed` (λ fixed to the main families' estimate, as the CAFE5 tutorial does) or `per_family` (each estimates its own λ, the behaviour before v2.5.2) | `fixed` |
+| `--cafe_te_filter` | Remove gene families made mostly of transposable elements before CAFE5 (before the error model and model selection), using the eggNOG annotations. Needs `--run_eggnog`. See `cafe/te_filter/te_families.tsv` | `false` |
+| `--cafe_te_min_fraction` | Remove a family when at least this fraction of its eggNOG-annotated genes are TEs | `0.5` |
+| `--cafe_te_signatures` | What counts as a TE: Pfam domain patterns, GO terms and description patterns. Copy `assets/te_signatures.tsv`, edit it and pass the copy | `assets/te_signatures.tsv` |
 | `--cafe_fixed_lambda` | Reuse λ from an earlier run (e.g. from its `cafe/model_comparison/cafe_model_parameters.tsv`): fixed in every CAFE5 fit instead of estimated | `null` |
 | `--cafe_fixed_alpha` | Reuse α: fixed in every fit with k > 1. The k = 1 to `--cafe_max_k` sweep still runs | `null` |
 | `--cafe_error_model` | Reuse an error model file (e.g. an earlier run's `cafe/base/Out_cafe_errormodel/Base_error_model.txt`) instead of estimating one | `null` |

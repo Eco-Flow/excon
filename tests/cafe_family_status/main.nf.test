@@ -14,9 +14,10 @@ nextflow_process {
             process {
                 """
                 input[0] = file("${baseDir}/tests/cafe_family_status/data/hog_filtering_report.tsv")
-                input[1] = file("${baseDir}/tests/cafe_family_status/data/best")
-                input[2] = file("${baseDir}/tests/cafe_family_status/data/hog_gene_counts_large.tsv")
-                input[3] = files("${baseDir}/tests/cafe_family_status/data/large_status/*.tsv")
+                input[1] = file("${baseDir}/assets/NO_FILE")
+                input[2] = file("${baseDir}/tests/cafe_family_status/data/best")
+                input[3] = file("${baseDir}/tests/cafe_family_status/data/hog_gene_counts_large.tsv")
+                input[4] = files("${baseDir}/tests/cafe_family_status/data/large_status/*.tsv")
                 """
             }
         }
@@ -45,9 +46,10 @@ nextflow_process {
             process {
                 """
                 input[0] = file("${baseDir}/tests/cafe_family_status/data/hog_filtering_report.tsv")
-                input[1] = file("${baseDir}/tests/cafe_family_status/data/best")
-                input[2] = file("${baseDir}/assets/NO_FILE")
-                input[3] = []
+                input[1] = file("${baseDir}/assets/NO_FILE")
+                input[2] = file("${baseDir}/tests/cafe_family_status/data/best")
+                input[3] = file("${baseDir}/assets/NO_FILE")
+                input[4] = []
                 """
             }
         }
@@ -56,6 +58,28 @@ nextflow_process {
             def status = path(process.out.status[0]).readLines()*.split('\t').collectEntries { [(it[0]): it[1]] }
             // Sent nowhere: the large-family table is absent, so not a failed task
             assert status.OG7 == 'not_in_results'
+            assert status.OG1 == 'modelled'
+        }
+    }
+
+    test("Lists the families removed as transposable elements") {
+        when {
+            params { cafe_te_filter = true }
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_family_status/data/hog_filtering_report.tsv")
+                input[1] = file("${baseDir}/tests/cafe_family_status/data/te_families.tsv")
+                input[2] = file("${baseDir}/tests/cafe_family_status/data/best")
+                input[3] = file("${baseDir}/assets/NO_FILE")
+                input[4] = []
+                """
+            }
+        }
+        then {
+            assert process.success
+            def status = path(process.out.status[0]).readLines()*.split('\t').collectEntries { [(it[0]): it[1]] }
+            assert status.OG90 == 'excluded_transposable_element'
+            assert !status.containsKey('OG91')   // kept: CAFE_PREP's report covers it
             assert status.OG1 == 'modelled'
         }
     }

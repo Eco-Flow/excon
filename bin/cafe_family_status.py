@@ -17,6 +17,8 @@ status is one of:
   modelled_large               fitted by the large-family track
   excluded_single_species      genes in one species only; nothing to model
   excluded_empty_after_subset  no genes in the species analysed (--cafe_clade/--cafe_species)
+  excluded_transposable_element  mostly transposable elements (--cafe_te_filter), removed
+                               before CAFE_PREP
   not_present_at_root          no genes on one side of the root, so CAFE5 dropped it
                                from the main model (--cafe_zero_root fits these in a
                                separate sensitivity run, cafe/zero_root/)
@@ -70,6 +72,8 @@ def main():
                     help="hog_gene_counts_large.tsv: the families sent to the large-family track")
     ap.add_argument("--large-status", nargs="*", default=[],
                     help="large_status_*.tsv files written by CAFE_RUN_LARGE")
+    ap.add_argument("--te-report",
+                    help="te_families.tsv from TE_FAMILY_FILTER (--cafe_te_filter)")
     ap.add_argument("-o", "--output", required=True)
     ap.add_argument("--summary", default="cafe_family_status_summary.txt")
     args = ap.parse_args()
@@ -120,6 +124,13 @@ def main():
             status = "excluded_" + (reason or "unknown")
         rows.append((hog, status, track, reason, rec))
 
+    # Families removed as transposable elements never reached CAFE_PREP's report
+    if args.te_report:
+        for row in read_tsv(args.te_report):
+            if row.get("removed") == "yes" and row["HOG"] not in report:
+                rows.append((row["HOG"], "excluded_transposable_element", "none",
+                             "transposable_element", {}))
+
     cols = ["n_species_present", "n_max", "n_min", "total_genes", "differential"]
     with open(args.output, "w") as out:
         out.write("HOG\tstatus\ttrack\tprep_filter\t" + "\t".join(cols) + "\n")
@@ -128,6 +139,7 @@ def main():
 
     counts = Counter(r[1] for r in rows)
     order = ["modelled", "modelled_large", "excluded_single_species", "excluded_empty_after_subset",
+             "excluded_transposable_element",
              "not_present_at_root", "large_not_present_at_root", "large_did_not_converge",
              "large_task_failed", "not_in_results"]
     order += sorted(set(counts) - set(order))

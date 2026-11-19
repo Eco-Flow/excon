@@ -1,0 +1,7 @@
+## emapper
+#query	seed_ortholog	evalue	score	eggNOG_OGs	max_annot_lvl	COG_category	Description	Preferred_name	GOs	EC	KEGG_ko	KEGG_Pathway	KEGG_Module	KEGG_Reaction	KEGG_rclass	BRITE	KEGG_TC	CAZy	BiGG_Reaction	PFAMs
+a1	x	1e-10	50	-	-	-	Transposase	-	-	-	-	-	-	-	-	-	-	-	-	DDE_Tnp_1
+a2	x	1e-10	50	-	-	-	hypothetical	-	-	-	-	-	-	-	-	-	-	-	-	-
+a3	x	1e-10	50	-	-	-	Pol polyprotein	-	-	-	-	-	-	-	-	-	-	-	-	RVT_1,rve
+a4	x	1e-10	50	-	-	-	Kinase	-	GO:0004672	-	-	-	-	-	-	-	-	-	-	Pkinase
+a6	x	1e-10	50	-	-	-	Transposase	-	-	-	-	-	-	-	-	-	-	-	-	DDE_Tnp_1
