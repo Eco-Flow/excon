@@ -175,6 +175,17 @@ The main model drops families with no genes on one side of the root, as CAFE5 do
 
 ---
 
+## Transposable-element Filter (`results/cafe/te_filter/`, with `--cafe_te_filter`)
+
+A gene counts as a transposable element (TE) when any of its eggNOG Pfam domains, GO terms or its eggNOG description matches a signature in `--cafe_te_signatures` (default `assets/te_signatures.tsv`: integrase, reverse transcriptase, transposase and related domains; transposition, DNA integration and transposase activity GO terms; TE words in descriptions). A family is removed before CAFE_PREP when at least `--cafe_te_min_fraction` (default 0.5) of its eggNOG-annotated genes are TEs. Families with no annotated genes are kept.
+
+| File | Description |
+|------|-------------|
+| `te_families.tsv` | Every family with at least one TE gene: `n_genes`, `n_annotated` (with an eggNOG hit), `n_te_genes`, `te_fraction` (of the annotated), `removed` (`yes` / `no`) and `evidence` (the signatures that matched most often, with counts) |
+| `te_filter_summary.txt` | How many families were removed, also printed in the run log |
+
+---
+
 ## CAFE Family Status (`results/cafe/cafe_family_status.tsv`)
 
 One row per gene family in the orthogroup table, saying what became of it. The run log prints the count for each status.
@@ -193,6 +204,7 @@ One row per gene family in the orthogroup table, saying what became of it. The r
 | `modelled_large` | Fitted by the large-family track |
 | `excluded_single_species` | Genes in one species only, so there is nothing to model |
 | `excluded_empty_after_subset` | No genes in the species analysed (`--cafe_clade` / `--cafe_species`) |
+| `excluded_transposable_element` | Made mostly of transposable elements, removed before CAFE5 (`--cafe_te_filter`; see `cafe/te_filter/`) |
 | `not_present_at_root` | No genes on one side of the root, so CAFE5 dropped it from the main model (`--cafe_zero_root` fits these separately, in `cafe/zero_root/`) |
 | `large_not_present_at_root` | The same, in the large-family track |
 | `large_did_not_converge` | The large-family fit has no finite likelihood (at the fixed λ, or with its own λ in `per_family` mode) |
