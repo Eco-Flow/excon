@@ -426,6 +426,8 @@ Outputs are written to `results/species_tree/`:
 |-----------|-------------|---------|
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
+| `--cafe_max_copies` | Families with at least this many copies in one species are left out of the main CAFE5 run and fitted by the large-family track instead | `100` |
+| `--cafe_large_mode` | How the large-family track fits them: `fixed` (λ fixed to the main families' estimate, as the CAFE5 tutorial does) or `per_family` (each estimates its own λ, the behaviour before v2.5.2) | `fixed` |
 | `--cafe_family_pvalue` | Family-wide p-value cutoff: a family's size must change significantly overall before any branch can be called significant. Passed to CAFE5 as `--pvalue`. | `0.05` |
 | `--cafe_branch_pvalue` | Branch p-value cutoff, applied to families that pass `--cafe_family_pvalue`. Used for the significant-family tables, CAFE GO gene lists and tree figures (before v2.5.2, `--go_cutoff` did this). | `0.05` |
 | `--cafe_max_differential` | Maximum gene count differential (max − min copies) for CAFE filtering. `CAFE_PREP` retries with this threshold, halving it on each subsequent retry | `50` |
@@ -478,22 +480,26 @@ Outputs are written to `results/species_tree/`:
 > escalated wall time — a retry asking for more than the queue maximum is rejected at submission
 > and fails instantly, which looks like a convergence failure but is not one.
 
-> **What happens to the filtered-out families.** Families above the differential threshold are
-> not discarded — `hog_gene_counts_large.tsv` is analysed separately in `cafe/large_families/`.
-> Each family is run **independently**, fitting its own λ, rather than as one shared batch: a
-> single shared λ cannot explain both a modest and an extreme size differential at once, so
-> lumping every high-differential family together into one CAFE5 call tends to be unfittable
-> regardless of λ. Running them one at a time removes that conflict, since a single family
-> imposes none. The converged per-family runs are stitched back into one CAFE5-shaped directory
-> (`cafe/large_families/Out_cafe_large/`) so `cafe_plot_large/` and `cafe_go_large/` read it exactly
-> like an ordinary CAFE5 result; `large_family_lambda_summary.tsv` records each family's own fitted
-> λ and -lnL, since there is no longer one shared value to report. `CAFE_SIG_FAMILIES` also runs on
-> this merged result, and its output is concatenated with the main model's into
+> **What happens to the filtered-out families.** Families with `--cafe_max_copies` (default 100)
+> or more copies in a species, or above the differential threshold, are not discarded:
+> `hog_gene_counts_large.tsv` is analysed separately in `cafe/large_families/`. By default
+> (`--cafe_large_mode fixed`), each is fitted with **λ fixed** to the value estimated on the main
+> run's families (CAFE_PREP's error-model fit), as the CAFE5 tutorial recommends for families too
+> large to estimate it from. With λ fixed, each family's likelihood, reconstruction and p-value
+> don't depend on the others, so the families run one at a time. That gives the same results as
+> one CAFE5 call, and a family CAFE5 can't fit doesn't stop the rest. With
+> `--cafe_large_mode per_family` (the behaviour before v2.5.2), each family instead estimates its
+> own λ. That fits more of them, but their results are then not on the main model's rate scale
+> (a λ estimated jointly over all large families did not converge). The per-family runs are
+> stitched back into one CAFE5-shaped directory (`cafe/large_families/Out_cafe_large/`), so
+> `cafe_plot_large/` and `cafe_go_large/` read it like an ordinary CAFE5 result.
+> `large_family_lambda_summary.tsv` records each family's λ and -lnL. `CAFE_SIG_FAMILIES` also
+> runs on this merged result, and its output is concatenated with the main model's into
 > `cafe/significant_families/combined_changes_per_node.tsv` /
-> `combined_significant_changes_per_node.tsv`, tagged by a `source` column (`main_model` vs
-> `large_family_own_lambda`) — one report spanning every orthogroup CAFE5 could fit at all. A
-> family that still fails to converge even on its own is dropped from the merge with a warning,
-> rather than failing the run.
+> `combined_significant_changes_per_node.tsv`, tagged by a `source` column (`main_model`, and
+> `large_family_fixed_lambda` or `large_family_own_lambda`). A family that has no finite
+> likelihood is dropped from the merge with a warning, rather than failing the run;
+> `cafe/cafe_family_status.tsv` lists it.
 
 > **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it
 > (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs.

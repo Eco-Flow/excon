@@ -2,7 +2,7 @@
 # cafe_large_families.R
 # Gene-count table for the families CAFE_PREP left out of the main CAFE5 run for
 # their size, so CAFE_RUN_LARGE can fit each one on its own:
-#   max_copies_ge_100          (>= 100 copies in some species; any CAFE_PREP attempt)
+#   max_copies_ge_<N>          (>= --cafe_max_copies, default 100, in some species)
 #   differential_gt_threshold  (max - min copies over --cafe_max_differential; retries)
 # Counts are built from N0.tsv exactly as cafe_prep.R does.
 #
@@ -18,8 +18,7 @@ suppressPackageStartupMessages({
 args   <- commandArgs(trailingOnly = TRUE)
 leaves <- read.tree(args[3])$tip.label
 report <- fread(args[2])
-sizes  <- c("max_copies_ge_100", "differential_gt_threshold")
-large  <- report[exclusion_reason %in% sizes]
+large  <- report[grepl("^max_copies_ge_", exclusion_reason) | exclusion_reason == "differential_gt_threshold"]
 
 if (nrow(large) == 0) {
   writeLines("Large-family track: no family was left out of the main CAFE5 run for its size, so there is nothing to run.",

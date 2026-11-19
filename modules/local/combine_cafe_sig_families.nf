@@ -13,6 +13,7 @@ process COMBINE_CAFE_SIG_FAMILIES {
     path "combined_significant_changes_per_node.tsv", emit: sig_changes
 
     script:
+    def large_source = params.cafe_large_mode == 'per_family' ? 'large_family_own_lambda' : 'large_family_fixed_lambda'
     """
     ${projectDir}/bin/combine_cafe_sig_families.py \\
         --main-changes main_changes.tsv \\
@@ -20,7 +21,8 @@ process COMBINE_CAFE_SIG_FAMILIES {
         --main-sig-changes main_sig_changes.tsv \\
         --large-sig-changes large_sig_changes.tsv \\
         --out-changes combined_changes_per_node.tsv \\
-        --out-sig-changes combined_significant_changes_per_node.tsv
+        --out-sig-changes combined_significant_changes_per_node.tsv \\
+        --large-source ${large_source}
     """
 
     stub:

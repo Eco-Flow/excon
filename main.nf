@@ -117,6 +117,8 @@ params {
     cafe_max_differential     : Integer
     cafe_filter_first         : Boolean
     cafe_max_k                : Integer
+    cafe_max_copies           : Integer
+    cafe_large_mode           : String
     cafe_family_pvalue        : Float
     cafe_branch_pvalue        : Float
     orthofinder_msa_dir       : String?
@@ -184,6 +186,12 @@ workflow {
       error "ERROR: give either --cafe_clade or --cafe_species, not both."
    }
 
+   if (!(params.cafe_large_mode in ['fixed', 'per_family'])) {
+      error "ERROR: --cafe_large_mode must be 'fixed' or 'per_family', got '${params.cafe_large_mode}'."
+   }
+   if (params.cafe_max_copies < 2) {
+      error "ERROR: --cafe_max_copies must be at least 2, got ${params.cafe_max_copies}."
+   }
    ['cafe_family_pvalue', 'cafe_branch_pvalue'].each { p ->
       if (!(params[p] > 0 && params[p] <= 1)) {
          error "ERROR: --${p} must be greater than 0 and at most 1, got ${params[p]}."
@@ -524,10 +532,25 @@ workflow {
         // Explicit combine() rather than passing cafe_tree/error_model as separate
         // positional channels — makes their reuse across every hog_counts item
         // unambiguous rather than relying on Nextflow's implicit broadcast pairing.
+        // --cafe_large_mode fixed: the lambda the main families were fitted with, from
+        // CAFE_PREP's error-model fit (lambda.txt, from the fit without it, when the
+        // error model failed). per_family: '' — each family estimates its own.
+        ch_large_lambda = params.cafe_large_mode == 'per_family' ?
+            Channel.value('') :
+            CAFE_PREP.out.errormodel_results
+                .ifEmpty( file("${projectDir}/assets/NO_FILE") )
+                .combine( CAFE_PREP.out.lambda )
+                .map { em, lambda_txt ->
+                    def line = em.name == 'NO_FILE' ? null : em.readLines().find { it.startsWith('Lambda:') }
+                    def lambda = line ? line.tokenize()[1] : lambda_txt.text.trim()
+                    lambda
+                }
+
         CAFE_RUN_LARGE (
             ch_large_family_tables
                 .combine( CAFE_PREP.out.cafe_tree )
                 .combine( CAFE_PREP.out.error_model )
+                .combine( ch_large_lambda )
         )
 
         // Stitch the many single-family runs back into one CAFE5-shaped directory so
@@ -543,9 +566,11 @@ workflow {
         // Say how the large-family track went, including when nothing converged
         ch_large_family_tables.count()
             .combine( CAFE_RUN_LARGE.out.results.count() )
-            .filter { n, fitted -> n > 0 }
-            .subscribe { n, fitted ->
-                def msg = "Large-family track: ${fitted} of ${n} families fitted; see cafe/large_families/ (CAFE_RUN_LARGE logs say why any were dropped)"
+            .combine( ch_large_lambda )
+            .filter { n, fitted, lambda -> n > 0 }
+            .subscribe { n, fitted, lambda ->
+                def how = lambda ? "lambda fixed at ${lambda}" : "each with its own lambda"
+                def msg = "Large-family track: ${fitted} of ${n} families fitted (${how}); see cafe/large_families/ and cafe/cafe_family_status.tsv"
                 fitted < n ? log.warn(msg) : log.info(msg)
             }
 

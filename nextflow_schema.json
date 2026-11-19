@@ -342,6 +342,18 @@
             "default": false,
             "description": "Pass CAFE5's -z/--zero_root option to every CAFE5 call (base, error-model, k-sweep, best-model and large-family runs), retaining families inferred to have zero copies at the analysis root. CAFE5 does not generally recommend this; use as a sensitivity analysis alongside the default run."
         },
+        "cafe_max_copies": {
+            "type": "integer",
+            "default": 100,
+            "minimum": 2,
+            "description": "Families with at least this many gene copies in any one species are left out of the main CAFE5 run, which can't fit them, and are fitted by the large-family track instead. The CAFE5 tutorial uses 100. In hog_filtering_report.tsv their reason is max_copies_ge_<N>."
+        },
+        "cafe_large_mode": {
+            "type": "string",
+            "default": "fixed",
+            "enum": ["fixed", "per_family"],
+            "description": "How the large-family track fits the families left out of the main run for their size. 'fixed' (default): lambda is fixed to the value estimated on the main run's families (CAFE_PREP's error-model fit), as the CAFE5 tutorial recommends for large families. 'per_family': each family estimates its own lambda, as before v2.5.2; its results then aren't on the same rate scale as the main model's."
+        },
         "cafe_family_pvalue": {
             "type": "number",
             "default": 0.05,
