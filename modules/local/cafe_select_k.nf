@@ -8,17 +8,18 @@ process CAFE_SELECT_K {
     output:
     path "model_selection.tsv", emit: table
     path "best_k.txt",          emit: best_k
+    path "k_boundary_warning.txt", emit: warnings, optional: true
     tuple val("${task.process}"), val('python'), val('3.10.13'), emit: versions_python, topic: versions
 
     script:
     """
-    /usr/bin/python3.10 ${projectDir}/bin/cafe_select_k.py
+    /usr/bin/python3.10 ${projectDir}/bin/cafe_select_k.py ${params.cafe_max_k}
     """
 
     stub:
     """
-    echo -e "k\tn_params\tneg_lnL\tAIC\tBIC\tn_families\tSelected" > model_selection.tsv
-    echo -e "3\t2\t195812.3\t391628.6\tNA\tNA\tBEST"               >> model_selection.tsv
+    echo -e "k\tn_params\tneg_lnL\tAIC\tBIC\tn_families\tSelected\tNote" > model_selection.tsv
+    echo -e "3\t2\t195812.3\t391628.6\tNA\tNA\tBEST\t"                 >> model_selection.tsv
     echo "3" > best_k.txt
     """
 }
