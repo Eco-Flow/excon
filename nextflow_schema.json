@@ -311,6 +311,12 @@
             "format": "file-path",
             "description": "TSV of node-age calibrations used to time-calibrate the species tree with ape::chronos before CAFE5. Columns: clade (label), tips (comma-separated tip names whose MRCA defines the node), age_min and age_max in millions of years (equal values fix the age). Applies to whichever species tree is in use, including the one built by --iqtree_species_tree. The calibrated tree is passed to every CAFE5 stage unchanged, so lambda is per Myr; --tree_scale_factor and chronoMPL() are skipped. Naming nodes by the MRCA of two tips avoids depending on node numbering."
         },
+        "dating_method": {
+            "type": "string",
+            "default": "chronos",
+            "enum": ["chronos", "lsd2"],
+            "description": "How --tree_calibrations dates the species tree: 'chronos' (ape::chronos, any species tree) or 'lsd2' (IQ-TREE's least-square dating, --date, on the IQ-TREE species tree; needs --iqtree_species_tree, and at least one calibration with an exact age)."
+        },
         "chronos_model": {
             "type": "string",
             "enum": ["discrete", "correlated", "relaxed"],
