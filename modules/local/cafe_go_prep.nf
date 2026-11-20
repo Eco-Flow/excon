@@ -20,6 +20,6 @@ process CAFE_GO_PREP {
     script:
     """
     ln -s ${cafe_results} Out_cafe
-    ${projectDir}/bin/cafe_go_prep.pl ${params.go_cutoff} ${params.go_type} ${params.go_max_plot} ${task.ext.args ?: ''}
+    ${projectDir}/bin/cafe_go_prep.pl ${params.cafe_branch_pvalue} ${params.go_type} ${params.go_max_plot} family_pvalue=${params.cafe_family_pvalue} ${task.ext.args ?: ''}
     """
 }

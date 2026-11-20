@@ -426,6 +426,8 @@ Outputs are written to `results/species_tree/`:
 |-----------|-------------|---------|
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
+| `--cafe_family_pvalue` | Family-wide p-value cutoff: a family's size must change significantly overall before any branch can be called significant. Passed to CAFE5 as `--pvalue`. | `0.05` |
+| `--cafe_branch_pvalue` | Branch p-value cutoff, applied to families that pass `--cafe_family_pvalue`. Used for the significant-family tables, CAFE GO gene lists and tree figures (before v2.5.2, `--go_cutoff` did this). | `0.05` |
 | `--cafe_max_differential` | Maximum gene count differential (max − min copies) for CAFE filtering. `CAFE_PREP` retries with this threshold, halving it on each subsequent retry | `50` |
 | `--cafe_filter_first` | Apply that threshold from the **first** attempt rather than only on retries | `false` |
 | `--tree_calibrations` | TSV of node ages used to time-calibrate the species tree with `ape::chronos`, so CAFE5's λ is per million years. See [Time-calibrating the species tree](#time-calibrating-the-species-tree-optional). Skips `--tree_scale_factor` and `chronoMPL()`. | `null` |
@@ -560,7 +562,7 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 |-----------|-------------|---------|
 | `--chromo_go` | Run GO enrichment analysis by chromosome | `null` |
 | `--chromo_go_max_chroms` | Max chromosomes/scaffolds shown per chromosome-GO summary plot, ranked by significant-term count. Trims the plots only — full per-chromosome results are always in the CSV outputs. | `15` |
-| `--go_cutoff` | P-value cutoff for GO enrichment | `0.05` |
+| `--go_cutoff` | P-value cutoff for GO enrichment (GO terms only; which CAFE families count as significant is set by `--cafe_family_pvalue` and `--cafe_branch_pvalue`) | `0.05` |
 | `--go_type` | GO test type (e.g. `none`) | `none` |
 | `--go_max_plot` | Maximum number of GO terms to plot | `10` |
 | `--go_algo` | topGO algorithm and statistic (`classic_fisher`, `weight01_t`, `elim_ks`, `weight_ks`). Results are written to a subfolder named after all three GO settings (e.g. `cafe_go/weight01_t_cutoff0.05_typenone/`), so running with different values preserves all results. | `classic_fisher` |

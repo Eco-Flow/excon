@@ -21,7 +21,7 @@ process CAFE_SIG_FAMILIES {
 
     script:
     def focus = params.cafe_focus_clades ? "\"${params.cafe_focus_clades}\"" : "NA"
-    def pcut  = params.go_cutoff ?: 0.05
+    def pcut  = params.cafe_branch_pvalue
     """
     ${projectDir}/bin/cafe_sig_families.R \\
         ${cafe_results} \\
@@ -29,7 +29,8 @@ process CAFE_SIG_FAMILIES {
         ${pcut} \\
         ${focus} \\
         ${msa_dir} \\
-        ${tree_dir}
+        ${tree_dir} \\
+        ${params.cafe_family_pvalue}
 
     # One alignment + one gene tree per significantly expanded family, per focus
     # node, adds up to hundreds of small files. Archived into one file so the

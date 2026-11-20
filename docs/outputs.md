@@ -117,7 +117,7 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 | Column | Description |
 |--------|-------------|
 | `Species/Node` | Leaf species name or ancestral node number (matches `cafe_node_label_guide.pdf`) |
-| `Total_HOGs_significant` | Gene families with a significant branch p-value (p ≤ 0.05) |
+| `Total_HOGs_significant` | Gene families significant on this branch: family-wide p ≤ `--cafe_family_pvalue` and branch p ≤ `--cafe_branch_pvalue` (both 0.05 by default) |
 | `Expansion_HOGs_significant` | Significant families with a net positive size change |
 | `Contraction_HOGs_significant` | Significant families with a net negative size change |
 | `Expansion_genes_significant` | Sum of gene count increases across all significant expanding families |
@@ -133,6 +133,7 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 
 | File | Description |
 |------|-------------|
+| `cafe_model_parameters.tsv` | The fitted parameters of every model compared (k = 1 to `--cafe_max_k` with a uniform root, and the best k with a Poisson root): k, root distribution, Poisson root mean, λ, α (k > 1), the error model's ε, -lnL, CAFE5's largest allowed λ for the tree, and `BEST` for the selected model |
 | `model_selection.tsv` | -lnL, AIC and BIC for k = 1 to `--cafe_max_k` rate categories (uniform root); the best k by AIC. `Note` reads `best_k_at_cafe_max_k` when the best k is the largest tested |
 | `k_boundary_warning.txt` | Written only when the best k is the largest tested: a larger `--cafe_max_k` may fit better |
 | `best_k.txt` | That k |
@@ -143,6 +144,21 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 | `root_filter_warning.txt` | How many families that was |
 
 Families left out of the main run for their size (`max_copies_ge_100`, `differential_gt_threshold` in `results/cafe/base/hog_filtering_report.tsv`) are fitted one at a time; their counts and merged results are in `results/cafe/large_families/`, with `large_families.txt` saying how many there were (or that there were none), and the run log says how many were fitted.
+
+---
+
+## Significant Families (`results/cafe/significant_families/`)
+
+A family changes significantly on a branch when **both** its family-wide p-value (CAFE5's `*_family_results.txt`) is at most `--cafe_family_pvalue` **and** that branch's p-value (`*_branch_probabilities.tab`) is at most `--cafe_branch_pvalue`. Both default to 0.05. This follows CAFE5, which gives branch p-values only for families significant overall. The same rule is used for these tables, the CAFE GO gene lists, `CAFE_summary.txt` and the significant-family tree figures.
+
+| File | Description |
+|------|-------------|
+| `changes_per_node.tsv` | Every branch where a family's size changed, from the main model |
+| `significant_changes_per_node.tsv` | The rows that pass both cutoffs |
+| `combined_changes_per_node.tsv` | Both tables' rows for the main model and the large-family track, with a `source` column |
+| `combined_significant_changes_per_node.tsv` | The rows of that table that pass both cutoffs |
+
+Columns of `changes_per_node.tsv`: `Node` (species, or the CAFE5 node id from `cafe_node_label_guide.pdf`), `HOG`, `change` (gene count change on that branch), `family_pvalue`, `branch_pvalue`, `direction` (`expansion` / `contraction`), `family_significant`, `branch_significant` and `significant` (both). The significant-only tables keep the first six. Before v2.5.2 the branch p-value column was called `pvalue`, there was no family p-value, and only the branch p-value was tested, against `--go_cutoff`.
 
 ---
 

@@ -1,0 +1,35 @@
+nextflow_process {
+
+    name "CAFE_MODEL_PARAMETERS"
+    script "../../modules/local/cafe_model_parameters.nf"
+    process "CAFE_MODEL_PARAMETERS"
+    tag "cafe_model_parameters"
+
+    // data/: synthetic CAFE5 results for k = 1 and 2 (uniform root) and k = 2 with a
+    // Poisson root, its log (two "Poisson lambda" lines: the last is the fit), and an
+    // error model whose rows share epsilon 0.1.
+
+    test("Tabulates every fitted model and marks the selected one") {
+        when {
+            process {
+                """
+                input[0] = [ file("${baseDir}/tests/cafe_model_parameters/data/Out_cafe_k1"),
+                             file("${baseDir}/tests/cafe_model_parameters/data/Out_cafe_k2") ]
+                input[1] = file("${baseDir}/tests/cafe_model_parameters/data/Out_cafe_k2_poisson")
+                input[2] = file("${baseDir}/tests/cafe_model_parameters/data/cafe_k2_poisson.log")
+                input[3] = file("${baseDir}/tests/cafe_model_parameters/data/Base_error_model.txt")
+                input[4] = file("${baseDir}/tests/cafe_model_parameters/data/best_model.txt")
+                input[5] = file("${baseDir}/tests/cafe_model_parameters/data/best_k.txt")
+                """
+            }
+        }
+        then {
+            assert process.success
+            def rows = path(process.out.table[0]).readLines()*.split('\t', -1)
+            assert rows[0] as List == ['directory', 'k', 'root_distribution', 'poisson_mean', 'lambda', 'alpha', 'epsilon', 'neg_lnL', 'max_possible_lambda', 'selected']
+            assert rows[1] as List == ['Out_cafe_k1',         '1', 'uniform', '',     '0.0021', '',     '0.1', '1500.2', '0.31', '']
+            assert rows[2] as List == ['Out_cafe_k2',         '2', 'uniform', '',     '0.0019', '0.42', '0.1', '1450.7', '0.31', '']
+            assert rows[3] as List == ['Out_cafe_k2_poisson', '2', 'poisson', '2.45', '0.0018', '0.40', '0.1', '1400.1', '0.31', 'BEST']
+        }
+    }
+}
