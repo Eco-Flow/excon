@@ -411,6 +411,22 @@ Outputs are written to `results/species_tree/`:
 `--chronos_model` (`discrete`, `correlated`, `relaxed`), `--chronos_lambda` and
 `--chronos_rate_categories` tune the fit.
 
+**Dating with IQ-TREE (LSD2) instead.** With `--iqtree_species_tree`, `--dating_method lsd2`
+dates the IQ-TREE tree with IQ-TREE's least-square dating (`--date`), from the same calibration
+table. The supermatrix the tree was built from gives LSD2 its branch-length variances, and the
+tree's branch lengths, topology and root are kept. LSD2 needs at least one calibration with an
+exact age (`age_min` equal to `age_max`); other calibrations can be bounds. The same three
+files are written to `results/species_tree/`, with IQ-TREE's own output (`dated.timetree.nex`,
+`dated.timetree.lsd`, `dated.log`) in `results/species_tree/lsd2/`. LSD2 needs the alignment,
+so OrthoFinder's tree can only be dated with `chronos`.
+
+Before dating, either method stops if a calibration names a tip that isn't in the tree, if two
+calibrations fall on the same node, if `age_min` is above `age_max`, or if a calibrated node
+lies inside another that it can't be younger than. After dating, both check that the tree is
+ultrametric and binary with positive branch lengths, and that every calibrated node is within
+its bounds. LSD2 also checks that the topology and root are unchanged, and stops on any LSD2
+warning.
+
 > **Dating failures are fatal, by design.** `ape::chronos` reports non-convergence as a
 > *warning* and still returns a tree, so the pipeline treats any chronos warning as an error
 > rather than publishing a tree that did not converge. It also checks that the fitted node ages
@@ -429,6 +445,7 @@ Outputs are written to `results/species_tree/`:
 | `--cafe_max_differential` | Maximum gene count differential (max − min copies) for CAFE filtering. `CAFE_PREP` retries with this threshold, halving it on each subsequent retry | `50` |
 | `--cafe_filter_first` | Apply that threshold from the **first** attempt rather than only on retries | `false` |
 | `--tree_calibrations` | TSV of node ages used to time-calibrate the species tree with `ape::chronos`, so CAFE5's λ is per million years. See [Time-calibrating the species tree](#time-calibrating-the-species-tree-optional). Skips `--tree_scale_factor` and `chronoMPL()`. | `null` |
+| `--dating_method` | `chronos` (`ape::chronos`, any species tree) or `lsd2` (IQ-TREE's LSD2; needs `--iqtree_species_tree` and at least one exact age) | `chronos` |
 | `--chronos_model` | `ape::chronos` rate model: `discrete`, `correlated` or `relaxed` | `discrete` |
 | `--chronos_lambda` | `ape::chronos` rate-smoothing parameter | `1` |
 | `--chronos_rate_categories` | Rate categories for the `discrete` model | `10` |
