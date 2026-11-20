@@ -1,0 +1,50 @@
+nextflow_process {
+
+    name "TE_FAMILY_FILTER"
+    script "../../modules/local/te_family_filter.nf"
+    process "TE_FAMILY_FILTER"
+    tag "te_family_filter"
+
+    // data/: 5 families over 2 species with eggNOG annotations.
+    //   OG1: 2 of 3 genes transposases (Pfam DDE_Tnp_1, GO:0004803)  -> removed
+    //   OG2: 3 of 3 reverse transcriptase / gag-pol                     -> removed
+    //   OG3: kinases; OG4: no annotated genes                           -> kept
+    //   OG5: 1 of 3 genes a transposase                                 -> kept, reported
+
+    test("Removes families made mostly of TEs and reports the rest") {
+        when {
+            params { cafe_te_min_fraction = 0.5 }
+            process {
+                """
+                input[0] = files("${baseDir}/tests/te_family_filter/data/*.emapper.annotations")
+                input[1] = file("${baseDir}/tests/te_family_filter/data/Orthogroups.tsv")
+                input[2] = file("${baseDir}/assets/te_signatures.tsv")
+                """
+            }
+        }
+        then {
+            assert process.success
+            def kept = path(process.out.orthogroups[0]).readLines()*.split('\t')*.getAt(0)
+            assert kept == ['Orthogroup', 'OG3', 'OG4', 'OG5']
+            def rep = path(process.out.report[0]).readLines().drop(1)*.split('\t').collectEntries { [(it[0]): it[5]] }
+            assert rep == [OG2: 'yes', OG1: 'yes', OG5: 'no']
+        }
+    }
+
+    test("A lower threshold also removes the family with one TE gene in three") {
+        when {
+            params { cafe_te_min_fraction = 0.3 }
+            process {
+                """
+                input[0] = files("${baseDir}/tests/te_family_filter/data/*.emapper.annotations")
+                input[1] = file("${baseDir}/tests/te_family_filter/data/Orthogroups.tsv")
+                input[2] = file("${baseDir}/assets/te_signatures.tsv")
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.orthogroups[0]).readLines()*.split('\t')*.getAt(0) == ['Orthogroup', 'OG3', 'OG4']
+        }
+    }
+}
