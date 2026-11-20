@@ -122,10 +122,10 @@ params {
     cafe_max_copies           : Integer
     cafe_large_mode           : String
     cafe_family_pvalue        : Float
-    cafe_fixed_lambda         : Float
-    cafe_fixed_alpha          : Float
-    cafe_error_model          : String
-    cafe_poisson              : Float
+    cafe_fixed_lambda         : Float?
+    cafe_fixed_alpha          : Float?
+    cafe_error_model          : String?
+    cafe_poisson              : Float?
     cafe_branch_pvalue        : Float
     orthofinder_msa_dir       : String?
     orthofinder_genetree_dir  : String?
