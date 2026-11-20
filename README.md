@@ -512,8 +512,9 @@ Outputs are written to `results/species_tree/`:
 
 > **Note on CAFE model selection:** The pipeline runs CAFE5 with k=1 through k=`cafe_max_k` (default 6) 
 > rate categories in parallel, then selects the best k by AIC. It then re-runs the best k with the 
-> Poisson birth-death option (`-p`) and picks the final model by likelihood. Model selection results 
-> (AIC table across k values) are in `results/cafe/model_comparison/`. If scores cannot be parsed 
+> Poisson root distribution (`-p`) and picks the final model by AIC. Model selection results 
+> (AIC table across k values) are in `results/cafe/model_comparison/`. If the best k is the largest
+> tested, the run log and `model_selection.tsv` warn that a larger `--cafe_max_k` may fit better. If scores cannot be parsed 
 > (e.g. on very small datasets), the pipeline defaults to the uniform model.
 
 ### GO annotation (optional)
