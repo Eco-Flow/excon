@@ -22,6 +22,7 @@ process CAFE_RUN_LARGE {
 
     output:
     path "Out_cafe_large_${hog_counts.baseName}/", emit: results, optional: true
+    path "large_status_${hog_counts.baseName}.tsv", emit: status
     path "cafe_large_${hog_counts.baseName}.log",  emit: log
     tuple val("${task.process}"), val('cafe5'), val('1.1.0'), emit: versions_cafe, topic: versions
 
@@ -46,15 +47,23 @@ process CAFE_RUN_LARGE {
         -o ${outdir} \\
         2>&1 | tee ${logf} || true
 
+    # What became of this family, for CAFE_FAMILY_STATUS. A family whose task fails
+    # outright writes nothing and is reported there as task_failed.
+    hog=\$(awk -F'\t' 'NR == 2 { print \$2 }' ${hog_counts})
     if grep -q "not present at the root from: 1 to 0" ${logf}; then
         echo "WARNING: ${hog_counts.baseName} has no genes on one side of the root, so CAFE5 dropped it (--cafe_zero_root keeps such families) — not in the large-family merge." >&2
         rm -rf ${outdir}
+        status=not_present_at_root
     elif [ ! -f ${outdir}/Base_results.txt ] || \\
        ! grep -q "Final Likelihood" ${outdir}/Base_results.txt || \\
        grep -q "inf" ${outdir}/Base_results.txt; then
         echo "WARNING: ${hog_counts.baseName} did not converge even on its own — dropping it from the large-family merge." >&2
         rm -rf ${outdir}
+        status=did_not_converge
+    else
+        status=fitted
     fi
+    printf "%s\\t%s\\n" "\$hog" "\$status" > large_status_${hog_counts.baseName}.tsv
     """
 
     stub:
@@ -69,5 +78,6 @@ process CAFE_RUN_LARGE {
     touch ${outdir}/Base_family_results.txt
     touch ${outdir}/Base_clade_results.txt
     touch cafe_large_${hog_counts.baseName}.log
+    printf "%s\\tfitted\\n" "${hog_counts.baseName}" > large_status_${hog_counts.baseName}.tsv
     """
 }

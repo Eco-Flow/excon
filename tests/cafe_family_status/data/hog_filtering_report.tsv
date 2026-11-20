@@ -1,0 +1,9 @@
+HOG	n_species_present	n_max	n_min	total_genes	differential	exclusion_reason	excluded
+OG1	3	2	1	5	1	retained	FALSE
+OG2	2	1	0	2	1	retained	FALSE
+OG3	1	4	0	4	4	single_species	TRUE
+OG4	3	150	1	160	149	max_copies_ge_100	TRUE
+OG5	3	90	1	95	89	differential_gt_threshold	TRUE
+OG6	3	120	2	130	118	max_copies_ge_100	TRUE
+OG7	3	110	2	130	108	max_copies_ge_100	TRUE
+OG8	0	0	0	0	0	empty_after_subset	TRUE
