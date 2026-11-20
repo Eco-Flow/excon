@@ -21,7 +21,9 @@ nextflow_pipeline {
             // (execution_trace_<timestamp>.tsv etc, see nextflow.config's
             // trace_report_suffix), so even the *paths* differ between runs.
             def stable_path = getAllFilesFromDir(params.outdir, relative: true, includeDir: true,
-                ignore: ['pipeline_info/*'])
+                // k_boundary_warning.txt is written only when the best k is the largest
+                // tested, which depends on CAFE5's optimiser path and so varies run to run.
+                ignore: ['pipeline_info/*', 'cafe/model_comparison/k_boundary_warning.txt'])
 
             // stable_content: content of files whose content should be identical
             // run to run. tests/.nftignore excludes OrthoFinder trees/alignments
