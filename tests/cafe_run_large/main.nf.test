@@ -1,0 +1,67 @@
+nextflow_process {
+
+    name "CAFE_RUN_LARGE"
+    script "../../modules/local/cafe_run_large.nf"
+    process "CAFE_RUN_LARGE"
+    tag "cafe_run_large"
+
+    // data/: a 4-species ultrametric tree, OG9 (40-135 copies in every species) and
+    // OG8 (none in SpA or SpB, so absent on one side of the root), and an empty
+    // error model (none estimated).
+
+    test("--cafe_large_mode fixed: the family is fitted at the given lambda") {
+        when {
+            process {
+                """
+                input[0] = [ file("${baseDir}/tests/cafe_run_large/data/OG9.tsv"),
+                             file("${baseDir}/tests/cafe_run_large/data/cafe_input_tree.txt"),
+                             file("${baseDir}/tests/cafe_run_large/data/Base_error_model.txt"),
+                             '0.005' ]
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.status[0]).text == 'OG9\tfitted\n'
+            def results = path("${process.out.results[0]}/Base_results.txt").readLines()
+            assert results.find { it.startsWith('Lambda:') }.tokenize()[1] == '0.005'
+        }
+    }
+
+    test("--cafe_large_mode per_family: the family estimates its own lambda") {
+        when {
+            process {
+                """
+                input[0] = [ file("${baseDir}/tests/cafe_run_large/data/OG9.tsv"),
+                             file("${baseDir}/tests/cafe_run_large/data/cafe_input_tree.txt"),
+                             file("${baseDir}/tests/cafe_run_large/data/Base_error_model.txt"),
+                             '' ]
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.status[0]).text == 'OG9\tfitted\n'
+            def results = path("${process.out.results[0]}/Base_results.txt").readLines()
+            assert results.find { it.startsWith('Lambda:') }.tokenize()[1] != '0.005'
+        }
+    }
+
+    test("A family absent on one side of the root is reported, not merged") {
+        when {
+            process {
+                """
+                input[0] = [ file("${baseDir}/tests/cafe_run_large/data/OG8.tsv"),
+                             file("${baseDir}/tests/cafe_run_large/data/cafe_input_tree.txt"),
+                             file("${baseDir}/tests/cafe_run_large/data/Base_error_model.txt"),
+                             '0.005' ]
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.status[0]).text == 'OG8\tnot_present_at_root\n'
+            assert process.out.results == []
+        }
+    }
+}

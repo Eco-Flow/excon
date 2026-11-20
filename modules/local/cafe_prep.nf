@@ -26,6 +26,9 @@ process CAFE_PREP {
     path("Out_cafe"),                                    emit: results
     path("Out_cafe/Base_count.tab"),                     emit: result_nftest
     path("Out_cafe_errormodel/Base_error_model.txt"),    emit: error_model
+    // The error-model fit's lambda (and epsilon): the lambda the large-family track
+    // fixes in --cafe_large_mode fixed. Absent when the error model failed.
+    path("Out_cafe_errormodel/Base_results.txt"),        emit: errormodel_results, optional: true
     path("hog_filtering_report.tsv"),                    emit: filtering_report
     path("lambda.txt"),                                  emit: lambda
     path("cafe_base.log"),                               emit: base_log
@@ -50,6 +53,7 @@ process CAFE_PREP {
     // Matches maxRetries below: the final attempt must not exit 1, or the run ends
     // with no result at all rather than one lacking an error model.
     def can_retry        = task.attempt <= 3
+    def max_copies       = params.cafe_max_copies
     """
     export PATH=\$PATH:/usr/bin
     set -e
@@ -64,10 +68,10 @@ process CAFE_PREP {
     # scale the tree by the factor squared.
     if [ "${use_filtering}" = "true" ]; then
         echo "CAFE_PREP attempt ${task.attempt}: applying differential filtering (threshold: ${max_differential})"
-        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential} 1 ${is_dated}
+        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential} 1 ${is_dated} ${max_copies}
     else
         echo "CAFE_PREP attempt ${task.attempt}: no filtering"
-        Rscript ${projectDir}/bin/cafe_prep.R 1 ${is_dated}
+        Rscript ${projectDir}/bin/cafe_prep.R 1 ${is_dated} ${max_copies}
     fi
 
     # ---------------------------------------------------------------

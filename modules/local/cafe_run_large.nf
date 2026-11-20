@@ -18,7 +18,9 @@ process CAFE_RUN_LARGE {
     // separate positional channels, so species_tree/error_model are unambiguously
     // paired with every hog_counts item rather than relying on Nextflow's implicit
     // broadcast of a singleton channel alongside a multi-item one.
-    tuple path(hog_counts), path(species_tree), path(error_model)
+    // fixed_lambda: the lambda to fix (--cafe_large_mode fixed), or '' to estimate
+    // the family's own (--cafe_large_mode per_family).
+    tuple path(hog_counts), path(species_tree), path(error_model), val(fixed_lambda)
 
     output:
     path "Out_cafe_large_${hog_counts.baseName}/", emit: results, optional: true
@@ -32,20 +34,25 @@ process CAFE_RUN_LARGE {
     // Family-wide significance (--cafe_family_pvalue). Under the gamma model CAFE5
     // writes branch p-values only for families significant at this level.
     def P_flag = "--pvalue ${params.cafe_family_pvalue}"
+    def l_flag = fixed_lambda ? "--fixed_lambda ${fixed_lambda}" : ""
     def outdir = "Out_cafe_large_${hog_counts.baseName}"
     def logf   = "cafe_large_${hog_counts.baseName}.log"
     """
-    # A shared lambda across every high-differential family at once is what made
-    # this module never converge (see git history / CAFE5 discussion #132): no
-    # single rate can explain both a modest and an extreme size differential in
-    # the same fit. Each family now runs on its own, free to find whatever
-    # lambda IT needs — a single family imposes no cross-family conflict, so
-    # CAFE5 almost always finds a finite-likelihood fit.
+    # --cafe_large_mode fixed (default): lambda is fixed to the value estimated on the
+    # families of the main run, as the CAFE5 tutorial does for families too large to
+    # estimate it from. With lambda fixed, each family's likelihood, reconstruction and
+    # p-value don't depend on the others, so running them one at a time gives the same
+    # results as one CAFE5 call, and one family that can't be fitted doesn't stop the rest.
+    #
+    # --cafe_large_mode per_family: no lambda given, so each family estimates its own.
+    # A lambda estimated jointly over all large families didn't converge (CAFE5
+    # discussion #132), which is why these families have always run one at a time.
     cafe5 \\
         -i ${hog_counts} \\
         -t ${species_tree} \\
         --cores ${task.cpus} \\
         ${e_flag} \\
+        ${l_flag} \\
         ${z_flag} \\
         ${P_flag} \\
         -o ${outdir} \\
@@ -61,7 +68,7 @@ process CAFE_RUN_LARGE {
     elif [ ! -f ${outdir}/Base_results.txt ] || \\
        ! grep -q "Final Likelihood" ${outdir}/Base_results.txt || \\
        grep -q "inf" ${outdir}/Base_results.txt; then
-        echo "WARNING: ${hog_counts.baseName} did not converge even on its own — dropping it from the large-family merge." >&2
+        echo "WARNING: ${hog_counts.baseName} has no finite likelihood${fixed_lambda ? " at the fixed lambda ${fixed_lambda}" : " even with its own lambda"} — dropping it from the large-family merge." >&2
         rm -rf ${outdir}
         status=did_not_converge
     else

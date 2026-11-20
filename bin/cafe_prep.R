@@ -24,6 +24,9 @@ library(data.table)
 args <- commandArgs(trailingOnly = TRUE)
 scale_factor <- if (length(args) >= 1) as.numeric(args[1]) else 1000
 is_dated     <- if (length(args) >= 2) tolower(args[2]) %in% c("true", "1", "yes") else FALSE
+# args[3] = --cafe_max_copies: families with at least this many copies in one species
+#           go to the large-family track (default 100, as the CAFE5 tutorial suggests)
+MAX_COPIES   <- if (length(args) >= 3) as.integer(args[3]) else 100L
 
 cat("================================================\n")
 cat("CAFE PREP\n")
@@ -156,10 +159,10 @@ if (length(empty_hogs) > 0) {
   ))
 }
 
-MAX_COPIES <- 100L   # families with >=100 copies in any one species are excluded
+max_copies_reason <- paste0('max_copies_ge_', MAX_COPIES)   # e.g. max_copies_ge_100
 
 reason <- rep('retained', nrow(stats))
-reason[stats$n_max >= MAX_COPIES]     <- 'max_copies_ge_100'
+reason[stats$n_max >= MAX_COPIES]     <- max_copies_reason
 reason[stats$n_species_present == 1]  <- 'single_species'
 reason[stats$n_species_present == 0]  <- 'empty_after_subset'
 stats[, exclusion_reason := reason]
