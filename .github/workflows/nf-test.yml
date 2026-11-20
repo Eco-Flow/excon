@@ -164,6 +164,16 @@ jobs:
             done
           fi
 
+      - name: Upload the pipeline test's trace and report
+        # Per-step run times of tests/default.nf.test, to see what makes it slow
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-info-${{ matrix.profile }}-${{ matrix.NXF_VER }}-${{ matrix.shard }}
+          path: .nf-test/tests/*/output/pipeline_info/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Upload logs and snapshot on failure
         if: failure()
         uses: actions/upload-artifact@v4
