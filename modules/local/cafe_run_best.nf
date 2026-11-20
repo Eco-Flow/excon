@@ -21,7 +21,6 @@ process CAFE_RUN_BEST {
     def k_flag    = best_k > 1  ? "-k ${best_k}" : ""
     def p_flag    = use_poisson ? "-p" : ""
     def e_flag    = error_model.size() > 0 ? "-e${error_model}" : ""
-    def z_flag    = params.cafe_zero_root ? "-z" : ""
     // Family-wide significance (--cafe_family_pvalue). Under the gamma model CAFE5
     // writes branch p-values only for families significant at this level.
     def P_flag = "--pvalue ${params.cafe_family_pvalue}"
@@ -33,7 +32,6 @@ process CAFE_RUN_BEST {
         ${k_flag} \\
         ${p_flag} \\
         ${e_flag} \\
-        ${z_flag} \\
         ${P_flag} \\
         -o Out_cafe_${run_label} \\
         2>&1 | tee cafe_${run_label}.log
