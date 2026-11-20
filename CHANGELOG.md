@@ -3,11 +3,11 @@
 ## [v2.5.2] - unreleased
 
 ### Added
-- **Checks on every pull request** (`.github/workflows/pr-checks.yml`). Until now nothing ran on a PR, and the tests that did run used Docker only, although most users run excon with Singularity or Apptainer on HPC. ([#152](https://github.com/Eco-Flow/excon/issues/152))
-  - `lint`: `nextflow lint` (errors fail), duplicate keys in `nextflow_schema.json` (Python's `json` keeps the last one silently, but Nextflow won't start), and the syntax of every Python, Perl, R and shell script in `bin/` and `utils/`.
-  - `module tests`: every `tests/*/main.nf.test`, once with Docker and once with Singularity (Apptainer). New module tests are picked up without editing the workflow. These tests moved here from `test-pipeline.yml`'s `go-tables` job, so they now also run on PRs.
-  - The full `test_chlamydia` run stays in `test-pipeline.yml` (on `main`, releases, or by hand: `gh workflow run test-pipeline.yml --ref <branch>`).
-  - Both workflows now install nf-test from its GitHub releases (`nf-core/setup-nf-test`). The `code.askimed.com` installer they used no longer resolves, which would have failed every run.
+- **CI on every pull request, laid out as in nf-core pipelines.** Until now nothing ran on a PR, and the tests that did run used Docker only, although most users run excon with Singularity or Apptainer on HPC. ([#152](https://github.com/Eco-Flow/excon/issues/152))
+  - `linting.yml`: `nextflow lint` (errors fail), duplicate keys in `nextflow_schema.json` (Python's `json` keeps the last one silently, but Nextflow won't start), and the syntax of every Python, Perl, R and shell script in `bin/` and `utils/`. It runs on every PR.
+  - `nf-test.yml`, following the nf-core template's: a PR runs the nf-tests related to what it changes (`--changed-since HEAD^`). A change to `main.nf`, `nextflow.config`, `bin/` or another trigger in `nf-test.config` runs all of them, including the full `test_chlamydia` pipeline test (~1 h). The tests are split across up to 7 runners. They run with Docker on the minimum Nextflow (26.04.6) and on `latest-everything` (a failure there only warns), and with Singularity (Apptainer) on the minimum. A `confirm-pass` job gives one result to require in branch protection. Releases and manual runs (`gh workflow run nf-test.yml --ref <branch>`) run every test. Docs-only changes skip the tests.
+  - `nf-test.config` now names only the test profile; the engine is added on the command line (`nf-test test --profile +docker`), as in nf-core pipelines. `tests/nextflow.config` caps tests at the runner's 4 CPUs and 14 GB, and shares one Singularity image cache across tests in CI.
+  - These replace `test-pipeline.yml`. Both workflows install Nextflow with `nf-core/setup-nextflow`, and nf-test from its GitHub releases (`nf-core/setup-nf-test`): the `code.askimed.com` installer no longer resolves, which would have failed every run.
 
 ## [v2.5.1] - 2026-10-08 - GO corrected
 

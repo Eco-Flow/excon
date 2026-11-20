@@ -1,0 +1,67 @@
+name: Linting
+
+# Static checks on every pull request (also on docs-only ones), on pushes to
+# main and by hand. nf-core pipelines run `nf-core pipelines lint` here; excon
+# isn't built from the nf-core template, so it runs the checks that apply to it.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NXF_VER: 26.04.6
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4.1.1
+
+      - name: Install Nextflow
+        uses: nf-core/setup-nextflow@v3
+        with:
+          version: ${{ env.NXF_VER }}
+
+      - name: Nextflow lint
+        # Errors fail the check; the existing warnings don't.
+        run: nextflow lint main.nf modules/local conf nextflow.config
+
+      - name: nextflow_schema.json has no duplicate keys
+        # Python's json module silently keeps the last of two equal keys, but
+        # Nextflow refuses to start.
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          def no_dupes(pairs):
+              keys = [k for k, _ in pairs]
+              dupes = sorted({k for k in keys if keys.count(k) > 1})
+              if dupes:
+                  sys.exit("nextflow_schema.json: duplicate key(s): " + ", ".join(dupes))
+              return dict(pairs)
+          json.load(open("nextflow_schema.json"), object_pairs_hook=no_dupes)
+          print("nextflow_schema.json: OK")
+          PY
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.3'
+
+      - name: Install BioPerl
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bioperl > /dev/null
+
+      - name: Script syntax
+        run: |
+          status=0
+          for f in bin/*.py; do python3 -m py_compile "$f" || { echo "::error file=$f::Python syntax error"; status=1; }; done
+          for f in bin/*.pl; do perl -c "$f" > /dev/null || { echo "::error file=$f::Perl syntax error"; status=1; }; done
+          for f in bin/*.R; do Rscript -e "invisible(parse('$f'))" || { echo "::error file=$f::R syntax error"; status=1; }; done
+          for f in bin/*.sh utils/*.sh; do [ -e "$f" ] || continue; bash -n "$f" || { echo "::error file=$f::shell syntax error"; status=1; }; done
+          exit $status
