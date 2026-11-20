@@ -579,6 +579,7 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 | `docker` | Run with Docker containers |
 | `singularity` | Run with Singularity containers |
 | `conda` | Run with Conda environments |
+| `test` | The quick end-to-end test that CI runs: the 10 *Chlamydia* genomes of `test_chlamydia`, fetched directly from NCBI's FTP site, with CAFE's k-sweep up to k = 3. Every step runs, CAFE5 included, apart from the NCBI download step |
 | `test_bacteria` | Fastest smoke test: 4 small bacterial genomes. Exercises every step, but CAFE5 does not converge on it (see below) |
 | `test_chlamydia` | 10 *Chlamydia* genomes. Slower than `test_bacteria`, but closely related enough for CAFE5 to fit a model, so it exercises the CAFE stages end to end |
 | `test_small` | Test run with small insect genomes |
@@ -606,8 +607,10 @@ Please select one of the following profiles when running the pipeline.
 > pipeline runs, but those species are too divergent for CAFE5: about half the orthogroups are identical
 > across all four, leaving almost no copy-number variation across just two internal branches, so
 > `CAFE_PREP` exhausts its retries and the error is ignored. That is a property of the dataset, not a
-> pipeline fault. Use `test_chlamydia` (10 species in one genus) when you need the CAFE stages
-> themselves to be exercised.
+> pipeline fault. Use `test` or `test_chlamydia` (10 species in one genus) when you need the CAFE
+> stages themselves to be exercised. `test` fetches those genomes by direct URL and is what CI runs;
+> `test_chlamydia` downloads them by accession with ncbi-genome-download, which first fetches NCBI's
+> 245 MB index of all bacterial assemblies, and runs the full k = 1-6 sweep.
 
 ## Custom Configuration
 

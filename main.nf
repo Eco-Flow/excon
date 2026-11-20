@@ -60,19 +60,19 @@ include { OG_ANNOTATION_SUMMARY } from './modules/local/og_annotation_summary.nf
 // nextflow.config.
 params {
     outdir                    : String
-    input                     : String
+    input                     : String?
     chromo_go                 : Boolean
     chromo_go_max_chroms      : Integer
     go_cutoff                 : Float
     go_type                   : String
     go_max_plot               : Integer
     go_algo                   : String
-    forks                     : Integer
+    forks                     : Integer?
     clean                     : Boolean
-    config_profile_description : String
-    config_profile_contact     : String
-    config_profile_url         : String
-    custom_config             : String
+    config_profile_description : String?
+    config_profile_contact     : String?
+    config_profile_url         : String?
+    custom_config             : String?
     max_memory                : String
     max_cpus                  : Integer
     max_time                  : String
@@ -84,27 +84,27 @@ params {
     stats                     : Boolean
     busco_mode                : String
     busco_lineage             : String
-    busco_lineages_path       : String
-    busco_config              : String
+    busco_lineages_path       : String?
+    busco_config              : String?
     internal_stop_action      : String
-    input_tree                : String
-    input_orthogroups         : String
-    orthofinder_blast_results : String
-    orthofinder_results       : String
-    proteome_dir              : String
+    input_tree                : String?
+    input_orthogroups         : String?
+    orthofinder_blast_results : String?
+    orthofinder_results       : String?
+    proteome_dir              : String?
     orthofinder_v2            : Boolean
-    orthofinder_method        : String
-    orthofinder_msa_prog      : String
-    orthofinder_search        : String
-    orthofinder_tree          : String
+    orthofinder_method        : String?
+    orthofinder_msa_prog      : String?
+    orthofinder_search        : String?
+    orthofinder_tree          : String?
     iqtree_species_tree       : Boolean
-    iqtree_outgroup           : String
-    iqtree_args               : String
-    iqtree_partition_model    : String
-    iqtree_partition_file     : String
-    cafe_clade                : String
-    cafe_species              : String
-    tree_calibrations         : String
+    iqtree_outgroup           : String?
+    iqtree_args               : String?
+    iqtree_partition_model    : String?
+    iqtree_partition_file     : String?
+    cafe_clade                : String?
+    cafe_species              : String?
+    tree_calibrations         : String?
     chronos_model             : String
     chronos_lambda            : Float
     chronos_rate_categories   : Integer
@@ -115,20 +115,20 @@ params {
     cafe_max_differential     : Integer
     cafe_filter_first         : Boolean
     cafe_max_k                : Integer
-    orthofinder_msa_dir       : String
-    orthofinder_genetree_dir  : String
-    cafe_focus_clades         : String
+    orthofinder_msa_dir       : String?
+    orthofinder_genetree_dir  : String?
+    cafe_focus_clades         : String?
     run_eggnog                : Boolean
-    eggnog_data_dir           : String
-    eggnog_target_taxa        : String
-    eggnog_tax_scope          : String
-    eggnog_evalue             : Float
-    eggnog_score              : Float
-    eggnog_pident             : Float
-    eggnog_query_cover        : Float
-    eggnog_subject_cover      : Float
-    eggnog_rep_species        : String
-    predownloaded_gofiles     : String
+    eggnog_data_dir           : String?
+    eggnog_target_taxa        : String?
+    eggnog_tax_scope          : String?
+    eggnog_evalue             : Float?
+    eggnog_score              : Float?
+    eggnog_pident             : Float?
+    eggnog_query_cover        : Float?
+    eggnog_subject_cover      : Float?
+    eggnog_rep_species        : String?
+    predownloaded_gofiles     : String?
 }
 
 workflow {
