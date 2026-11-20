@@ -127,7 +127,7 @@ params {
     cafe_te_filter            : Boolean
     cafe_kegg                 : Boolean
     cafe_kegg_padj            : Float
-    cafe_kegg_pathway_names   : String
+    cafe_kegg_pathway_names   : String?
     cafe_te_min_fraction      : Float
     cafe_te_signatures        : String
     cafe_fixed_lambda         : Float?
