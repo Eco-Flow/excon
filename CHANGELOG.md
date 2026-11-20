@@ -2,6 +2,9 @@
 
 ## [v2.5.2] - unreleased
 
+### Fixed
+- **excon couldn't start on Nextflow 26.10 or later** (`Parameter chromo_go is required but no value was provided`). Newer Nextflow treats a typed parameter whose default is `null` as missing, unless its type is declared nullable. The `Boolean` options that defaulted to `null` (`--chromo_go`, `--stats`, `--skip_cafe`, `--help`) now default to `false`. The other optional parameters are declared nullable in `main.nf` (`String?`, `Integer?`, `Float?`). Checked with `-preview` on Nextflow 26.04.6, 26.10.6 and 26.11.0-edge. CI's new `latest-everything` test leg found this.
+
 ### Added
 - **CI on every pull request, laid out as in nf-core pipelines.** Until now nothing ran on a PR, and the tests that did run used Docker only, although most users run excon with Singularity or Apptainer on HPC. ([#152](https://github.com/Eco-Flow/excon/issues/152))
   - `linting.yml`: `nextflow lint` (errors fail), duplicate keys in `nextflow_schema.json` (Python's `json` keeps the last one silently, but Nextflow won't start), and the syntax of every Python, Perl, R and shell script in `bin/` and `utils/`. It runs on every PR.
