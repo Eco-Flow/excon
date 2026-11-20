@@ -85,6 +85,9 @@ def main():
     ap.add_argument("--error-model")
     ap.add_argument("--best-model")
     ap.add_argument("--best-k")
+    ap.add_argument("--fixed", default="",
+                    help="comma-separated parameters given rather than estimated "
+                         "(lambda, alpha, error_model, poisson_mean)")
     ap.add_argument("-o", "--output", required=True)
     args = ap.parse_args()
 
@@ -112,11 +115,15 @@ def main():
             "neg_lnL": v.get("neg_lnL", "NA"),
             "max_possible_lambda": v.get("max_possible_lambda", ""),
             "selected": "BEST" if (k == best_k and root == best_root) else "",
+            "fixed_parameters": ",".join(
+                f for f in args.fixed.split(",")
+                if f and not (f == "alpha" and int(k) == 1)
+                and not (f == "poisson_mean" and not poisson)),
         })
 
     rows.sort(key=lambda r: (int(r["k"]), r["root_distribution"] != "uniform"))
     cols = ["directory", "k", "root_distribution", "poisson_mean", "lambda", "alpha",
-            "epsilon", "neg_lnL", "max_possible_lambda", "selected"]
+            "epsilon", "neg_lnL", "max_possible_lambda", "selected", "fixed_parameters"]
     with open(args.output, "w") as out:
         out.write("\t".join(cols) + "\n")
         for r in rows:

@@ -428,6 +428,10 @@ Outputs are written to `results/species_tree/`:
 | `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
 | `--cafe_max_copies` | Families with at least this many copies in one species are left out of the main CAFE5 run and fitted by the large-family track instead | `100` |
 | `--cafe_large_mode` | How the large-family track fits them: `fixed` (λ fixed to the main families' estimate, as the CAFE5 tutorial does) or `per_family` (each estimates its own λ, the behaviour before v2.5.2) | `fixed` |
+| `--cafe_fixed_lambda` | Reuse λ from an earlier run (e.g. from its `cafe/model_comparison/cafe_model_parameters.tsv`): fixed in every CAFE5 fit instead of estimated | `null` |
+| `--cafe_fixed_alpha` | Reuse α: fixed in every fit with k > 1. The k = 1 to `--cafe_max_k` sweep still runs | `null` |
+| `--cafe_error_model` | Reuse an error model file (e.g. an earlier run's `cafe/base/Out_cafe_errormodel/Base_error_model.txt`) instead of estimating one | `null` |
+| `--cafe_poisson` | Reuse the Poisson root mean for the Poisson-root model instead of estimating it | `null` |
 | `--cafe_family_pvalue` | Family-wide p-value cutoff: a family's size must change significantly overall before any branch can be called significant. Passed to CAFE5 as `--pvalue`. | `0.05` |
 | `--cafe_branch_pvalue` | Branch p-value cutoff, applied to families that pass `--cafe_family_pvalue`. Used for the significant-family tables, CAFE GO gene lists and tree figures (before v2.5.2, `--go_cutoff` did this). | `0.05` |
 | `--cafe_max_differential` | Maximum gene count differential (max − min copies) for CAFE filtering. `CAFE_PREP` retries with this threshold, halving it on each subsequent retry | `50` |

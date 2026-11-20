@@ -16,6 +16,7 @@ process CAFE_PREP {
     input:
     path table
     path tree_newick
+    path user_error_model, stageAs: 'user_error_model/*'  // --cafe_error_model, or NO_FILE
 
     output:
     path("hog_gene_counts.tsv"),                         emit: prepared_counts
@@ -53,6 +54,14 @@ process CAFE_PREP {
     // with no result at all rather than one lacking an error model.
     def can_retry        = task.attempt <= 3
     def max_copies       = params.cafe_max_copies
+    // --cafe_fixed_lambda: fixed in both fits here, so lambda.txt and the error-model
+    // fit report it, and the large-family track uses it
+    def l_flag           = params.cafe_fixed_lambda != null ? "--fixed_lambda ${params.cafe_fixed_lambda}" : ''
+    // --cafe_error_model: use that file rather than estimate one (no space after -e)
+    // (decided from the parameter: the staged NO_FILE placeholder sits under
+    // user_error_model/, so its name can't be compared reliably)
+    def given_em         = params.cafe_error_model ? true : false
+    def e_flag           = given_em ? "-e${user_error_model}" : '-e'
     """
     export PATH=\$PATH:/usr/bin
     set -e
@@ -85,6 +94,7 @@ process CAFE_PREP {
         -i hog_gene_counts.tsv \\
         -t cafe_input_tree.txt \\
         --cores ${task.cpus} \\
+        ${l_flag} \\
         -o Out_cafe \\
         2>&1 | tee cafe_base.log
     cafe5_exit=\${PIPESTATUS[0]}
@@ -106,7 +116,10 @@ process CAFE_PREP {
         exit 1
     fi
 
-    if ! grep -q "Final -lnL:" cafe_base.log; then
+    # With --cafe_fixed_lambda nothing is optimised, so CAFE5 logs no "Final -lnL:";
+    # a finite likelihood in its results file is the sign of success instead.
+    if ! grep -q "Final -lnL:" cafe_base.log && \\
+       ! { [ -n "${l_flag}" ] && grep -qE "Final Likelihood \\(-lnL\\):[[:space:]]+[0-9]" Out_cafe/Base_results.txt; }; then
         echo "ERROR: CAFE5 produced no likelihood score — retrying with filtering" >&2
         exit 1
     fi
@@ -116,7 +129,7 @@ process CAFE_PREP {
 
 
     # ---------------------------------------------------------------
-    # Stage 2: estimate error model
+    # Stage 2: estimate error model (or, with --cafe_error_model, fit lambda with the given one)
     # Quantifies assembly/annotation error in gene family counts.
     # The resulting Base_error_model.txt is passed to CAFE_RUN_K so
     # that all downstream k-sweep runs correct for this error.
@@ -129,11 +142,19 @@ process CAFE_PREP {
         -i hog_gene_counts.tsv \\
         -t cafe_input_tree.txt \\
         --cores ${task.cpus} \\
-        -e \\
+        ${l_flag} \\
+        ${e_flag} \\
         -o Out_cafe_errormodel \\
         2>&1 | tee cafe_errormodel.log
     errormodel_exit=\${PIPESTATUS[0]}
     set -e
+
+    # With --cafe_error_model CAFE5 reads the model rather than writing one; publish
+    # the one used under the usual name
+    if [ "${given_em}" = "true" ] && [ \$errormodel_exit -eq 0 ]; then
+        mkdir -p Out_cafe_errormodel
+        cp -f ${user_error_model} Out_cafe_errormodel/Base_error_model.txt
+    fi
 
     # A failed error model is non-fatal — downstream processes handle an empty file
     # via the optional NO_FILE fallback pattern. CAFE5 can also exit 0 without writing
