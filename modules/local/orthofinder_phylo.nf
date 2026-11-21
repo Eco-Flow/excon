@@ -6,8 +6,8 @@ process ORTHOFINDER_PHYLO {
     conda "${moduleDir}/../nf-core/orthofinder/environment.yml"
     container {
         workflow.containerEngine == 'singularity' && !task.ext?.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/orthofinder:3.1.4--hdfd78af_0' :
-        'biocontainers/orthofinder:3.1.4--hdfd78af_0'
+        'https://depot.galaxyproject.org/singularity/orthofinder:3.2--hdfd78af_0' :
+        'biocontainers/orthofinder:3.2--hdfd78af_0'
     }
 
     input:
@@ -27,59 +27,75 @@ process ORTHOFINDER_PHYLO {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    # Build a local working directory from symlinks to the blast results.
-    # This avoids any data copy (critical on Lustre/NFS where cp of many files is slow).
-    # OrthoFinder writes new results (OrthoFinder/ subdir) into this local dir, so it
-    # never touches the original blast work directory.
-    # Any OrthoFinder/ dir from a previous run is explicitly excluded.
-    mkdir local_blast_wd
+    # Build the working directory from symlinks to the search results, at
+    # $prefix/WorkingDirectory: no data is copied (critical on Lustre/NFS), and the
+    # BLAST task's own directory is never written to. On a -b restart OrthoFinder 3.2
+    # writes its results into the parent of the directory it is given, so they land
+    # in $prefix/ (3.1 created WorkingDirectory/OrthoFinder/Results_<name>/ instead).
+    # Any OrthoFinder/ dir from a previous run is left out. Subdirectories (3.2's
+    # dependencies/, a few KB) are copied: OrthoFinder rewrites files in them, which
+    # through a symlink would change the BLAST task's own output.
+    mkdir -p $prefix/WorkingDirectory
     blast_abs=\$(readlink -f $blast_wd)
     for item in "\$blast_abs"/*; do
         name=\$(basename "\$item")
         [ "\$name" = "OrthoFinder" ] && continue
-        ln -s "\$item" "local_blast_wd/\$name"
+        if [ -d "\$item" ]; then
+            cp -rL "\$item" "$prefix/WorkingDirectory/\$name"
+        else
+            ln -s "\$item" "$prefix/WorkingDirectory/\$name"
+        fi
     done
 
-    # OrthoFinder v3's "Initial processing of each species" step has a 200s
-    # STALL_TIMEOUT (gathering.DoOrthogroups's default kwarg, never overridden
-    # by any caller in __main__.py) that misfires as a failure on any species
-    # whose own processing genuinely takes longer than that -- not an actual
-    # hang. No CLI flag exists to raise it (davidemms/OrthoFinder#1024), and the
-    # container's site-packages is read-only, so patch the function's default
-    # via a sitecustomize.py on PYTHONPATH instead of editing the installed file.
-    #
-    # The `orthofinder` package isn't on the normal Python path at all -- the
-    # container's `orthofinder` launcher script adds its own src/ dir (next to
-    # the executable) to sys.path itself at runtime, after Python's own startup
-    # already tried (and, without this, silently failed) to import
-    # sitecustomize.py. Add that same src/ dir to PYTHONPATH ourselves so
-    # `orthofinder.orthogroups.gathering` is importable in time.
+    # OrthoFinder 3's "Initial processing of each species" step has a 200 s
+    # STALL_TIMEOUT that misfires as a failure on any species whose own processing
+    # genuinely takes longer than that -- not an actual hang. No CLI flag exists to
+    # raise it (davidemms/OrthoFinder#1024), and the container's site-packages is
+    # read-only, so patch the function's default via a sitecustomize.py on PYTHONPATH.
+    # It is the last default argument of
+    #   3.2:   orthofinder.mcl_orthogroups.infer_orthogroups.do_orthogroups
+    #   3.1.x: orthofinder.orthogroups.gathering.DoOrthogroups
+    # The `orthofinder` package isn't on the normal Python path -- the launcher adds
+    # its own src/ dir at run time, after Python's startup already tried to import
+    # sitecustomize.py -- so add that src/ dir to PYTHONPATH ourselves.
     orthofinder_src="\$(dirname "\$(command -v orthofinder)")/src"
     mkdir pypatch
     cat > pypatch/sitecustomize.py <<'PYEOF'
-import orthofinder.orthogroups.gathering as _gathering
-_defaults = _gathering.DoOrthogroups.__defaults__
-_gathering.DoOrthogroups.__defaults__ = _defaults[:-1] + (3600.,)
+try:
+    from orthofinder.mcl_orthogroups import infer_orthogroups as _mod
+    _fn = _mod.do_orthogroups
+except ImportError:
+    from orthofinder.orthogroups import gathering as _mod
+    _fn = _mod.DoOrthogroups
+_fn.__defaults__ = _fn.__defaults__[:-1] + (3600.,)
 PYEOF
     export PYTHONPATH="\${orthofinder_src}:\$PWD/pypatch\${PYTHONPATH:+:\$PYTHONPATH}"
 
-    # Fail fast if the patch can't actually load -- sitecustomize.py import errors are
-    # swallowed silently by Python's own startup (a warning, nothing more), which is how
-    # this went unnoticed before: it just ran unpatched with the original 200s timeout.
-    python3 -c "import orthofinder.orthogroups.gathering" || {
-        echo "ERROR: could not import orthofinder.orthogroups.gathering from '\${orthofinder_src}' -- the STALL_TIMEOUT patch would silently no-op. Container package layout may have changed." >&2
+    # Fail fast if the patch didn't take: sitecustomize.py import errors are swallowed
+    # by Python's startup (a warning, nothing more), so check the default really is 3600 s
+    python3 -c "
+import sitecustomize
+try:
+    from orthofinder.mcl_orthogroups.infer_orthogroups import do_orthogroups as f
+except ImportError:
+    from orthofinder.orthogroups.gathering import DoOrthogroups as f
+assert f.__defaults__[-1] == 3600., f.__defaults__
+" || {
+        echo "ERROR: the OrthoFinder STALL_TIMEOUT patch did not apply ('\${orthofinder_src}'). The container's package layout may have changed." >&2
         exit 1
     }
 
     orthofinder \\
         -t $task.cpus \\
         -a ${[task.cpus, 4].min()} \\
-        -b local_blast_wd \\
+        -b $prefix/WorkingDirectory \\
         -n $prefix \\
         $args
 
-    # OrthoFinder writes results to local_blast_wd/OrthoFinder/Results_$prefix
-    mv local_blast_wd/OrthoFinder/Results_${prefix} $prefix
+    if [ ! -s $prefix/Orthogroups/Orthogroups.tsv ]; then
+        echo "ERROR: OrthoFinder wrote no $prefix/Orthogroups/Orthogroups.tsv; see its output above." >&2
+        exit 1
+    fi
     """
 
     stub:
@@ -90,12 +106,12 @@ PYEOF
     mkdir       $prefix/Gene_Trees
     mkdir       $prefix/Orthogroup_Sequences
     mkdir       $prefix/Orthogroups
-    mkdir       $prefix/Orthologues
+    mkdir       $prefix/Orthologs
     mkdir       $prefix/Phylogenetic_Hierarchical_Orthogroups
     mkdir       $prefix/Phylogenetically_Misplaced_Genes
     mkdir       $prefix/Putative_Xenologs
     mkdir       $prefix/Resolved_Gene_Trees
-    mkdir       $prefix/Single_Copy_Orthologue_Sequences
+    mkdir       $prefix/Single_Copy_Ortholog_Sequences
     mkdir       $prefix/MultipleSequenceAlignments
     mkdir       $prefix/Species_Tree
     mkdir       $prefix/WorkingDirectory

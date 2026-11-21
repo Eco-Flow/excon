@@ -6,8 +6,8 @@ process ORTHOFINDER_BLAST {
     conda "${moduleDir}/../nf-core/orthofinder/environment.yml"
     container {
         workflow.containerEngine == 'singularity' && !task.ext?.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/orthofinder:3.1.4--hdfd78af_0' :
-        'biocontainers/orthofinder:3.1.4--hdfd78af_0'
+        'https://depot.galaxyproject.org/singularity/orthofinder:3.2--hdfd78af_0' :
+        'biocontainers/orthofinder:3.2--hdfd78af_0'
     }
 
     input:
@@ -24,22 +24,28 @@ process ORTHOFINDER_BLAST {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    # -op prepares DIAMOND databases and prints commands to stdout (v3 does not write
-    # blast_commands.txt — commands appear on stdout after "diamond commands that must be run")
+    # -op prepares the DIAMOND databases and stops. OrthoFinder 3.2 writes the search
+    # commands to WorkingDirectory/blast_commands.txt (3.1 printed them to stdout).
     orthofinder \\
         -f input \\
         -n $prefix \\
         $args \\
         -op > orthofinder_prep.log
 
-    # Run diamond commands in parallel (up to task.cpus at once).
-    # Paths are relative to the current work directory.
-    grep "^diamond blastp" orthofinder_prep.log | xargs -P $task.cpus -I {} bash -c '{}'
+    wd=input/OrthoFinder/Results_${prefix}/WorkingDirectory
+    n_cmds=\$(grep -c "^diamond blastp" \$wd/blast_commands.txt || true)
+    if [ "\$n_cmds" -eq 0 ]; then
+        echo "ERROR: OrthoFinder -op wrote no DIAMOND commands to \$wd/blast_commands.txt" >&2
+        exit 1
+    fi
 
-    # Move the WorkingDirectory (now containing Blast*.txt.gz) to the output location.
-    # Because blast_commands.txt was never written, orthofinder -b will skip re-running
-    # searches and proceed directly to orthogroup inference.
-    mv input/OrthoFinder/Results_${prefix}/WorkingDirectory ${meta.id}_blast_wd
+    # Run the DIAMOND searches in parallel, up to task.cpus at once
+    grep "^diamond blastp" \$wd/blast_commands.txt | xargs -P $task.cpus -I {} bash -c '{}'
+
+    # The WorkingDirectory, now holding Blast*.txt.gz, is the output. ORTHOFINDER_PHYLO
+    # restarts from it with -b; OrthoFinder 3.2 checks the searches are all present
+    # and complete, and goes straight on to orthogroup inference.
+    mv \$wd ${meta.id}_blast_wd
     """
 
     stub:

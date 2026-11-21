@@ -194,7 +194,7 @@ annotation noise.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.1.4. v2 produces Hierarchical Orthogroups (`N0.tsv`) which have lower copy-number variance and are better suited to CAFE5. v3 produces flat orthogroups (`Orthogroups.tsv`). Recommended for large datasets (>30 species) or when CAFE5 fails to converge. | `false` |
+| `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.2. v2 produces Hierarchical Orthogroups (`N0.tsv`) which have lower copy-number variance and are better suited to CAFE5. v3 produces flat orthogroups (`Orthogroups.tsv`). Recommended for large datasets (>30 species) or when CAFE5 fails to converge. | `false` |
 | `--orthofinder_method` | Gene tree inference method: `msa` or `dendroblast` | `msa` |
 | `--orthofinder_search` | Sequence search program: `diamond`, `blast`, or `mmseqs2` | `diamond` |
 | `--orthofinder_msa_prog` | MSA program (requires `--orthofinder_method msa`): `mafft` or `muscle` | `mafft` |
@@ -203,17 +203,16 @@ annotation noise.
 
 > **Note:** `-A` and `-T` are only valid when `-M msa` is set. If you set `--orthofinder_msa_prog` or `--orthofinder_tree` without `--orthofinder_method msa`, OrthoFinder will error.
 
-> **OrthoFinder 3's 200-second stall timer.** OrthoFinder 3.1.3–3.1.5 stop with
+> **OrthoFinder 3's 200-second stall timer.** OrthoFinder 3.1.3–3.2 stop with
 > `ERROR: Stalled for 200.0s` when 200 seconds pass without any species finishing its
 > initial processing, even though the work is still going. That happens with large genomes, and
 > no OrthoFinder option changes it ([davidemms/OrthoFinder#1024](https://github.com/davidemms/OrthoFinder/issues/1024)).
-> The timer is set in `orthogroups/gathering.py` (`DoOrthogroups`), which hands it on to
-> `utils/parallel_task_manager.py` (`ManageQueueNew`). excon's `ORTHOFINDER_PHYLO` raises it
-> to 3,600 seconds before OrthoFinder starts, so the pipeline's own OrthoFinder 3.1.4 run is
-> not affected. Running OrthoFinder 3 yourself, or in another pipeline, it is. If an
-> OrthoFinder 3 run still fails or stalls, `--orthofinder_v2` runs OrthoFinder 2.5.5
-> instead, which has no such timer. (The OrthoFinder 3.1.4 that excon uses has no
-> `--old-version` option to fall back from within OrthoFinder 3.)
+> The timer is the last default argument of `mcl_orthogroups/infer_orthogroups.py`
+> (`do_orthogroups`) in 3.2, and of `orthogroups/gathering.py` (`DoOrthogroups`) in 3.1.x.
+> excon's `ORTHOFINDER_PHYLO` raises it to 3,600 seconds before OrthoFinder starts, and stops
+> if that didn't take, so the pipeline's own OrthoFinder 3.2 run is not affected. Running
+> OrthoFinder 3 yourself, or in another pipeline, it is. If an OrthoFinder 3 run still fails or
+> stalls, `--orthofinder_v2` runs OrthoFinder 2.5.5 instead, which has no such timer.
 
 ### Species tree with IQ-TREE2 (optional)
 

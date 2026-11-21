@@ -2,6 +2,14 @@
 
 ## [v2.6.0] - unreleased
 
+### Changed
+- **OrthoFinder 3.2** (was 3.1.4) for `ORTHOFINDER_BLAST` and `ORTHOFINDER_PHYLO`. 3.2 changed three things excon relied on, and each step is updated:
+  - `-op` writes the DIAMOND commands to `WorkingDirectory/blast_commands.txt` instead of printing them. `ORTHOFINDER_BLAST` read them from its log, so on 3.2 it would have run no searches. It now reads the file, and stops if there are none.
+  - A `-b` restart writes its results into the parent of the given working directory, instead of a new `OrthoFinder/Results_<name>/`. `ORTHOFINDER_PHYLO` now builds the working directory at `<prefix>/WorkingDirectory`, so the results land in `<prefix>/` within its own task. Subdirectories (3.2's small `dependencies/`, which OrthoFinder rewrites) are copied rather than linked, so nothing is written back into the BLAST task's output.
+  - The 200-second stall timer moved to `mcl_orthogroups/infer_orthogroups.py` (`do_orthogroups`). The patch now finds it there (or at 3.1's location), and checks the new default really is 3,600 s before OrthoFinder starts.
+
+  3.2 also renames some output folders and files (`Orthologues` → `Orthologs`, `Single_Copy_Orthologue_Sequences` → `Single_Copy_Ortholog_Sequences`, `Orthogroups_SingleCopyOrthologues.txt` → `…Orthologs.txt`). It writes each species' orthologs to one compressed file, and by default builds the species tree from a concatenated alignment of single-copy orthogroups, so OrthoFinder's tree, and with it CAFE's results, can differ from 3.1.4. `Orthogroups/Orthogroups.tsv` and `Species_Tree/SpeciesTree_rooted_node_labels.txt` keep their names, so `--orthofinder_results` works with results from either version. On `-resume` from an earlier version, OrthoFinder and everything after it re-runs. ([#151](https://github.com/Eco-Flow/excon/issues/151))
+
 ### Added
 - **CI on every pull request, laid out as in nf-core pipelines.** Until now nothing ran on a PR, and the tests that did run used Docker only, although most users run excon with Singularity or Apptainer on HPC. ([#152](https://github.com/Eco-Flow/excon/issues/152))
   - `linting.yml`: `nextflow lint` (errors fail), duplicate keys in `nextflow_schema.json` (Python's `json` keeps the last one silently, but Nextflow won't start), and the syntax of every Python, Perl, R and shell script in `bin/` and `utils/`. It runs on every PR.
@@ -9,6 +17,7 @@
   - `nf-test.config` now names only the test profile; the engine is added on the command line (`nf-test test --profile +docker`), as in nf-core pipelines. `tests/nextflow.config` caps tests at the runner's 4 CPUs and 14 GB, and shares one Singularity image cache across tests in CI.
   - **New `test` profile, which the pipeline test now uses.** It has the 10 *Chlamydia* species of `test_chlamydia`, with genomes and annotations fetched straight from NCBI's FTP site over HTTPS (`data/input_test.csv`, checked to give byte-identical data), two at a time because NCBI answers HTTP 503 to more. That skips ncbi-genome-download, which first fetches NCBI's 245 MB index of all bacterial assemblies. CAFE's k-sweep goes to k = 3 rather than 6, since its fits run one after another on a 4-CPU runner and k = 4-6 take longest. The snapshot only loses the download step's own outputs. CI also uploads the pipeline test's `pipeline_info/` (trace, timeline) on every run, to see what is slow. `test_chlamydia` is unchanged, for testing the download step.
   - **Development follows the nf-core branch model:** pull requests go to `dev`, and `main` only takes releases from `dev` (or an urgent fix from a branch named `patch`). The new `branch.yml` check fails any other pull request into `main`.
+  - A manual run can rewrite the snapshots instead of checking them: `gh workflow run nf-test.yml --ref <branch> -f update_snapshot=true`, then download the `snapshots-*` artifact.
   - These replace `test-pipeline.yml`. Both workflows install Nextflow with `nf-core/setup-nextflow`, and nf-test from its GitHub releases (`nf-core/setup-nf-test`): the `code.askimed.com` installer no longer resolves, which would have failed every run.
 
 ## [v2.5.1] - 2026-11-24 - GO corrected
