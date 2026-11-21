@@ -1,13 +1,13 @@
 name: Linting
 
 # Static checks on every pull request (also on docs-only ones), on pushes to
-# main and by hand. nf-core pipelines run `nf-core pipelines lint` here; excon
+# dev and main, and by hand. nf-core pipelines run `nf-core pipelines lint` here; excon
 # isn't built from the nf-core template, so it runs the checks that apply to it.
 
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [dev, main]
   workflow_dispatch:
 
 concurrency:

@@ -1,0 +1,28 @@
+name: Branch protection
+
+# As in nf-core pipelines: development happens on `dev`, and `main` only takes
+# a release, as a pull request from `dev` (or an urgent fix from a branch named
+# `patch`). Anything else opened against `main` fails here; change its base to
+# `dev` instead.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull requests into main come from dev (or patch)
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if { [ "$HEAD_REPO" = "${{ github.repository }}" ] && [ "$HEAD_REF" = "dev" ]; } || [ "$HEAD_REF" = "patch" ]; then
+            echo "OK: $HEAD_REPO:$HEAD_REF -> main"
+          else
+            echo "::error::Pull requests into main must come from the dev branch (or a branch named patch). Change this PR's base to dev."
+            exit 1
+          fi
