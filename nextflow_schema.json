@@ -12,6 +12,12 @@
       "description": "Define where the pipeline should find input data and save output data.",
       "required": ["outdir"],
       "properties": {
+        "input_proteins": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "description": "CSV of proteomes to use instead of genomes and annotations, one line per species: species,proteins.fasta (plain or gzipped). Each proteome should hold one protein per gene (e.g. the longest isoform), named by the gene's ID. Internal stop codons ('*', or '.' as gffread -y writes them) are handled as --internal_stop_action says. Can be combined with --input. Not usable with --stats or --chromo_go, which need genomes and annotations."
+        },
         "input": {
           "type": "string",
           "format": "file-path",
@@ -298,6 +304,13 @@
             "description": "Reuse an existing IQ-TREE partition file instead of the one built by CONCAT_SINGLE_COPY. Intended for restarting a run without repeating model selection: a previous run's *.best_scheme file lists the model chosen for each partition, so IQ-TREE uses those directly. The partition coordinates must match the supermatrix, so only use a file produced from the same set of orthogroups. Supplying this suppresses the default -m MFP.",
             "hidden": true
         },
+        "iqtree_min_occupancy": {
+            "type": "number",
+            "description": "Smallest fraction of species a single-copy orthogroup must contain to go into the IQ-TREE supermatrix. The default 1 keeps only orthogroups with every species exactly once. With many species few orthogroups pass that; e.g. 0.9 also keeps orthogroups that lack up to 10% of the species (rounded so that at least 90% are present, and never fewer than 4), and fills the missing species with gaps, which IQ-TREE treats as missing data. Species present must still have exactly one copy. Only used with --iqtree_species_tree.",
+            "default": 1.0,
+            "minimum": 0,
+            "maximum": 1
+        },
         "cafe_clade": {
             "type": "string",
             "description": "Restrict the CAFE analysis to one clade, given as two or more tip names whose most recent common ancestor defines it (e.g. 'Vespa_crabro,Apis_mellifera'). The species tree is pruned to that clade and the gene-count table is subset to match, so a single OrthoFinder analysis can be analysed clade by clade while keeping the original orthogroup identifiers. Pruning happens after any time-calibration, so node ages are retained. Mutually exclusive with --cafe_species."
@@ -310,6 +323,12 @@
             "type": "string",
             "format": "file-path",
             "description": "TSV of node-age calibrations used to time-calibrate the species tree with ape::chronos before CAFE5. Columns: clade (label), tips (comma-separated tip names whose MRCA defines the node), age_min and age_max in millions of years (equal values fix the age). Applies to whichever species tree is in use, including the one built by --iqtree_species_tree. The calibrated tree is passed to every CAFE5 stage unchanged, so lambda is per Myr; --tree_scale_factor and chronoMPL() are skipped. Naming nodes by the MRCA of two tips avoids depending on node numbering."
+        },
+        "dating_method": {
+            "type": "string",
+            "default": "chronos",
+            "enum": ["chronos", "lsd2"],
+            "description": "How --tree_calibrations dates the species tree: 'chronos' (ape::chronos, any species tree) or 'lsd2' (IQ-TREE's least-square dating, --date, on the IQ-TREE species tree; needs --iqtree_species_tree, and at least one calibration with an exact age)."
         },
         "chronos_model": {
             "type": "string",

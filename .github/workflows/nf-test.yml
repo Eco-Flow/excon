@@ -150,6 +150,28 @@ jobs:
             --tap=test.tap \
             --shard ${{ matrix.shard }}/${{ needs.nf-test-changes.outputs.total_shards }}
 
+      - name: Offline image names match Nextflow's
+        # utils/pull_singularity_images.sh re-creates Nextflow's file naming for
+        # cached Singularity images (for offline use, docs/offline.md). Every image
+        # Nextflow cached in this job must have a name the script would give it,
+        # or offline runs would look for files the script never wrote.
+        if: matrix.profile == 'singularity'
+        run: |
+          shopt -s nullglob
+          cached=("$NXF_SINGULARITY_CACHEDIR"/*.img)
+          if [ ${#cached[@]} -eq 0 ]; then echo "No images cached in this shard; nothing to compare."; exit 0; fi
+          utils/pull_singularity_images.sh --list > expected_images.tsv
+          bad=0
+          for f in "${cached[@]}"; do
+            name=$(basename "$f")
+            if ! cut -f2 expected_images.tsv | grep -qxF "$name"; then
+              echo "::error::Nextflow cached '$name', a name utils/pull_singularity_images.sh doesn't produce"
+              bad=1
+            fi
+          done
+          [ "$bad" -eq 0 ] && echo "All ${#cached[@]} images Nextflow cached have the names the script gives them."
+          exit "$bad"
+
       - name: Note a failure with the latest Nextflow (not a failed check)
         if: ${{ always() && steps.run_nf_test.outcome == 'failure' && matrix.NXF_VER == 'latest-everything' }}
         run: |
