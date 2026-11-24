@@ -44,7 +44,7 @@ Produced by [CAFEPlotter](https://github.com/moshi4/CafePlotter) from the best-f
 
 ### Significant HOG Tree (`cafe_sig_hog_tree.pdf/svg`)
 
-Same layout as the cafeplotter summary tree but restricted to **statistically significant** gene families only (branch p ≤ 0.05). Each leaf and internal node is annotated with `+expanded / −contracted` counts from `CAFE_summary.txt`. This is the figure to use when reporting how many families changed significantly on each lineage.
+Same layout as the cafeplotter summary tree but restricted to **statistically significant** gene families only: family-wide p ≤ `--cafe_family_pvalue` and branch p ≤ `--cafe_branch_pvalue` (both 0.05 by default). Each leaf and internal node is annotated with `+expanded / −contracted` counts from `CAFE_summary.txt`. This is the figure to use when reporting how many families changed significantly on each lineage.
 
 ---
 

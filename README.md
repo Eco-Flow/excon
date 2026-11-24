@@ -37,6 +37,7 @@ The general pipeline logic is as follows:
 * Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
 * Re-runs CAFE5 at the best k with a Poisson root size distribution (`-p`) `[CAFE_RUN_BEST]`.
 * Compares uniform vs Poisson root at the best k by AIC, selects the winner `[CAFE_MODEL_COMPARE]`.
+* Tabulates the fitted parameters of every model compared `[CAFE_MODEL_PARAMETERS]`.
 * Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
 * Records what became of every gene family: modelled, filtered out and why, or dropped `[CAFE_FAMILY_STATUS]`.
 
@@ -694,6 +695,7 @@ results/
 │   ├── large_families/              # High-differential families, each run independently under its own lambda
 │   └── model_comparison/
 │       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
+│       ├── cafe_model_parameters.tsv # k, λ, α, ε, root distribution, -lnL of every model compared
 │       └── best_model.txt            # "uniform" or "poisson"
 ├── cafe_plot/
 │   └── cafe_plotter/                # Expansion/contraction plots for best model
