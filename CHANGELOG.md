@@ -4,6 +4,7 @@
 
 ### Changed
 - **CI downloads Nextflow's plugins and, on Singularity, the container images before the tests, retrying failed downloads.** A plugin download or an image pull from quay.io breaking off used to fail whichever test needed it. The images come from `utils/pull_singularity_images.sh`, so CI also runs the offline script for real.
+- **CI runs on pull requests that change only docs.** `nf-test.yml` skipped them, so they never got the required `confirm-pass` check and could not be merged. The README's Pipeline Tests badge now shows `nf-test.yml` (it pointed at the removed `test-pipeline.yml`). Both also went into `main` directly (#172).
 
 ## [v2.6.0] - 2026-11-24 - Extra features
 
