@@ -24,6 +24,7 @@ The general pipeline logic is as follows:
 <img width="398" alt="image" src="docs/images/excon_pipeline.5.svg" align="right" />
 
 * Downloads genome and annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`, or you provide your own.
+* Or starts from proteomes you provide, one protein per gene `[PREPARE_PROTEINS]` (see `--input_proteins`).
 * Unzips the files, if necessary `[GUNZIP]`
 * Sanitises GFF annotations and extracts longest isoform `[AGAT_SPKEEPLONGESTISOFORM]`.
 * Gets the protein sequences `[GFFREAD]`.
