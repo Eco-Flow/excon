@@ -33,6 +33,7 @@ The general pipeline logic is as follows:
 * Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it with `ape::chronos` when node ages are supplied `[DATE_TREE]` (see `--tree_calibrations`).
 * Optionally restricts the analysis to one clade `[PRUNE_TREE]` (see `--cafe_clade` / `--cafe_species`).
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
+* Fits the families too large for the main model one at a time, with λ fixed to the main estimate `[CAFE_RUN_LARGE]` (see `--cafe_large_mode`, `--cafe_max_copies`).
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
 * Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
 * Re-runs CAFE5 at the best k with a Poisson root size distribution (`-p`) `[CAFE_RUN_BEST]`.
@@ -698,7 +699,7 @@ results/
 │   │   └── SpeciesTree_rooted_ultra.txt  # Ultrametric tree used by CAFE5
 │   ├── best/                        # Full CAFE5 results for the winning model (uniform or Poisson)
 │   ├── cafe_family_status.tsv       # What became of every gene family (see Output Guide)
-│   ├── large_families/              # High-differential families, each run independently under its own lambda
+│   ├── large_families/              # Families too large for the main model, each fitted with λ fixed to the main estimate (--cafe_large_mode)
 │   └── model_comparison/
 │       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
 │       ├── cafe_model_parameters.tsv # k, λ, α, ε, root distribution, -lnL of every model compared
