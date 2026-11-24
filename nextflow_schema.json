@@ -12,6 +12,12 @@
       "description": "Define where the pipeline should find input data and save output data.",
       "required": ["outdir"],
       "properties": {
+        "input_proteins": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "description": "CSV of proteomes to use instead of genomes and annotations, one line per species: species,proteins.fasta (plain or gzipped). Each proteome should hold one protein per gene (e.g. the longest isoform), named by the gene's ID. Internal stop codons ('*', or '.' as gffread -y writes them) are handled as --internal_stop_action says. Can be combined with --input. Not usable with --stats or --chromo_go, which need genomes and annotations."
+        },
         "input": {
           "type": "string",
           "format": "file-path",

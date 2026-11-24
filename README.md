@@ -24,6 +24,7 @@ The general pipeline logic is as follows:
 <img width="398" alt="image" src="docs/images/excon_pipeline.5.svg" align="right" />
 
 * Downloads genome and annotation files from NCBI `[NCBIGENOMEDOWNLOAD]`, or you provide your own.
+* Or starts from proteomes you provide, one protein per gene `[PREPARE_PROTEINS]` (see `--input_proteins`).
 * Unzips the files, if necessary `[GUNZIP]`
 * Sanitises GFF annotations and extracts longest isoform `[AGAT_SPKEEPLONGESTISOFORM]`.
 * Gets the protein sequences `[GFFREAD]`.
@@ -115,6 +116,27 @@ Drosophila_santomea,data/Drosophila_santomea/genome.fna.gz,data/Drosophila_santo
 ```
 
 > **Note:** Genomes should be chromosome-level, not contig-level. RefSeq IDs must be used (not GenBank IDs).
+
+### Starting from proteins (`--input_proteins`)
+
+If you have proteomes rather than genomes and annotations, give them in a separate 2-field CSV
+with `--input_proteins`, instead of `--input` or as well as it:
+
+```
+Species_A,/path/to/Species_A.proteins.fa.gz
+Species_B,/path/to/Species_B.proteins.fa
+```
+
+Each proteome should hold **one protein per gene** (e.g. the longest isoform), named by the ID
+you want for that gene. The pipeline uses the proteins as they are, apart from stop codons:
+- A final stop is removed.
+- Internal stops are handled as `--internal_stop_action` says (`longest_orf` by default; see
+  [Internal stop codons](#internal-stop-codons-optional)). Both `*` and `.` count as stops;
+  `gffread -y` writes `.` unless run with `-S`.
+- Repeated IDs and empty sequences are skipped with a warning.
+
+`--stats` and `--chromo_go` need genomes and annotations, so they only cover species given in
+`--input`.
 
 ## Parameters
 
@@ -598,6 +620,7 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 | `singularity` | Run with Singularity containers |
 | `conda` | Run with Conda environments |
 | `test` | The quick end-to-end test that CI runs: the 10 *Chlamydia* genomes of `test_chlamydia`, fetched directly from NCBI's FTP site, with CAFE's k-sweep up to k = 3. Every step runs, CAFE5 included, apart from the NCBI download step |
+| `test_proteins` | `test` with 5 of the 10 species given as NCBI proteomes (`--input_proteins`) and 5 as genomes, so one run covers both kinds of input. CI runs it too |
 | `test_bacteria` | Fastest smoke test: 4 small bacterial genomes. Exercises every step, but CAFE5 does not converge on it (see below) |
 | `test_chlamydia` | 10 *Chlamydia* genomes. Slower than `test_bacteria`, but closely related enough for CAFE5 to fit a model, so it exercises the CAFE stages end to end |
 | `test_small` | Test run with small insect genomes |
