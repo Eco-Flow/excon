@@ -51,15 +51,23 @@ if (length(go_files) == 0) {
   stop(sprintf("No *_res.tab files found in: %s", go_results_dir))
 }
 
+# go_chromosome.pl writes <Unfiltered_Go|Filtered_dup_Go>_<species>/<species>_<chromosome>_res.tab
+species <- sub("^(Unfiltered_Go|Filtered_dup_Go)_", "", prefix)
+
 all_go_results <- lapply(go_files, function(f) {
-  chrom <- gsub(".*_([0-9]+)_res\\.tab$", "\\1", basename(f))
+  chrom <- sub("_res\\.tab$", "", basename(f))
+  if (startsWith(chrom, paste0(species, "_")))
+    chrom <- substring(chrom, nchar(species) + 2)
 
   df <- read.table(f, header = TRUE, sep = "\t",
                    quote = "", comment.char = "",
                    stringsAsFactors = FALSE)
 
-  df$Chromosome     <- paste0("Scaffold_", chrom)
-  df$Chromosome_Num <- as.numeric(chrom)
+  # Names ending in a number (HiC_scaffold_12, chr_3) keep the short Scaffold_<n>
+  # label; any other name, e.g. a RefSeq accession (NC_066586.1), is used as it is.
+  num <- regmatches(chrom, regexec("_([0-9]+)$", chrom))[[1]]
+  df$Chromosome     <- if (length(num)) paste0("Scaffold_", num[2]) else chrom
+  df$Chromosome_Num <- if (length(num)) as.numeric(num[2]) else NA_real_
   df
 }) %>% bind_rows()
 
@@ -74,7 +82,7 @@ significant_go <- all_go_results %>%
     bonferroni < bonferroni_threshold,
     Annotated  >= min_annotated
   ) %>%
-  arrange(Chromosome_Num, bonferroni)
+  arrange(Chromosome_Num, Chromosome, bonferroni)
 
 cat(sprintf("Significant terms after filtering: %d\n", nrow(significant_go)))
 

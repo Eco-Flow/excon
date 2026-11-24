@@ -4,6 +4,32 @@ use strict;
 
 print "Please be in folder with focal gff3 file and GO hashes\n\n";
 
+# GFF3 column 9 as key => value, so ID/Parent are found whatever order they come in.
+sub parse_attributes {
+    my ($col9) = @_;
+    my %attr;
+    foreach my $bits (split("\;", $col9)){
+        my ($key, $value) = split("\=", $bits, 2);
+        next if !defined $value;
+        $key   =~ s/^\s+|\s+$//g;
+        $value =~ s/^\s+|\s+$//g;
+        $attr{$key} = $value;
+    }
+    return %attr;
+}
+
+# Orthogroup of a gene: try its gene ID, the gene ID without NCBI's "gene-" prefix,
+# then its transcript IDs, since Orthogroups.tsv can name proteins either way.
+# Used for both the chromosome and the background tables, so they always agree.
+sub find_og {
+    my ($og_of, $gene, @trans) = @_;
+    (my $stripped = $gene // "") =~ s/^gene-//;
+    foreach my $id ($gene, $stripped, @trans){
+        return $og_of->{$id} if defined $id && $og_of->{$id};
+    }
+    return;
+}
+
 my $go_algo = $ARGV[0] // "classic_fisher";
 
 my @goes=`ls *.go.txt`;
@@ -12,13 +38,16 @@ my $ortho="Orthogroups.tsv";
 
 
 #Store orthogroup names hash/
+# OrthoFinder writes Orthogroups.tsv with Windows (CRLF) line endings, and chomp only
+# removes the \n: the \r left behind was glued to the last gene of the last species
+# column on every row, so that gene matched nothing. Strip it from every input read here.
 my %orthogroup_hash;
 open(my $orthin, "<", $ortho)   or die "Could not open $ortho\n";
 my $header=<$orthin>;
-chomp $header;
+$header =~ s/\r?\n\z//;
 my @colHeadsplit=split("\t", $header);
 while (my $lineOrtho=<$orthin>){
-    chomp $lineOrtho;
+    $lineOrtho =~ s/\r?\n\z//;
     my $n=1;
     my @colsplit=split("\t", $lineOrtho);
     my $OG= shift(@colsplit);
@@ -60,8 +89,6 @@ foreach my $gofile (@goes){
 
 
 #Now run through the jobs and prepare the input files.
-my %Gene_tran_hash;
-
 foreach my $species (@jobs){
     my @sp=split(/\ /, $species);
     my $go=$sp[0];
@@ -77,72 +104,56 @@ foreach my $species (@jobs){
     my $out2="$species_name\.go_r_file.noDuplicates.txt";
     open(my $fileout2, ">", $out2)   or die "Could not open $out2\n";
 
+    # A gene can have more than one transcript line (BRAKER writes GeneMark models
+    # as both an mRNA and a transcript), so only write each gene/OG to a scaffold once.
+    my %seen_gene_scaffold;
+    my %seen_og_scaffold;
+
+    my $og_of = $orthogroup_hash{$species_name} // {};
+    my %trans_of_gene;
+
     open(my $filein, "<", $gff)   or die "Could not open $gff\n";
     while (my $line=<$filein>){
-        chomp $line;
+        $line =~ s/\r?\n\z//;
         my @split=split("\t", $line);
         my $gene;
         my $tran;
         my $scaffold=$split[0];
         # Make scaffold name R-safe (R can't handle purely numeric names)
         $scaffold =~ s/^(\d+)$/chr_$1/;
-        if ($line =~ /^#/){
+        if ($line =~ /^#/ || scalar(@split) < 9){
             #do nothing
         }
         else{
-            if ($split[2] eq "mRNA"){
-           
-                if ($split[1] eq "AUGUSTUS"){
-                    my @lsplit=split("\;", $split[8]);
-                    my @genesp=split("\=", $lsplit[1]);
-                    my @transp=split("\=", $lsplit[0]);
-                    $gene=$genesp[1];
-                    $tran=$transp[1];
-                }
-                elsif($split[1] eq "maker"){
-                    my @lsplit=split("\;", $split[8]);
-                    my %temp_h;
-                    foreach my $bits (@lsplit){
-                        my @spbit=split("\=", $bits);
-                        $temp_h{$spbit[0]}=$spbit[1];
-                    }
-                    $gene=$temp_h{"Parent"};
-                    $tran=$temp_h{"ID"};
+            # BRAKER/TSEBRA/AGAT annotations write AUGUSTUS models as "transcript"
+            # and only GeneMark models as "mRNA", so mRNA lines alone miss most genes.
+            if ($split[2] eq "mRNA" || $split[2] eq "transcript"){
+
+                my %attr = parse_attributes($split[8]);
+                if ($split[1] eq "AUGUSTUS" || $split[1] eq "maker"){
+                    $gene=$attr{"Parent"};
+                    $tran=$attr{"ID"};
                 }
                 else{
                     #Its probably a normal NCBI type:
-                    my @lsplit=split("\;", $split[8]);
-                    my %temp_h;
-                    foreach my $bits (@lsplit){
-                        my @spbit=split("\=", $bits);
-                        $temp_h{$spbit[0]}=$spbit[1];
-                    }
-                    my $fullgene=$temp_h{"Parent"};
-                    my @fullsp=split("\:", $fullgene);
+                    my $fullgene=$attr{"Parent"};
+                    my @fullsp=split("\:", $fullgene // "");
                     $gene=$fullsp[-1];
                     # Keep full transcript ID (including rna- prefix) for orthogroup lookup
-                    $tran=$temp_h{"ID"};
+                    $tran=$attr{"ID"};
                 }
+                next if !defined $gene;
 
-                # Try gene ID first in orthogroup hash, then full transcript ID as fallback
-                my $lookup_id = $gene;
-		my $gene_stripped = $gene;
-		$gene_stripped =~ s/^gene-//;
-
-		if (!$orthogroup_hash{$species_name}{$gene} && $orthogroup_hash{$species_name}{$gene_stripped}){
-                    $lookup_id = $gene_stripped;
-		}
-		elsif (!$orthogroup_hash{$species_name}{$gene} && $tran){
-		    $lookup_id = $tran;
-		}
+                # Transcripts of each gene, for the background lookup below
+                (my $gene_stripped = $gene) =~ s/^gene-//;
+                push @{$trans_of_gene{$gene_stripped}}, $tran if defined $tran;
 
                 # Write to OG duplicates file if found in orthogroups
-                if ($orthogroup_hash{$species_name}{$lookup_id}){
-                    my $og_id = $orthogroup_hash{$species_name}{$lookup_id};
+                if (my $og_id = find_og($og_of, $gene, $tran)){
                     # Sanitise OG ID for R
                     $og_id =~ s/\-/\_/g;
                     $og_id =~ s/\:/\_/g;
-                    print $fileout2 "$og_id\t$scaffold\n";
+                    print $fileout2 "$og_id\t$scaffold\n" unless $seen_og_scaffold{"$og_id\t$scaffold"}++;
                 }
 
                 # Sanitise gene ID for R before writing to go_r_file.txt
@@ -150,15 +161,7 @@ foreach my $species (@jobs){
                 $gene_r =~ s/^gene-//;
                 $gene_r =~ s/\-/\_/g if $gene_r;
                 $gene_r =~ s/\:/\_/g if $gene_r;
-                print $fileout "$gene_r\t$scaffold\n";
-
-                if ($Gene_tran_hash{$gene}){
-                    my $old=$Gene_tran_hash{$gene};
-                    $Gene_tran_hash{$gene}="$old\,$tran";
-                }
-                else{
-                    $Gene_tran_hash{$gene}=$tran;
-                }
+                print $fileout "$gene_r\t$scaffold\n" unless $seen_gene_scaffold{"$gene_r\t$scaffold"}++;
             }
         }
     }
@@ -171,12 +174,15 @@ foreach my $species (@jobs){
 
     my %exist_hit;
     while (my $linego=<$filego>){
-        chomp $linego;
+        $linego =~ s/\r?\n\z//;
         my @splitgo=split("\t", $linego);
         my $go_gene = $splitgo[0];
 
-        # Try direct lookup first, then with rna- prefix stripped
-        my $found_og = $orthogroup_hash{$species_name}{$go_gene};
+        # Same lookup as for the chromosome table, with the gene's transcripts from the GFF.
+        # The GO file's gene ID alone misses genes that Orthogroups.tsv names by transcript
+        # (e.g. rna-XM_...), which the chromosome table still finds.
+        (my $go_gene_stripped = $go_gene) =~ s/^gene-//;
+        my $found_og = find_og($og_of, $go_gene, @{$trans_of_gene{$go_gene_stripped} // []});
 
         if ($found_og){
             # Sanitise OG ID for R

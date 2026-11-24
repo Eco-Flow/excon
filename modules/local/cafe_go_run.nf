@@ -15,6 +15,8 @@ process CAFE_GO_RUN {
 
     script:
     """
+    # v2.5.1: GO tables cover every tested term, so adjusted P-values are corrected over all of them.
+    # Nextflow does not hash bin/ scripts, so changing this script is what makes -resume re-run it.
     ${projectDir}/bin/cafe_go_run.pl \\
         ${target} \\
         ${background} \\

@@ -2,7 +2,7 @@ process CAFE_RUN_K {
     tag "k=${k}"
     label 'process_high'
     label 'process_long'
-    container 'ecoflowucl/cafe:r-4.3.1' //R version 4.3.1, cafe version 4.2.1 (confusing)
+    container 'ecoflowucl/cafe:r-4.3.1' // R 4.3.1; CAFE5 1.1.0 (cafe5 has no --version: from /opt/CAFE5/config.h)
 
     input:
     path hog_counts
@@ -13,7 +13,7 @@ process CAFE_RUN_K {
     output:
     tuple val(k), path("Out_cafe_k${k}/"), emit: results
     path "cafe_k${k}.log",                 emit: log
-    tuple val("${task.process}"), val('cafe'), val('4.2.1'), emit: versions_cafe, topic: versions
+    tuple val("${task.process}"), val('cafe5'), val('1.1.0'), emit: versions_cafe, topic: versions
 
     script:
     def k_flag = k > 1 ? "-k ${k}" : ""

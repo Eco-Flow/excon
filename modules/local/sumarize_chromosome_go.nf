@@ -3,7 +3,7 @@ process SUMMARIZE_CHROMO_GO {
     label 'process_single'
     container "${ workflow.containerEngine == 'singularity' && !task.ext?.singularity_pull_docker_container ?
         'docker://rocker/tidyverse:4.3.2' :
-        'rocker/tidyverse:4.3.2' }"
+        'docker.io/rocker/tidyverse:4.3.2' }"
 
     input:
     tuple val(meta), path(res_dir)

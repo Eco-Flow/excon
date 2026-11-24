@@ -203,6 +203,18 @@ annotation noise.
 
 > **Note:** `-A` and `-T` are only valid when `-M msa` is set. If you set `--orthofinder_msa_prog` or `--orthofinder_tree` without `--orthofinder_method msa`, OrthoFinder will error.
 
+> **OrthoFinder 3's 200-second stall timer.** OrthoFinder 3.1.3–3.1.5 stop with
+> `ERROR: Stalled for 200.0s` when 200 seconds pass without any species finishing its
+> initial processing, even though the work is still going. That happens with large genomes, and
+> no OrthoFinder option changes it ([davidemms/OrthoFinder#1024](https://github.com/davidemms/OrthoFinder/issues/1024)).
+> The timer is set in `orthogroups/gathering.py` (`DoOrthogroups`), which hands it on to
+> `utils/parallel_task_manager.py` (`ManageQueueNew`). excon's `ORTHOFINDER_PHYLO` raises it
+> to 3,600 seconds before OrthoFinder starts, so the pipeline's own OrthoFinder 3.1.4 run is
+> not affected. Running OrthoFinder 3 yourself, or in another pipeline, it is. If an
+> OrthoFinder 3 run still fails or stalls, `--orthofinder_v2` runs OrthoFinder 2.5.5
+> instead, which has no such timer. (The OrthoFinder 3.1.4 that excon uses has no
+> `--old-version` option to fall back from within OrthoFinder 3.)
+
 ### Species tree with IQ-TREE2 (optional)
 
 By default the species tree passed to CAFE5 is the one OrthoFinder infers itself (STAG/STRIDE

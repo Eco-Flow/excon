@@ -38,6 +38,7 @@ include { IQTREE as IQTREE_SPECIES_TREE } from './modules/nf-core/iqtree/main.nf
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main.nf'
 
 include { CAFE_PREP } from './modules/local/cafe_prep.nf'
+include { CAFE_LARGE_FAMILY_COUNTS } from './modules/local/cafe_large_family_counts.nf'
 include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
 include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
@@ -59,19 +60,19 @@ include { OG_ANNOTATION_SUMMARY } from './modules/local/og_annotation_summary.nf
 // nextflow.config.
 params {
     outdir                    : String
-    input                     : String
+    input                     : String?
     chromo_go                 : Boolean
     chromo_go_max_chroms      : Integer
     go_cutoff                 : Float
     go_type                   : String
     go_max_plot               : Integer
     go_algo                   : String
-    forks                     : Integer
+    forks                     : Integer?
     clean                     : Boolean
-    config_profile_description : String
-    config_profile_contact     : String
-    config_profile_url         : String
-    custom_config             : String
+    config_profile_description : String?
+    config_profile_contact     : String?
+    config_profile_url         : String?
+    custom_config             : String?
     max_memory                : String
     max_cpus                  : Integer
     max_time                  : String
@@ -83,27 +84,27 @@ params {
     stats                     : Boolean
     busco_mode                : String
     busco_lineage             : String
-    busco_lineages_path       : String
-    busco_config              : String
+    busco_lineages_path       : String?
+    busco_config              : String?
     internal_stop_action      : String
-    input_tree                : String
-    input_orthogroups         : String
-    orthofinder_blast_results : String
-    orthofinder_results       : String
-    proteome_dir              : String
+    input_tree                : String?
+    input_orthogroups         : String?
+    orthofinder_blast_results : String?
+    orthofinder_results       : String?
+    proteome_dir              : String?
     orthofinder_v2            : Boolean
-    orthofinder_method        : String
-    orthofinder_msa_prog      : String
-    orthofinder_search        : String
-    orthofinder_tree          : String
+    orthofinder_method        : String?
+    orthofinder_msa_prog      : String?
+    orthofinder_search        : String?
+    orthofinder_tree          : String?
     iqtree_species_tree       : Boolean
-    iqtree_outgroup           : String
-    iqtree_args               : String
-    iqtree_partition_model    : String
-    iqtree_partition_file     : String
-    cafe_clade                : String
-    cafe_species              : String
-    tree_calibrations         : String
+    iqtree_outgroup           : String?
+    iqtree_args               : String?
+    iqtree_partition_model    : String?
+    iqtree_partition_file     : String?
+    cafe_clade                : String?
+    cafe_species              : String?
+    tree_calibrations         : String?
     chronos_model             : String
     chronos_lambda            : Float
     chronos_rate_categories   : Integer
@@ -114,20 +115,20 @@ params {
     cafe_max_differential     : Integer
     cafe_filter_first         : Boolean
     cafe_max_k                : Integer
-    orthofinder_msa_dir       : String
-    orthofinder_genetree_dir  : String
-    cafe_focus_clades         : String
+    orthofinder_msa_dir       : String?
+    orthofinder_genetree_dir  : String?
+    cafe_focus_clades         : String?
     run_eggnog                : Boolean
-    eggnog_data_dir           : String
-    eggnog_target_taxa        : String
-    eggnog_tax_scope          : String
-    eggnog_evalue             : Float
-    eggnog_score              : Float
-    eggnog_pident             : Float
-    eggnog_query_cover        : Float
-    eggnog_subject_cover      : Float
-    eggnog_rep_species        : String
-    predownloaded_gofiles     : String
+    eggnog_data_dir           : String?
+    eggnog_target_taxa        : String?
+    eggnog_tax_scope          : String?
+    eggnog_evalue             : Float?
+    eggnog_score              : Float?
+    eggnog_pident             : Float?
+    eggnog_query_cover        : Float?
+    eggnog_subject_cover      : Float?
+    eggnog_rep_species        : String?
+    predownloaded_gofiles     : String?
 }
 
 workflow {
@@ -479,7 +480,18 @@ workflow {
             ch_tree_for_prep
         )
 
-        // High-differential families filtered out during prep are run one at a time,
+        // Families CAFE_PREP left out for their size (>= 100 copies in a species, or, on
+        // its retries, over the --cafe_max_differential spread) go to the large-family
+        // track. Built in its own step, from CAFE_PREP's outputs, so it can change without
+        // re-running CAFE_PREP and every CAFE5 run after it.
+        CAFE_LARGE_FAMILY_COUNTS (
+            CAFE_PREP.out.N0_table,
+            CAFE_PREP.out.filtering_report,
+            CAFE_PREP.out.cafe_tree
+        )
+        CAFE_LARGE_FAMILY_COUNTS.out.summary.subscribe { f -> log.info(f.text.trim()) }
+
+        // Large families are run one at a time,
         // each fitting its own lambda, rather than forcing one lambda to explain every
         // excluded family at once (which never converged). Split with splitCsv/
         // collectFile — entirely inside Nextflow's own dataflow engine — rather than
@@ -488,11 +500,9 @@ workflow {
         // glob can race the writes and see only some of the files. splitCsv/
         // collectFile emit each family as its own channel item directly, so there is
         // no separate directory listing step to race. Named by HOG id so CAFE_RUN_LARGE
-        // task tags and output directories stay readable. Only produces items when
-        // cafe_prep_filtered.R was triggered (attempt > 1) and found families above the
-        // differential threshold — otherwise large_counts is empty and nothing
-        // downstream of it fires.
-        ch_large_family_tables = CAFE_PREP.out.large_counts
+        // task tags and output directories stay readable. Produces nothing when no family
+        // was left out for its size, and then nothing downstream of it fires.
+        ch_large_family_tables = CAFE_LARGE_FAMILY_COUNTS.out.large_counts
             .splitCsv( header: true, sep: '\t' )
             .collectFile { row ->
                 def hog    = (row.HOG as String).replaceAll(/[^A-Za-z0-9_.-]/, '_')
@@ -520,6 +530,15 @@ workflow {
         MERGE_CAFE_LARGE_RESULTS (
             CAFE_RUN_LARGE.out.results.collect().filter { it.size() > 0 }
         )
+
+        // Say how the large-family track went, including when nothing converged
+        ch_large_family_tables.count()
+            .combine( CAFE_RUN_LARGE.out.results.count() )
+            .filter { n, fitted -> n > 0 }
+            .subscribe { n, fitted ->
+                def msg = "Large-family track: ${fitted} of ${n} families fitted; see cafe/large_families/ (CAFE_RUN_LARGE logs say why any were dropped)"
+                fitted < n ? log.warn(msg) : log.info(msg)
+            }
 
 
         k_values = Channel.of( 1..params.cafe_max_k )
@@ -555,10 +574,14 @@ workflow {
         // Compare uniform vs Poisson at best k, emit the winning directory
         CAFE_MODEL_COMPARE (
             ch_best_uniform,
-            CAFE_RUN_BEST.out.results
+            CAFE_RUN_BEST.out.results,
+            CAFE_PREP.out.prepared_counts
         )
 
         ch_best_results = CAFE_MODEL_COMPARE.out.best_results
+
+        // Also published to cafe/model_comparison/; shown here so they aren't missed
+        CAFE_MODEL_COMPARE.out.warnings.flatten().subscribe { f -> log.warn(f.text.trim()) }
 
         CAFE_PLOT ( ch_best_results )
         CAFE_NODE_GUIDE ( ch_best_results )
