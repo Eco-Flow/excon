@@ -31,7 +31,7 @@ The general pipeline logic is as follows:
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
 * Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[EXTRACT_SINGLE_COPY]`, `[ALIGN_SINGLE_COPY]`, `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
-* Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it with `ape::chronos` when node ages are supplied `[DATE_TREE]` (see `--tree_calibrations`).
+* Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it when node ages are supplied, with `ape::chronos` `[DATE_TREE]` or IQ-TREE's LSD2 (subworkflow `[LSD2_DATING]`: `[LSD2_PREPARE]`, `[DATE_TREE_LSD2]`, `[LSD2_CHECK]`) (see `--tree_calibrations`, `--dating_method`).
 * Optionally restricts the analysis to one clade `[PRUNE_TREE]` (see `--cafe_clade` / `--cafe_species`).
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
@@ -264,6 +264,7 @@ and the rest of the CAFE options behave exactly as before.
 | `--iqtree_outgroup` | Comma-separated tip name(s) to root the tree on, matching the sample names in your input CSV. Must be monophyletic in the inferred tree. If unset, the tree is midpoint-rooted. | `null` (midpoint) |
 | `--iqtree_args` | Extra arguments appended to the IQ-TREE2 command line, e.g. `-mset LG,WAG,JTT` to restrict ModelFinder's candidate matrices, or `--gcf` for gene concordance factors. | `null` |
 | `--iqtree_partition_file` | Reuse an existing partition file instead of the generated one, so model selection is not repeated. A previous run's `iqtree/species_tree.best_scheme` records the model chosen for each partition; the coordinates must match the supermatrix, so only use a file produced from the same orthogroups. Supplying it suppresses the default `-m MFP` | `null` |
+| `--iqtree_min_occupancy` | Smallest fraction of species a single-copy orthogroup must contain. `1` keeps only orthogroups with every species exactly once; with many species few pass, so e.g. `0.9` also keeps those lacking up to 10% of species (never fewer than 4 present) and fills the missing species with gaps. Species present must still have exactly one copy. | `1` |
 | `--iqtree_partition_model` | Model written per partition. `AA` lets ModelFinder pick one per orthogroup; set e.g. `LG+F+G4` to fix it and skip model selection. With a partition file the model has to be set here rather than through `--iqtree_args '-m ...'`. | `AA` |
 
 ```bash
@@ -433,6 +434,22 @@ Outputs are written to `results/species_tree/`:
 `--chronos_model` (`discrete`, `correlated`, `relaxed`), `--chronos_lambda` and
 `--chronos_rate_categories` tune the fit.
 
+**Dating with IQ-TREE (LSD2) instead.** With `--iqtree_species_tree`, `--dating_method lsd2`
+dates the IQ-TREE tree with IQ-TREE's least-square dating (`--date`), from the same calibration
+table. The supermatrix the tree was built from gives LSD2 its branch-length variances, and the
+tree's branch lengths, topology and root are kept. LSD2 needs at least one calibration with an
+exact age (`age_min` equal to `age_max`); other calibrations can be bounds. The same three
+files are written to `results/species_tree/`, with IQ-TREE's own output (`dated.timetree.nex`,
+`dated.timetree.lsd`, `dated.log`) in `results/species_tree/lsd2/`. LSD2 needs the alignment,
+so OrthoFinder's tree can only be dated with `chronos`.
+
+Before dating, either method stops if a calibration names a tip that isn't in the tree, if two
+calibrations fall on the same node, if `age_min` is above `age_max`, or if a calibrated node
+lies inside another that it can't be younger than. After dating, both check that the tree is
+ultrametric and binary with positive branch lengths, and that every calibrated node is within
+its bounds. LSD2 also checks that the topology and root are unchanged, and stops on any LSD2
+warning.
+
 > **Dating failures are fatal, by design.** `ape::chronos` reports non-convergence as a
 > *warning* and still returns a tree, so the pipeline treats any chronos warning as an error
 > rather than publishing a tree that did not converge. It also checks that the fitted node ages
@@ -451,6 +468,7 @@ Outputs are written to `results/species_tree/`:
 | `--cafe_max_differential` | Maximum gene count differential (max − min copies) for CAFE filtering. `CAFE_PREP` retries with this threshold, halving it on each subsequent retry | `50` |
 | `--cafe_filter_first` | Apply that threshold from the **first** attempt rather than only on retries | `false` |
 | `--tree_calibrations` | TSV of node ages used to time-calibrate the species tree with `ape::chronos`, so CAFE5's λ is per million years. See [Time-calibrating the species tree](#time-calibrating-the-species-tree-optional). Skips `--tree_scale_factor` and `chronoMPL()`. | `null` |
+| `--dating_method` | `chronos` (`ape::chronos`, any species tree) or `lsd2` (IQ-TREE's LSD2; needs `--iqtree_species_tree` and at least one exact age) | `chronos` |
 | `--chronos_model` | `ape::chronos` rate model: `discrete`, `correlated` or `relaxed` | `discrete` |
 | `--chronos_lambda` | `ape::chronos` rate-smoothing parameter | `1` |
 | `--chronos_rate_categories` | Rate categories for the `discrete` model | `10` |
@@ -618,6 +636,8 @@ Please select one of the following profiles when running the pipeline.
 * `docker` - This profile uses the container software Docker when running the pipeline. This container software requires root permissions so is used when running on cloud infrastructure or your local machine (depending on permissions). **Please Note:** You must have Docker installed to use this profile.
 * `singularity` - This profile uses the container software Singularity when running the pipeline. This container software does not require root permissions so is used when running on on-premise HPCs or you local machine (depending on permissions). **Please Note:** You must have Singularity installed to use this profile.
 * `apptainer` - This profile uses the container software Apptainer when running the pipeline. This container software does not require root permissions so is used when running on on-premise HPCs or you local machine (depending on permissions). **Please Note:** You must have Apptainer installed to use this profile.
+
+**No internet on your compute nodes?** See [docs/offline.md](docs/offline.md). `utils/pull_singularity_images.sh` downloads every container image the pipeline uses, so they can be used offline. Genomes, the eggNOG database and BUSCO lineages can all be supplied locally.
 
 ### Optional Profiles
 

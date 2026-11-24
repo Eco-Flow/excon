@@ -5,6 +5,7 @@ include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-sch
 include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { DATE_TREE } from './modules/local/date_tree.nf'
 include { PRUNE_TREE } from './modules/local/prune_tree.nf'
+include { LSD2_DATING } from './subworkflows/local/lsd2_dating'
 include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
@@ -104,9 +105,11 @@ params {
     iqtree_args               : String?
     iqtree_partition_model    : String?
     iqtree_partition_file     : String?
+    iqtree_min_occupancy      : Float
     cafe_clade                : String?
     cafe_species              : String?
     tree_calibrations         : String?
+    dating_method             : String
     chronos_model             : String
     chronos_lambda            : Float
     chronos_rate_categories   : Integer
@@ -189,6 +192,12 @@ workflow {
       error "ERROR: give either --cafe_clade or --cafe_species, not both."
    }
 
+   if (!(params.dating_method in ['chronos', 'lsd2'])) {
+      error "ERROR: --dating_method must be 'chronos' or 'lsd2', got '${params.dating_method}'."
+   }
+   if (params.dating_method == 'lsd2' && !(params.tree_calibrations && params.iqtree_species_tree)) {
+      error "ERROR: --dating_method lsd2 dates the IQ-TREE species tree with IQ-TREE's LSD2, which needs the alignment the tree was built from, so it needs --iqtree_species_tree and --tree_calibrations. Use --dating_method chronos to date OrthoFinder's tree."
+   }
    if (!(params.internal_stop_action in ['strip', 'drop', 'longest_orf'])) {
       error "ERROR: --internal_stop_action must be 'strip', 'drop' or 'longest_orf', got '${params.internal_stop_action}'."
    }
@@ -213,6 +222,9 @@ workflow {
       }
       if (params.iqtree_args?.toLowerCase() in ['null', 'none', 'false']) {
          error "ERROR: --iqtree_args was given the literal value '${params.iqtree_args}', which would be passed to IQ-TREE verbatim. Omit the option entirely."
+      }
+      if (!(params.iqtree_min_occupancy > 0 && params.iqtree_min_occupancy <= 1)) {
+         error "ERROR: --iqtree_min_occupancy must be greater than 0 and at most 1, got ${params.iqtree_min_occupancy}."
       }
    }
 
@@ -481,11 +493,19 @@ workflow {
             // Calibrate here instead, so the tree reaching CAFE5 is on a time axis
             // and lambda is per Myr. Works for the OrthoFinder tree and the
             // IQ-TREE one alike, since both arrive on ch_speciestree.
-            DATE_TREE (
-                ch_speciestree,
-                Channel.fromPath(params.tree_calibrations, checkIfExists: true)
-            )
-            ch_tree_for_prep = DATE_TREE.out.dated_tree
+            ch_calibrations = Channel.fromPath(params.tree_calibrations, checkIfExists: true)
+            if (params.dating_method == 'lsd2') {
+                // IQ-TREE's LSD2 needs the alignment the tree came from: the supermatrix
+                LSD2_DATING (
+                    CONCAT_SINGLE_COPY.out.alignment.map { meta, aln -> aln },
+                    ch_speciestree,
+                    ch_calibrations
+                )
+                ch_tree_for_prep = LSD2_DATING.out.dated_tree
+            } else {
+                DATE_TREE ( ch_speciestree, ch_calibrations )
+                ch_tree_for_prep = DATE_TREE.out.dated_tree
+            }
         } else {
             RESCALE_TREE ( ch_speciestree )
             ch_tree_for_prep = RESCALE_TREE.out.rescaled_tree
