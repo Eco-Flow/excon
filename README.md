@@ -620,6 +620,7 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 | `singularity` | Run with Singularity containers |
 | `conda` | Run with Conda environments |
 | `test` | The quick end-to-end test that CI runs: the 10 *Chlamydia* genomes of `test_chlamydia`, fetched directly from NCBI's FTP site, with CAFE's k-sweep up to k = 3. Every step runs, CAFE5 included, apart from the NCBI download step |
+| `test_proteins` | `test` with 5 of the 10 species given as NCBI proteomes (`--input_proteins`) and 5 as genomes, so one run covers both kinds of input. CI runs it too |
 | `test_bacteria` | Fastest smoke test: 4 small bacterial genomes. Exercises every step, but CAFE5 does not converge on it (see below) |
 | `test_chlamydia` | 10 *Chlamydia* genomes. Slower than `test_bacteria`, but closely related enough for CAFE5 to fit a model, so it exercises the CAFE stages end to end |
 | `test_small` | Test run with small insect genomes |
