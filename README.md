@@ -30,7 +30,7 @@ The general pipeline logic is as follows:
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
 * Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
 * Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[EXTRACT_SINGLE_COPY]`, `[ALIGN_SINGLE_COPY]`, `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
-* Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it with `ape::chronos` when node ages are supplied `[DATE_TREE]` (see `--tree_calibrations`).
+* Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it when node ages are supplied, with `ape::chronos` `[DATE_TREE]` or IQ-TREE's LSD2 `[LSD2_PREPARE]`, `[DATE_TREE_LSD2]`, `[LSD2_CHECK]` (see `--tree_calibrations`, `--dating_method`).
 * Optionally restricts the analysis to one clade `[PRUNE_TREE]` (see `--cafe_clade` / `--cafe_species`).
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
