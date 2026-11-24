@@ -2,6 +2,8 @@
 use warnings;
 use strict;
 
+# Standalone helper, not called by any pipeline module. It reads mRNA lines only, so the
+# AUGUSTUS "transcript" models of BRAKER-style annotations are skipped.
 
 print "Please be in folder with *noquest.gff3 file\n\n";
 

@@ -9,7 +9,7 @@ process CAFE_RUN {
 
     output:
     tuple val(meta), path("Out_${meta.id}"), emit: results
-    tuple val("${task.process}"), val('cafe'), val('4.2.1'), emit: versions_cafe, topic: versions
+    tuple val("${task.process}"), val('cafe5'), val('1.1.0'), emit: versions_cafe, topic: versions
 
     script:
     def args = task.ext.args ?: ''

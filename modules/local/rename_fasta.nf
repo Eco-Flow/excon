@@ -15,6 +15,10 @@ process RENAME_FASTA {
     tuple val(meta), path("${meta.id}.internal_stop_codons.tsv"), emit: internal_stop_report, optional: true
     tuple val("${task.process}"), val('python'), eval("python3 --version | sed 's/Python //'"), emit: versions, topic: versions
 
+    // Only mRNA lines are read below, so the AUGUSTUS "transcript" models of BRAKER-style
+    // annotations are not in tran_to_gene. Their IDs (g1.t1) still map to the right gene
+    // through the .tN fallback. This is deliberately left alone: editing the script
+    // changes this task's hash, so -resume would re-run OrthoFinder and everything after it.
     script:
     """
     python3 <<EOF

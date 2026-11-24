@@ -358,11 +358,21 @@ foreach my $key ( keys %Gene_Go_Hash ){
     print $outhandle3 "selGenes<-Chop.WGCNA2Gene\$",$key,"\n";
     print $outhandle3 "inGenes <- factor(as.integer(names(Chop.gene2GO) %in% selGenes))\n";
     print $outhandle3 "names(inGenes) <- names(Chop.gene2GO)\n";
+    # topGO stops with "allGenes must be a factor with 2 levels" if none of the group's genes
+    # has a GO annotation, which would end the R session and lose every group after it.
+    print $outhandle3 "if (nlevels(inGenes) < 2) {\n";
+    print $outhandle3 "    message(\"Skipping ",$key,": none of its genes has a GO annotation\")\n";
+    print $outhandle3 "} else {\n";
     
+    # GenTable() returns every scored term, not a top N, so p.adjust() corrects over all
+    # terms tested. Its topGOresult column is text (e.g. "< 1e-30", which p.adjust() turns
+    # into NA), so it is replaced by the numeric scores. An ontology with no annotated genes
+    # never gets here: new("topGOdata") already fails for it.
     #BP
     print $outhandle3 "GOdata <- new(\"topGOdata\", ontology=\"BP\", allGenes=inGenes, annot=annFUN.gene2GO, gene2GO=Chop.gene2GO)\n";
     print $outhandle3 "result <- runTest(GOdata, algorithm = \"$algo\", statistic = \"$stat\")\n";
-    print $outhandle3 "allRes_BP <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50, numChar = 200)\n";
+    print $outhandle3 "allRes_BP <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = length(score(result)), numChar = 200)\n";
+    print $outhandle3 "allRes_BP\$topGOresult <- score(result)[allRes_BP\$GO.ID]\n";
     foreach my $meths (@methods){
 	print $outhandle3 "allRes_BP\$",$meths,"<-p.adjust(allRes_BP\$topGOresult, method = \"",$meths,"\")\n";
     }
@@ -372,7 +382,8 @@ foreach my $key ( keys %Gene_Go_Hash ){
     #MF
     print $outhandle3 "GOdata <- new(\"topGOdata\", ontology=\"MF\", allGenes=inGenes, annot=annFUN.gene2GO, gene2GO=Chop.gene2GO)\n";
     print $outhandle3 "result <- runTest(GOdata, algorithm = \"$algo\", statistic = \"$stat\")\n";
-    print $outhandle3 "allRes_MF <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50, numChar = 200)\n";
+    print $outhandle3 "allRes_MF <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = length(score(result)), numChar = 200)\n";
+    print $outhandle3 "allRes_MF\$topGOresult <- score(result)[allRes_MF\$GO.ID]\n";
     foreach my $meths (@methods){
 	print $outhandle3 "allRes_MF\$",$meths,"<-p.adjust(allRes_MF\$topGOresult, method = \"",$meths,"\")\n";
     }
@@ -382,7 +393,8 @@ foreach my $key ( keys %Gene_Go_Hash ){
     #CC
     print $outhandle3 "GOdata <- new(\"topGOdata\", ontology=\"CC\", allGenes=inGenes, annot=annFUN.gene2GO, gene2GO=Chop.gene2GO)\n";
     print $outhandle3 "result <- runTest(GOdata, algorithm = \"$algo\", statistic = \"$stat\")\n";
-    print $outhandle3 "allRes_CC <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = 50, numChar = 200)\n";
+    print $outhandle3 "allRes_CC <- GenTable(GOdata, topGOresult = result,orderBy = \"topGOresult\", ranksOf = \"topGOresult\", topNodes = length(score(result)), numChar = 200)\n";
+    print $outhandle3 "allRes_CC\$topGOresult <- score(result)[allRes_CC\$GO.ID]\n";
     foreach my $meths (@methods){
 	print $outhandle3 "allRes_CC\$",$meths,"<-p.adjust(allRes_CC\$topGOresult, method = \"",$meths,"\")\n";
     }
@@ -395,6 +407,7 @@ foreach my $key ( keys %Gene_Go_Hash ){
     print $outhandle3 "f.sub<-x.sub[sort.list(x.sub\$none),]\n";
     print $outhandle3 "e.sub <- subset(f.sub, FoldChange > ",$sort_enrich,")\n";
     print $outhandle3 "write.table(e.sub, \"$species\_$key\_res.tab\", sep=\"\\t\", quote=FALSE, eol=\"\\n\", row.names=F)   \n";
+    print $outhandle3 "}\n";
     my $out_name="$species\_$key\_res.tab";
     push (@ALL_made_files, $out_name);
 }
