@@ -30,7 +30,9 @@ Many clusters don't allow long-running processes on login nodes. Ask your admini
    utils/pull_singularity_images.sh /shared/path/excon_images
    ```
 
-   It lists the image of every step in the pipeline with `nextflow inspect`, whether or not your run uses that step. It then pulls each image under the file name Nextflow looks for. Re-running it only fetches what is missing. Use `--dry-run` to see the list first, and `--engine apptainer` if you have Apptainer and Singularity together.
+   It lists the image of every step in the pipeline with `nextflow inspect`, whether or not your run uses that step. It then pulls each image under the file name Nextflow looks for. Use `--dry-run` to see the list first, and `--engine apptainer` if you have Apptainer and Singularity together.
+
+   The script names no image or version itself: the images and the registry (`quay.io`, from the profile's `registry` setting) come from the pipeline's own config. So it stays correct as excon updates its tools, but **re-run it after you update excon** (`git pull` or a new release): steps whose tool version changed need new images. Re-running only fetches the images that are missing, and old ones can be deleted. Each pull request's CI checks that the script's file names still match the ones Nextflow uses.
 
    Running Nextflow here also downloads Nextflow's own files and plugins into `~/.nextflow`. That directory needs to be readable from the offline nodes (or copy it there, or set `NXF_HOME` to a shared path for both runs).
 

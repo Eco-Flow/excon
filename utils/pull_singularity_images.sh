@@ -14,25 +14,32 @@
 #
 # Options:
 #   --dry-run        list the images and the file names, download nothing
+#   --list           print <image URL><TAB><file name> for every image, nothing else
+#                    (no directory needed; CI uses it to check the names)
 #   --engine NAME    'singularity' or 'apptainer' (default: whichever is installed)
-#   --registry HOST  registry for images named without one (default: quay.io,
-#                    as set by the pipeline's singularity/apptainer profiles)
+#   --registry HOST  registry for images named without one (default: read from
+#                    the pipeline's singularity/apptainer profile)
 #
-# The image list comes from `nextflow inspect`, which lists the container of
-# every process in the pipeline, used or not, so one cache serves any options.
+# Nothing here names an image or a version: the list comes from `nextflow
+# inspect` on this copy of excon, which gives the container of every process,
+# used or not. After updating excon, run it again; it only fetches the images
+# you don't have yet. CI checks that the file names it gives match the ones
+# Nextflow itself uses (.github/workflows/nf-test.yml).
 
 set -euo pipefail
 
-usage() { sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 dry_run=false
+list_only=false
 engine=""
-registry="quay.io"
+registry=""
 cache_dir=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --dry-run)  dry_run=true ;;
+        --list)     list_only=true ;;
         --engine)   engine="$2"; shift ;;
         --registry) registry="$2"; shift ;;
         -h|--help)  usage 0 ;;
@@ -42,9 +49,9 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
-[ -n "$cache_dir" ] || { echo "ERROR: give the directory to download the images into" >&2; usage 1; }
+$list_only || [ -n "$cache_dir" ] || { echo "ERROR: give the directory to download the images into" >&2; usage 1; }
 
-if [ -z "$engine" ] && ! $dry_run; then
+if [ -z "$engine" ] && ! $dry_run && ! $list_only; then
     if command -v singularity >/dev/null 2>&1; then engine=singularity
     elif command -v apptainer >/dev/null 2>&1; then engine=apptainer
     else echo "ERROR: neither singularity nor apptainer is on the PATH" >&2; exit 1
@@ -57,9 +64,18 @@ pipeline_dir="$(cd "$(dirname "$0")/.." && pwd)"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
+# The registry the pipeline's profile prefixes to image names without one
+# (singularity.registry / apptainer.registry), unless given with --registry
+profile="${engine:-singularity}"
+if [ -z "$registry" ]; then
+    registry=$( (cd "$work" && nextflow config "$pipeline_dir" -profile "$profile" -flat 2>/dev/null) \
+        | sed -n "s/^${profile}\.registry *= *'\(.*\)'.*/\1/p" | head -n1 )
+    [ -n "$registry" ] || echo "WARNING: no ${profile}.registry in the pipeline's config; images named without a registry are taken from Docker Hub" >&2
+fi
+
 echo "Listing the pipeline's containers with nextflow inspect ..." >&2
 # inspect prints the JSON, then the pipeline's own completion line.
-( cd "$work" && nextflow inspect "$pipeline_dir/main.nf" -profile "${engine:-singularity}" --outdir "$work/out" ) \
+( cd "$work" && nextflow inspect "$pipeline_dir/main.nf" -profile "$profile" --outdir "$work/out" ) \
     > "$work/inspect.txt"
 
 # Resolve each container as Nextflow does (ContainerHandler.normalizeSingularityImageName
@@ -89,6 +105,8 @@ for proc in data["processes"]:
         ext, name = '.sif', name[:-4]
     print(img + "\t" + name.replace(':', '-').replace('/', '-') + ext)
 PY
+
+if $list_only; then cat "$work/images.tsv"; exit 0; fi
 
 n=$(wc -l < "$work/images.tsv" | tr -d ' ')
 echo "$n images" >&2
