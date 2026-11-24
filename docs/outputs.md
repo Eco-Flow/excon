@@ -173,13 +173,14 @@ this tree rather than the OrthoFinder one in `results/orthofinder_cafe/`.
 | `supermatrix/supermatrix.faa` | Concatenated single-copy orthogroup alignment, one sequence per species |
 | `supermatrix/partitions.txt` | Partition boundaries in the supermatrix, one per orthogroup |
 
-With `--tree_calibrations`, the same directory also holds the time-calibrated tree:
+With `--tree_calibrations`, the same directory also holds the time-calibrated tree, dated with `ape::chronos` or, with `--dating_method lsd2`, IQ-TREE's LSD2:
 
 | File | Description |
 |------|-------------|
 | `SpeciesTree_dated.nwk` | Ultrametric tree with branch lengths in millions of years — the tree CAFE5 receives |
 | `dating_calibrations.tsv` | Each calibration, the node it resolved to, and the age actually fitted |
 | `dating_qc.tsv` | Model settings, root age, shortest branch, ultrametric/binary checks |
+| `lsd2/dated.timetree.nex`, `lsd2/dated.timetree.lsd`, `lsd2/dated.log` | With `--dating_method lsd2`: IQ-TREE's time tree (NEXUS, branch lengths in time units), LSD2 report and run log |
 
 With `--cafe_clade` or `--cafe_species`, the pruned tree actually given to CAFE5:
 

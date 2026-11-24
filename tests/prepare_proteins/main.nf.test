@@ -1,0 +1,47 @@
+nextflow_process {
+
+    name "PREPARE_PROTEINS"
+    script "../../modules/local/prepare_proteins.nf"
+    process "PREPARE_PROTEINS"
+    tag "prepare_proteins"
+
+    // data/SpP.fa.gz: XP_001.1 MKVL.LLW. (stops written '.', as gffread -y does),
+    // XP_002.1 MKAAAAAAAA*LL*, XP_003.1 in lower case and then again (duplicate),
+    // XP_004.1 only a stop.
+
+    test("longest_orf: stops in either notation, duplicates and empty proteins") {
+        when {
+            params { internal_stop_action = 'longest_orf' }
+            process {
+                """
+                input[0] = [ [id: 'SpP'], file("${baseDir}/tests/prepare_proteins/data/SpP.fa.gz") ]
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.fasta[0][1]).readLines() ==
+                ['>XP_001.1', 'MKVL', '>XP_002.1', 'MKAAAAAAAA', '>XP_003.1', 'MKVWWW']
+            assert path(process.out.internal_stop_report[0][1]).readLines().drop(1) ==
+                ['XP_001.1\tlongest_orf\t8\t4', 'XP_002.1\tlongest_orf\t13\t10']
+            // Each protein maps to itself, so EGGNOG_TO_GO keeps IDs such as XP_001.1 whole
+            assert path(process.out.gff[0][1]).readLines().drop(1)*.split('\t')*.getAt(8) ==
+                ['ID=XP_001.1;Parent=XP_001.1', 'ID=XP_002.1;Parent=XP_002.1', 'ID=XP_003.1;Parent=XP_003.1']
+        }
+    }
+
+    test("drop: proteins with an internal stop are left out") {
+        when {
+            params { internal_stop_action = 'drop' }
+            process {
+                """
+                input[0] = [ [id: 'SpP'], file("${baseDir}/tests/prepare_proteins/data/SpP.fa.gz") ]
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.fasta[0][1]).readLines() == ['>XP_003.1', 'MKVWWW']
+        }
+    }
+}
