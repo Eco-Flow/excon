@@ -1,0 +1,51 @@
+nextflow_workflow {
+
+    name "LSD2 dating"
+    script "../main.nf"
+    workflow "LSD2_DATING"
+    tag "subworkflows"
+    tag "lsd2_dating"
+
+    // data/: an 800-column protein alignment simulated with IQ-TREE's AliSim on
+    // species_tree.nwk ((((A,B),(C,D)),(E,F)), rooted between ABCD and EF).
+    // calibrations.tsv: A+B 25-35 Ma, A+B+C+D exactly 60 Ma.
+
+    test("Dates the tree within the calibrations and keeps its root") {
+        when {
+            workflow {
+                """
+                input[0] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/supermatrix.phy")
+                input[1] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/species_tree.nwk")
+                input[2] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/calibrations.tsv")
+                """
+            }
+        }
+        then {
+            assert workflow.success
+            def rows = path(workflow.out.calibrations[0]).readLines().drop(1)*.split('\t')
+            def age = rows.collectEntries { [(it[0]): it[5] as double] }
+            assert age.ad == 60.0
+            assert age.ab >= 25.0 && age.ab <= 35.0
+            assert rows.every { it[6] == 'TRUE' }
+            // rooted between (A,B,C,D) and (E,F), as the input
+            def tree = path(workflow.out.dated_tree[0]).text
+            assert tree.contains('E') && tree.contains('F')
+        }
+    }
+
+    test("Stops before dating when nested calibrations conflict") {
+        when {
+            workflow {
+                """
+                input[0] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/supermatrix.phy")
+                input[1] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/species_tree.nwk")
+                input[2] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/calibrations_conflict.tsv")
+                """
+            }
+        }
+        then {
+            assert workflow.failed
+            assert workflow.stdout.any { it.contains('conflict') } || workflow.stderr.any { it.contains('conflict') }
+        }
+    }
+}

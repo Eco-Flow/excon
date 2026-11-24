@@ -1,0 +1,46 @@
+nextflow_pipeline {
+
+    name "Test pipeline with proteomes"
+    script "../main.nf"
+    tag "pipeline"
+    tag "proteins"
+    profile "test_proteins"
+
+    // -profile test_proteins: the 10 Chlamydia species of -profile test, 5 given as
+    // genomes + annotations (--input) and 5 as NCBI proteomes (--input_proteins).
+    // Not a snapshot: default.nf.test already snapshots the run's outputs; this
+    // checks that both kinds of input reach OrthoFinder and CAFE together.
+
+    test("-profile test_proteins: 5 species as genomes, 5 as proteomes") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+                // the CI runner's size (also set in conf/test.config)
+                max_cpus = 4
+                max_memory = '14.GB'
+            }
+        }
+
+        then {
+            def as_genomes  = ['Chlamydia_trachomatis', 'Chlamydia_muridarum', 'Chlamydia_suis', 'Chlamydia_caviae', 'Chlamydia_felis']
+            def as_proteins = ['Chlamydia_psittaci', 'Chlamydia_abortus', 'Chlamydia_pneumoniae', 'Chlamydia_pecorum', 'Chlamydia_gallinacea']
+            def ran = { name -> workflow.trace.succeeded().findAll { it.name.startsWith("${name} (") || it.name.contains(":${name} (") }*.name }
+
+            assert workflow.success
+            assertAll(
+                // each species went through its own path, once
+                { assert ran('PREPARE_PROTEINS').size() == 5 },
+                { assert as_proteins.every { sp -> ran('PREPARE_PROTEINS').any { it.contains(sp) } } },
+                { assert ran('RENAME_FASTA').size() == 5 },
+                { assert as_genomes.every { sp -> ran('RENAME_FASTA').any { it.contains(sp) } } },
+                // all 10 reached OrthoFinder as species of their own
+                { assert path("${params.outdir}/orthofinder_cafe/ortho_cafe/Orthogroups/Orthogroups.GeneCount.tsv").readLines()[0]
+                      .split('\t').findAll { it.startsWith('Chlamydia_') }.collect { it.replace('.clean', '') }.sort() == (as_genomes + as_proteins).sort() },
+                // and CAFE ran on their gene families
+                { assert path("${params.outdir}/cafe/base/Out_cafe/Base_results.txt").exists() },
+                { assert file("${params.outdir}/cafe/best").list().size() > 0 }
+            )
+        }
+    }
+}
