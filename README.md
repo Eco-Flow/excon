@@ -35,8 +35,8 @@ The general pipeline logic is as follows:
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
 * Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
-* Re-runs CAFE5 at the best k with Poisson birth-death (`-p`) `[CAFE_RUN_BEST]`.
-* Compares uniform vs Poisson model at the best k by likelihood, selects the winner `[CAFE_MODEL_COMPARE]`.
+* Re-runs CAFE5 at the best k with a Poisson root size distribution (`-p`) `[CAFE_RUN_BEST]`.
+* Compares uniform vs Poisson root at the best k by AIC, selects the winner `[CAFE_MODEL_COMPARE]`.
 * Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
 
 ### Optional — GO enrichment (`--run_eggnog` or `--predownloaded_gofiles`)
@@ -684,7 +684,7 @@ results/
 ├── cafe/
 │   ├── base/                        # CAFE_PREP outputs
 │   │   ├── hog_gene_counts.tsv      # Filtered gene count input to CAFE
-│   │   ├── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
+│   │   ├── hog_filtering_report.tsv # Why each family was kept for the main run or left out
 │   │   └── SpeciesTree_rooted_ultra.txt  # Ultrametric tree used by CAFE5
 │   ├── best/                        # Full CAFE5 results for the winning model (uniform or Poisson)
 │   ├── large_families/              # High-differential families, each run independently under its own lambda
