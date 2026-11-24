@@ -1,0 +1,30 @@
+nextflow_process {
+
+    name "CONCAT_SINGLE_COPY"
+    script "../../modules/local/concat_single_copy.nf"
+    process "CONCAT_SINGLE_COPY"
+    tag "single_copy"
+
+    // ../single_copy/data/alignments: OG1 (all 5 species), OG2 (no SpE), OG3 (SpA, SpD, SpE only),
+    // each 7 columns wide.
+
+    test("Occupancy 0.8 pads the missing species with gaps") {
+        when {
+            params { iqtree_min_occupancy = 0.8 }
+            process {
+                """
+                input[0] = [ [id: 'test'],
+                             file("${baseDir}/tests/single_copy/data/ortho"),
+                             file("${baseDir}/tests/single_copy/data/alignments") ]
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.partitions[0][1]).readLines() == ['AA, OG1 = 1-7', 'AA, OG2 = 8-14']
+            def fasta = path(process.out.alignment[0][1]).text
+            assert fasta.contains('>SpE\nMKV1LLW-------\n')
+            assert fasta.contains('>SpA\nMKV1LLWMKV2LLW\n')
+        }
+    }
+}

@@ -27,6 +27,7 @@ process CONCAT_SINGLE_COPY {
         -o supermatrix.faa \\
         -p partitions.txt \\
         --model '${model}' \\
+        --min-occupancy ${params.iqtree_min_occupancy} \\
         $args
     """
 
