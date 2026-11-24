@@ -9,13 +9,17 @@ proteomes hold the sequences, so taking the sequence from the proteome named by
 the column keeps the species assignment exact. Gene IDs are only unique within a
 species, so identifying species from the sequence headers alone is not reliable.
 
-An orthogroup is written only if it is strictly single-copy and complete: every
-species represented exactly once.
+An orthogroup is written only if it is strictly single-copy: every species in it
+represented exactly once. By default it must also be complete (every species
+present); --min-occupancy lowers that to a fraction of the species, and the
+species an orthogroup lacks are left out of its FASTA (concat_single_copy.py
+fills them with gaps).
 
 Pure standard library (no BioPython/ete3) to match the rest of bin/.
 """
 
 import argparse
+import math
 import os
 import sys
 from collections import OrderedDict
@@ -75,8 +79,13 @@ def main():
                         help='Directory of per-species proteome FASTA files')
     parser.add_argument('-o', '--out-dir', required=True,
                         help='Output directory for per-orthogroup FASTA files')
+    parser.add_argument('--min-occupancy', type=float, default=1.0,
+                        help='Smallest fraction of species an orthogroup must contain, each '
+                             'exactly once (default: 1.0, every species)')
 
     args = parser.parse_args()
+    if not 0 < args.min_occupancy <= 1:
+        sys.exit("ERROR: --min-occupancy must be in (0, 1], got %s" % args.min_occupancy)
 
     with open(args.orthogroups) as fh:
         header = fh.readline().rstrip('\n\r').split('\t')
@@ -86,11 +95,17 @@ def main():
     if not species:
         sys.exit("ERROR: no species columns found in %s" % args.orthogroups)
 
+    # Round up, so e.g. 0.9 of 25 species needs 23 present, never 22. At least 4,
+    # the fewest taxa that carry any information about an unrooted topology.
+    min_species = max(min(4, len(species)),
+                      math.ceil(args.min_occupancy * len(species) - 1e-9))
+
     # Work out the single-copy orthogroups first, so only the genes they contain are
     # read from the proteomes. Reading every proteome in full scales with the total
     # gene count across the analysis, which is far more than is needed here.
     single_copy_rows = []
     skipped_not_single = 0
+    skipped_low_occupancy = 0
     wanted = {sp: set() for sp in species}
 
     for fields in rows:
@@ -101,12 +116,16 @@ def main():
         single_copy = True
         for sp, cell in zip(species, cells):
             ids = [g.strip() for g in cell.split(',') if g.strip()]
-            if len(ids) != 1:
+            if len(ids) > 1:
                 single_copy = False
                 break
-            genes[sp] = ids[0]
-        if not single_copy or len(genes) != len(species):
+            if ids:
+                genes[sp] = ids[0]
+        if not single_copy:
             skipped_not_single += 1
+            continue
+        if len(genes) < min_species:
+            skipped_low_occupancy += 1
             continue
         single_copy_rows.append((og, genes))
         for sp, gene in genes.items():
@@ -133,6 +152,8 @@ def main():
 
         records = []
         for sp in species:
+            if sp not in genes:
+                continue
             seq = proteomes[sp].get(genes[sp])
             if seq is None:
                 records = None
@@ -151,14 +172,17 @@ def main():
 
     if written == 0:
         sys.exit(
-            "ERROR: no single-copy orthogroups found across %d species. "
-            "A supermatrix cannot be built." % len(species)
+            "ERROR: no single-copy orthogroups found across %d species with at least %d "
+            "species present. A supermatrix cannot be built. With many species, try "
+            "--iqtree_min_occupancy below 1." % (len(species), min_species)
         )
 
     print("Single-copy orthogroups extracted")
     print("   Species:                     %d" % len(species))
+    print("   Minimum species present:     %d (occupancy %s)" % (min_species, args.min_occupancy))
     print("   Orthogroups written:         %d" % written)
     print("   Skipped (not single-copy):   %d" % skipped_not_single)
+    print("   Skipped (too few species):   %d" % skipped_low_occupancy)
     if missing_gene:
         print("   Skipped (gene not in proteome): %d" % missing_gene)
     print("   Output directory:            %s" % args.out_dir)

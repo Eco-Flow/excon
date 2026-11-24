@@ -103,6 +103,7 @@ params {
     iqtree_args               : String?
     iqtree_partition_model    : String?
     iqtree_partition_file     : String?
+    iqtree_min_occupancy      : Float
     cafe_clade                : String?
     cafe_species              : String?
     tree_calibrations         : String?
@@ -212,6 +213,9 @@ workflow {
       }
       if (params.iqtree_args?.toLowerCase() in ['null', 'none', 'false']) {
          error "ERROR: --iqtree_args was given the literal value '${params.iqtree_args}', which would be passed to IQ-TREE verbatim. Omit the option entirely."
+      }
+      if (!(params.iqtree_min_occupancy > 0 && params.iqtree_min_occupancy <= 1)) {
+         error "ERROR: --iqtree_min_occupancy must be greater than 0 and at most 1, got ${params.iqtree_min_occupancy}."
       }
    }
 
