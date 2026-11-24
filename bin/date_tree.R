@@ -88,6 +88,26 @@ resolve_tips <- function(spec, clade) {
   unname(resolved)
 }
 
+# Stop before dating when the ages can't all hold: a bound the wrong way round, or a
+# calibrated node that must be younger than a calibrated node inside it.
+check_calibration_ages <- function(tre, nodes, calib) {
+  bad <- calib$age_min > calib$age_max | calib$age_min <= 0
+  if (any(bad)) {
+    stop("Calibrations need 0 < age_min <= age_max: ", paste(calib$clade[bad], collapse = ", "))
+  }
+  tips_under <- lapply(nodes, function(n) extract.clade(tre, n)$tip.label)
+  for (i in seq_along(nodes)) for (j in seq_along(nodes)) {
+    if (i == j) next
+    # j inside i: i's oldest allowed age must exceed j's youngest
+    if (all(tips_under[[j]] %in% tips_under[[i]]) && calib$age_max[i] <= calib$age_min[j]) {
+      stop(sprintf("Calibrations '%s' (%.2f-%.2f Ma) and '%s' (%.2f-%.2f Ma) conflict: '%s' lies inside '%s', so it must be younger, but its minimum age is not below the maximum age of '%s'.",
+                   calib$clade[i], calib$age_min[i], calib$age_max[i],
+                   calib$clade[j], calib$age_min[j], calib$age_max[j],
+                   calib$clade[j], calib$clade[i], calib$clade[i]))
+    }
+  }
+}
+
 nodes <- integer(nrow(calib))
 for (i in seq_len(nrow(calib))) {
   nodes[i] <- getMRCA(tre, resolve_tips(calib$tips[i], calib$clade[i]))
@@ -96,6 +116,8 @@ if (anyDuplicated(nodes)) {
   dup <- calib$clade[duplicated(nodes) | duplicated(nodes, fromLast = TRUE)]
   stop("These calibrations resolve to the same node: ", paste(dup, collapse = ", "))
 }
+
+check_calibration_ages(tre, nodes, calib)
 
 cat("Calibrations:\n")
 for (i in seq_len(nrow(calib))) {

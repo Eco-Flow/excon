@@ -8,8 +8,11 @@ Takes a directory of aligned FASTA files, one per orthogroup, whose sequences ar
 named after their species (as written by extract_single_copy.py), plus the
 OrthoFinder Orthogroups.tsv giving the expected species list.
 
-An orthogroup is used only if it is strictly single-copy and complete: every
-species must be represented exactly once. Those orthogroups are concatenated in
+An orthogroup is used only if it is strictly single-copy: every species in it
+represented exactly once. By default every species must be present; with
+--min-occupancy below 1, an orthogroup missing some species is used when enough
+are present, and the missing species are filled with gaps ('-') across its
+partition, which IQ-TREE treats as missing data. Those orthogroups are concatenated in
 a stable order and a RAxML-style partition file is emitted alongside, so
 IQ-TREE can fit a separate model per orthogroup.
 
@@ -17,6 +20,7 @@ Pure standard library (no BioPython/ete3) to match the rest of bin/.
 """
 
 import argparse
+import math
 import os
 import sys
 from collections import OrderedDict
@@ -67,6 +71,9 @@ def main():
     parser.add_argument('--model', default='AA',
                         help="Model/datatype field written for each partition (default: AA, "
                              "letting IQ-TREE's ModelFinder choose per partition)")
+    parser.add_argument('--min-occupancy', type=float, default=1.0,
+                        help='Smallest fraction of species an orthogroup must contain '
+                             '(default: 1.0, every species)')
     parser.add_argument('--min-orthogroups', type=int, default=1,
                         help='Fail if fewer than this many usable orthogroups are found (default: 1)')
 
@@ -80,6 +87,11 @@ def main():
         sys.exit("ERROR: no species columns found in %s" % args.orthogroups)
     species = sorted(species)
     species_set = set(species)
+    if not 0 < args.min_occupancy <= 1:
+        sys.exit("ERROR: --min-occupancy must be in (0, 1], got %s" % args.min_occupancy)
+    # Same rule as extract_single_copy.py.
+    min_species = max(min(4, len(species)),
+                      math.ceil(args.min_occupancy * len(species) - 1e-9))
 
     alignment_files = sorted(
         os.path.join(args.msa_dir, f)
@@ -96,6 +108,8 @@ def main():
     skipped_multicopy = 0
     skipped_incomplete = 0
     skipped_ragged = 0
+    present = {sp: 0 for sp in species}
+    n_gap_cells = 0
 
     for path in alignment_files:
         og = os.path.splitext(os.path.basename(path))[0]
@@ -118,7 +132,7 @@ def main():
         if any(len(v) > 1 for v in by_species.values()):
             skipped_multicopy += 1
             continue
-        if len(by_species) != len(species):
+        if len(by_species) < min_species:
             skipped_incomplete += 1
             continue
 
@@ -131,7 +145,12 @@ def main():
         width = lengths.pop()
 
         for sp in species:
-            blocks[sp].append(by_species[sp][0])
+            if sp in by_species:
+                blocks[sp].append(by_species[sp][0])
+                present[sp] += 1
+            else:
+                blocks[sp].append('-' * width)
+                n_gap_cells += 1
         partitions.append((og, offset + 1, offset + width))
         offset += width
 
@@ -140,6 +159,13 @@ def main():
             "ERROR: only %d usable single-copy orthogroup(s) found across %d species "
             "(minimum required: %d). A supermatrix cannot be built."
             % (len(partitions), len(species), args.min_orthogroups)
+        )
+
+    absent = [sp for sp in species if present[sp] == 0]
+    if absent:
+        sys.exit(
+            "ERROR: %d species are in none of the %d orthogroups used, so the tree cannot "
+            "place them: %s" % (len(absent), len(partitions), ', '.join(absent))
         )
 
     with open(args.out_fasta, 'w') as fh:
@@ -161,6 +187,13 @@ def main():
     print("   Skipped (incomplete):    %d" % skipped_incomplete)
     if skipped_ragged:
         print("   Skipped (ragged):        %d" % skipped_ragged)
+    if n_gap_cells:
+        total = len(partitions) * len(species)
+        print("   Missing species x orthogroup cells (gaps): %d of %d (%.1f%%)"
+              % (n_gap_cells, total, 100.0 * n_gap_cells / total))
+        low = sorted(species, key=lambda sp: present[sp])[:5]
+        print("   Lowest-occupancy species: %s" % ', '.join(
+            "%s (%d/%d)" % (sp, present[sp], len(partitions)) for sp in low))
     print("   Alignment written to:    %s" % args.out_fasta)
     print("   Partitions written to:   %s" % args.out_partitions)
 
