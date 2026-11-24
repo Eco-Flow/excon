@@ -1,0 +1,48 @@
+nextflow_process {
+
+    name "EXTRACT_SINGLE_COPY"
+    script "../../modules/local/extract_single_copy.nf"
+    process "EXTRACT_SINGLE_COPY"
+    tag "single_copy"
+
+    // data/ortho/Orthogroups/Orthogroups.tsv, 5 species:
+    //   OG1 every species once; OG2 lacks SpE; OG3 lacks SpB and SpC; OG4 has two SpA genes.
+
+    test("Default occupancy keeps only orthogroups with every species once") {
+        when {
+            params { iqtree_min_occupancy = 1.0 }
+            process {
+                """
+                input[0] = [ [id: 'test'],
+                             file("${baseDir}/tests/single_copy/data/ortho"),
+                             files("${baseDir}/tests/single_copy/data/proteomes/*.fa") ]
+                """
+            }
+        }
+        then {
+            assert process.success
+            def dir = file(process.out.orthogroups[0][1])
+            assert dir.list().sort() == ['OG1.fa']
+        }
+    }
+
+    test("Occupancy 0.8 also keeps an orthogroup missing one of five species") {
+        when {
+            params { iqtree_min_occupancy = 0.8 }
+            process {
+                """
+                input[0] = [ [id: 'test'],
+                             file("${baseDir}/tests/single_copy/data/ortho"),
+                             files("${baseDir}/tests/single_copy/data/proteomes/*.fa") ]
+                """
+            }
+        }
+        then {
+            assert process.success
+            def dir = file(process.out.orthogroups[0][1])
+            // OG3 (3 of 5 species) is below 0.8; OG4 is multi-copy
+            assert dir.list().sort() == ['OG1.fa', 'OG2.fa']
+            assert file("${dir}/OG2.fa").readLines().findAll { it.startsWith('>') } == ['>SpA', '>SpB', '>SpC', '>SpD']
+        }
+    }
+}
