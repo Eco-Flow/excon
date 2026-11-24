@@ -4,8 +4,8 @@ include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-sch
 
 include { RESCALE_TREE } from './modules/local/rescale_tree.nf'
 include { DATE_TREE } from './modules/local/date_tree.nf'
-include { LSD2_PREPARE; DATE_TREE_LSD2; LSD2_CHECK } from './modules/local/date_tree_lsd2.nf'
 include { PRUNE_TREE } from './modules/local/prune_tree.nf'
+include { LSD2_DATING } from './subworkflows/local/lsd2_dating'
 include { CAFE_RUN } from './modules/local/cafe_run.nf'
 include { CAFE_MODEL_COMPARE } from './modules/local/cafe_model_compare.nf'
 include { CAFE_GO_PREP } from './modules/local/cafe_go_prep.nf'
@@ -460,15 +460,12 @@ workflow {
             ch_calibrations = Channel.fromPath(params.tree_calibrations, checkIfExists: true)
             if (params.dating_method == 'lsd2') {
                 // IQ-TREE's LSD2 needs the alignment the tree came from: the supermatrix
-                LSD2_PREPARE ( ch_speciestree, ch_calibrations )
-                DATE_TREE_LSD2 (
+                LSD2_DATING (
                     CONCAT_SINGLE_COPY.out.alignment.map { meta, aln -> aln },
                     ch_speciestree,
-                    LSD2_PREPARE.out.dates,
-                    LSD2_PREPARE.out.outgroup
+                    ch_calibrations
                 )
-                LSD2_CHECK ( DATE_TREE_LSD2.out.nex, ch_calibrations, ch_speciestree, DATE_TREE_LSD2.out.log )
-                ch_tree_for_prep = LSD2_CHECK.out.dated_tree
+                ch_tree_for_prep = LSD2_DATING.out.dated_tree
             } else {
                 DATE_TREE ( ch_speciestree, ch_calibrations )
                 ch_tree_for_prep = DATE_TREE.out.dated_tree

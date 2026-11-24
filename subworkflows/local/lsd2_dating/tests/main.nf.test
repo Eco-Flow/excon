@@ -1,8 +1,9 @@
 nextflow_workflow {
 
     name "LSD2 dating"
-    script "./main.nf"
+    script "../main.nf"
     workflow "LSD2_DATING"
+    tag "subworkflows"
     tag "lsd2_dating"
 
     // data/: an 800-column protein alignment simulated with IQ-TREE's AliSim on
@@ -13,9 +14,9 @@ nextflow_workflow {
         when {
             workflow {
                 """
-                input[0] = file("${baseDir}/tests/lsd2_dating/data/supermatrix.phy")
-                input[1] = file("${baseDir}/tests/lsd2_dating/data/species_tree.nwk")
-                input[2] = file("${baseDir}/tests/lsd2_dating/data/calibrations.tsv")
+                input[0] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/supermatrix.phy")
+                input[1] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/species_tree.nwk")
+                input[2] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/calibrations.tsv")
                 """
             }
         }
@@ -36,9 +37,9 @@ nextflow_workflow {
         when {
             workflow {
                 """
-                input[0] = file("${baseDir}/tests/lsd2_dating/data/supermatrix.phy")
-                input[1] = file("${baseDir}/tests/lsd2_dating/data/species_tree.nwk")
-                input[2] = file("${baseDir}/tests/lsd2_dating/data/calibrations_conflict.tsv")
+                input[0] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/supermatrix.phy")
+                input[1] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/species_tree.nwk")
+                input[2] = file("${baseDir}/subworkflows/local/lsd2_dating/tests/data/calibrations_conflict.tsv")
                 """
             }
         }

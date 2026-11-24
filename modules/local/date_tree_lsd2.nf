@@ -1,28 +1,10 @@
-// --dating_method lsd2: time-calibrate the IQ-TREE species tree with IQ-TREE's
-// least-square dating (LSD2) instead of ape::chronos, from the same calibration table.
-// Three steps, because the IQ-TREE container has no R: check the calibrations and write
-// IQ-TREE's date file; date; check the dated tree. See bin/lsd2_dating.R.
-
-process LSD2_PREPARE {
-    label 'process_single'
-    container 'ecoflowucl/cafe:r-4.3.1'
-
-    input:
-    path tree_newick
-    path calibrations
-
-    output:
-    path 'lsd2_dates.txt',    emit: dates
-    path 'lsd2_outgroup.txt', emit: outgroup
-
-    script:
-    """
-    Rscript ${projectDir}/bin/lsd2_dating.R prepare ${tree_newick} ${calibrations}
-    """
-}
+// --dating_method lsd2, step 2 of 3 (subworkflows/local/lsd2_dating): time-calibrate
+// the IQ-TREE species tree with IQ-TREE's least-square dating (LSD2), from the
+// supermatrix it was inferred from and the dates LSD2_PREPARE wrote.
 
 process DATE_TREE_LSD2 {
     label 'process_low'
+
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/iqtree:3.1.3--h8471819_0' :
         'quay.io/biocontainers/iqtree:3.1.3--h8471819_0' }"
@@ -39,6 +21,9 @@ process DATE_TREE_LSD2 {
     path 'dated.log',          emit: log
     tuple val("${task.process}"), val('iqtree'), eval("iqtree -version 2>&1 | grep -oE '[0-9]+[.][0-9]+[.][0-9]+' | head -n1"), emit: versions, topic: versions
 
+    when:
+    task.ext.when == null || task.ext.when
+
     script:
     // -blfix keeps the tree's branch lengths, so the model only serves LSD2's variances;
     // -o names one side of the root, so LSD2 keeps the root rather than estimating it
@@ -54,25 +39,11 @@ process DATE_TREE_LSD2 {
         -T ${task.cpus} \\
         -pre dated
     """
-}
 
-process LSD2_CHECK {
-    label 'process_single'
-    container 'ecoflowucl/cafe:r-4.3.1'
-
-    input:
-    path nex
-    path calibrations
-    path tree_newick
-    path iqtree_log
-
-    output:
-    path 'SpeciesTree_dated.nwk'   , emit: dated_tree
-    path 'dating_calibrations.tsv' , emit: calibrations
-    path 'dating_qc.tsv'           , emit: qc
-
-    script:
+    stub:
     """
-    Rscript ${projectDir}/bin/lsd2_dating.R check ${nex} ${calibrations} ${tree_newick} ${iqtree_log}
+    touch dated.timetree.nex
+    touch dated.timetree.lsd
+    touch dated.log
     """
 }
