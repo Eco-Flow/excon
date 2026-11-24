@@ -23,6 +23,7 @@ process EXTRACT_SINGLE_COPY {
         -g ${orthofinder_dir}/Orthogroups/Orthogroups.tsv \\
         -p proteomes \\
         -o single_copy_orthogroups \\
+        --min-occupancy ${params.iqtree_min_occupancy} \\
         $args
     """
 
