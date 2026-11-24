@@ -1,6 +1,8 @@
 # Changelog
 
-## [v2.6.0] - unreleased
+## [v2.6.0] - 2026-11-24 - Extra features
+
+New options, a new kind of input, and CI. Every addition is opt-in: a run with the same inputs and options gives the same results as v2.5.1.
 
 ### Added
 - **CI on every pull request, laid out as in nf-core pipelines.** Until now nothing ran on a PR, and the tests that did run used Docker only, although most users run excon with Singularity or Apptainer on HPC. ([#152](https://github.com/Eco-Flow/excon/issues/152))
