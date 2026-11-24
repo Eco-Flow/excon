@@ -2,6 +2,9 @@
 
 ## [v2.7.0] - unreleased
 
+### Changed
+- **CI downloads Nextflow's plugins and, on Singularity, the container images before the tests, retrying failed downloads.** A plugin download or an image pull from quay.io breaking off used to fail whichever test needed it. The images come from `utils/pull_singularity_images.sh`, so CI also runs the offline script for real.
+
 ## [v2.6.0] - 2026-11-24 - Extra features
 
 New options, a new kind of input, and CI. Every addition is opt-in: a run with the same inputs and options gives the same results as v2.5.1.
