@@ -42,6 +42,7 @@ The general pipeline logic is as follows:
 * Optionally fits the families dropped at the root in a separate `-z` sensitivity run `[CAFE_RUN_ZERO_ROOT]` (see `--cafe_zero_root`).
 * Tabulates the fitted parameters of every model compared `[CAFE_MODEL_PARAMETERS]`.
 * Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
+* Optionally tests the significantly changed families for KEGG pathway enrichment `[CAFE_KEGG_ENRICHMENT]` (see `--cafe_kegg`).
 * Records what became of every gene family: modelled, filtered out and why, or dropped `[CAFE_FAMILY_STATUS]`.
 
 ### Optional — GO enrichment (`--run_eggnog` or `--predownloaded_gofiles`)
@@ -732,6 +733,7 @@ results/
 │       └── best_model.txt            # "uniform" or "poisson"
 ├── cafe_plot/
 │   └── cafe_plotter/                # Expansion/contraction plots for best model
+├── cafe_kegg/                       # [optional, --cafe_kegg] KEGG pathway enrichment per node and direction
 ├── cafe_go/
 │   └── <algo>_cutoff<val>_type<val>/  # One subfolder per GO parameter combination
 │       ├── CAFE_summary.txt           # Summary of expansions/contractions per branch
