@@ -32,6 +32,7 @@ The general pipeline logic is as follows:
 * Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[EXTRACT_SINGLE_COPY]`, `[ALIGN_SINGLE_COPY]`, `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
 * Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it with `ape::chronos` when node ages are supplied `[DATE_TREE]` (see `--tree_calibrations`).
 * Optionally restricts the analysis to one clade `[PRUNE_TREE]` (see `--cafe_clade` / `--cafe_species`).
+* Optionally removes transposable-element families, using the eggNOG annotations `[TE_FAMILY_FILTER]` (see `--cafe_te_filter`).
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
 * Fits the families too large for the main model one at a time, with λ fixed to the main estimate `[CAFE_RUN_LARGE]` (see `--cafe_large_mode`, `--cafe_max_copies`).
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
@@ -708,6 +709,7 @@ results/
 │   ├── best/                        # Full CAFE5 results for the winning model (uniform or Poisson)
 │   ├── cafe_family_status.tsv       # What became of every gene family (see Output Guide)
 │   ├── large_families/              # Families too large for the main model, each fitted with λ fixed to the main estimate (--cafe_large_mode)
+│   ├── te_filter/                   # [optional, --cafe_te_filter] TE families removed before CAFE5, and why
 │   ├── zero_root/                   # [optional, --cafe_zero_root] Separate -z run of the families dropped at the root
 │   └── model_comparison/
 │       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
