@@ -1,6 +1,8 @@
 # Changelog
 
-## [v2.7.0-edge] - 2026-11-25 - Pre-release
+## [v2.7.0] - unreleased
+
+## [v2.7.0-edge] - 2026-11-25 - CAFE improvements
 
 A pre-release of v2.7.0, with OrthoFinder 3.2 and a reworked CAFE analysis, to try before they become the default. Run it with `-r v2.7.0-edge`; without `-r`, excon still runs the latest full release, v2.6.0. **Results change from v2.6.0**, as listed under Changed: OrthoFinder 3.2 can build a different species tree, a branch counts as significant only if its family is significant too, and large families are fitted with the main families' λ.
 
