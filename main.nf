@@ -127,6 +127,10 @@ params {
     cafe_max_copies           : Integer
     cafe_large_mode           : String
     cafe_family_pvalue        : Float
+    cafe_fixed_lambda         : Float?
+    cafe_fixed_alpha          : Float?
+    cafe_error_model          : String?
+    cafe_poisson              : Float?
     cafe_branch_pvalue        : Float
     orthofinder_msa_dir       : String?
     orthofinder_genetree_dir  : String?
@@ -205,6 +209,14 @@ workflow {
    }
    if (params.cafe_max_copies < 2) {
       error "ERROR: --cafe_max_copies must be at least 2, got ${params.cafe_max_copies}."
+   }
+   ['cafe_fixed_lambda', 'cafe_fixed_alpha', 'cafe_poisson'].each { p ->
+      if (params[p] != null && !(params[p] > 0)) {
+         error "ERROR: --${p} must be a positive number, got ${params[p]}."
+      }
+   }
+   if (params.cafe_error_model && !file(params.cafe_error_model).exists()) {
+      error "ERROR: --cafe_error_model file not found: ${params.cafe_error_model}"
    }
    ['cafe_family_pvalue', 'cafe_branch_pvalue'].each { p ->
       if (!(params[p] > 0 && params[p] <= 1)) {
@@ -548,7 +560,10 @@ workflow {
 
         CAFE_PREP (
             ch_orthologues,
-            ch_tree_for_prep
+            ch_tree_for_prep,
+            params.cafe_error_model ?
+                Channel.fromPath(params.cafe_error_model, checkIfExists: true) :
+                Channel.fromPath("${projectDir}/assets/NO_FILE")
         )
 
         // Families CAFE_PREP left out for their size (>= 100 copies in a species, or, on

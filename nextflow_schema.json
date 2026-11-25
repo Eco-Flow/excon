@@ -373,6 +373,23 @@
             "enum": ["fixed", "per_family"],
             "description": "How the large-family track fits the families left out of the main run for their size. 'fixed' (default): lambda is fixed to the value estimated on the main run's families (CAFE_PREP's error-model fit), as the CAFE5 tutorial recommends for large families. 'per_family': each family estimates its own lambda, as before v2.5.2; its results then aren't on the same rate scale as the main model's."
         },
+        "cafe_fixed_lambda": {
+            "type": "number",
+            "description": "Fix lambda (CAFE5 --fixed_lambda) in every CAFE5 fit instead of estimating it, e.g. to reuse the value from an earlier run's cafe/model_comparison/cafe_model_parameters.tsv. The large-family track and the zero-root run then use it too."
+        },
+        "cafe_fixed_alpha": {
+            "type": "number",
+            "description": "Fix the gamma shape alpha (CAFE5 --fixed_alpha) in every fit with k > 1 instead of estimating it. Model selection still compares k = 1 to --cafe_max_k, counting only the parameters still estimated."
+        },
+        "cafe_error_model": {
+            "type": "string",
+            "format": "file-path",
+            "description": "An error model file to use instead of estimating one, e.g. an earlier run's cafe/base/Out_cafe_errormodel/Base_error_model.txt. CAFE_PREP still fits lambda with it, for the large-family track."
+        },
+        "cafe_poisson": {
+            "type": "number",
+            "description": "Mean of the Poisson root distribution (CAFE5 --poisson=<mean>) for the Poisson-root model, instead of estimating it from the families."
+        },
         "cafe_family_pvalue": {
             "type": "number",
             "default": 0.05,
