@@ -9,6 +9,8 @@
 
 ### Added
 - **A warning when the best number of gamma rate categories is the largest tested.** If the best k by AIC equals `--cafe_max_k`, a larger k may fit better still. `cafe/model_comparison/model_selection.tsv` has a new `Note` column marking this (`best_k_at_cafe_max_k`), and `k_boundary_warning.txt` and the run log say to re-run with a larger `--cafe_max_k`. ([#147](https://github.com/Eco-Flow/excon/issues/147))
+- **`cafe/cafe_family_status.tsv`: what became of every gene family.** Until now this was spread over `hog_filtering_report.tsv` (left out before CAFE5), the CAFE5 log (dropped at the root) and `CAFE_RUN_LARGE`'s stderr (did not converge). Large-family tasks that failed every attempt were dropped by `errorStrategy 'ignore'` and left no trace at all. Each family now gets one row with its final status: `modelled`, `modelled_large`, `excluded_single_species`, `excluded_empty_after_subset`, `not_present_at_root`, `large_not_present_at_root`, `large_did_not_converge` or `large_task_failed`. The row also gives why CAFE_PREP kept or left the family out, and its size statistics. The run log prints the count for each status. `CAFE_RUN_LARGE` now writes each family's outcome to a small status file, so these large-family runs re-run once on `-resume`. ([#147](https://github.com/Eco-Flow/excon/issues/147), item 5)
+- **`tests/cafe_family_status/`**, an nf-test of `CAFE_FAMILY_STATUS` with one family of every status.
 
 ## [v2.6.0] - 2026-11-24 - Extra features
 

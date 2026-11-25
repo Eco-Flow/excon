@@ -146,6 +146,32 @@ Families left out of the main run for their size (`max_copies_ge_100`, `differen
 
 ---
 
+## CAFE Family Status (`results/cafe/cafe_family_status.tsv`)
+
+One row per gene family in the orthogroup table, saying what became of it. The run log prints the count for each status.
+
+| Column | Description |
+|--------|-------------|
+| `HOG` | Family ID |
+| `status` | What became of it (below) |
+| `track` | `main` (the main CAFE5 model), `large` (the large-family track) or `none` (not given to CAFE5) |
+| `prep_filter` | `exclusion_reason` from `cafe/base/hog_filtering_report.tsv`: `retained`, `single_species`, `empty_after_subset`, `max_copies_ge_100` or `differential_gt_threshold` |
+| `n_species_present`, `n_max`, `n_min`, `total_genes`, `differential` | Copied from `hog_filtering_report.tsv` |
+
+| `status` | Meaning |
+|----------|---------|
+| `modelled` | In the selected main model (`cafe/best/`) |
+| `modelled_large` | Fitted by the large-family track |
+| `excluded_single_species` | Genes in one species only, so there is nothing to model |
+| `excluded_empty_after_subset` | No genes in the species analysed (`--cafe_clade` / `--cafe_species`) |
+| `not_present_at_root` | No genes on one side of the root, so CAFE5 dropped it from the main model (`--cafe_zero_root` keeps such families) |
+| `large_not_present_at_root` | The same, in the large-family track |
+| `large_did_not_converge` | The large-family fit did not reach a finite likelihood |
+| `large_task_failed` | The large-family task failed on every attempt (e.g. ran out of time) |
+| `not_in_results` | Given to CAFE5 but missing from its results for another reason |
+
+---
+
 ## Proteomes (`results/proteomes/`)
 
 The `*.clean.fasta` files written by `RENAME_FASTA`, one per species. These hold the exact
