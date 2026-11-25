@@ -359,7 +359,7 @@
         "cafe_zero_root": {
             "type": "boolean",
             "default": false,
-            "description": "Also fit the families the main model drops for having no genes on one side of the root, in a separate sensitivity run with CAFE5's -z (λ fixed to the main estimate), published in cafe/zero_root/ and never merged into the main results. Before v2.5.2 this added -z to every CAFE5 call, including the main model."
+            "description": "Also fit the families the main model drops for having no genes on one side of the root, in a separate sensitivity run with CAFE5's -z (λ fixed to the main estimate), published in cafe/zero_root/ and never merged into the main results. Before v2.7.0 this added -z to every CAFE5 call, including the main model."
         },
         "cafe_max_copies": {
             "type": "integer",
@@ -371,7 +371,7 @@
             "type": "string",
             "default": "fixed",
             "enum": ["fixed", "per_family"],
-            "description": "How the large-family track fits the families left out of the main run for their size. 'fixed' (default): lambda is fixed to the value estimated on the main run's families (CAFE_PREP's error-model fit), as the CAFE5 tutorial recommends for large families. 'per_family': each family estimates its own lambda, as before v2.5.2; its results then aren't on the same rate scale as the main model's."
+            "description": "How the large-family track fits the families left out of the main run for their size. 'fixed' (default): lambda is fixed to the value estimated on the main run's families (CAFE_PREP's error-model fit), as the CAFE5 tutorial recommends for large families. 'per_family': each family estimates its own lambda, as before v2.7.0; its results then aren't on the same rate scale as the main model's."
         },
         "cafe_kegg": {
             "type": "boolean",
@@ -436,7 +436,7 @@
             "default": 0.05,
             "minimum": 0,
             "maximum": 1,
-            "description": "Branch p-value cutoff. A family that passes --cafe_family_pvalue changes significantly on a branch when that branch's p-value (*_branch_probabilities.tab) is at most this value. Used for the significant-family tables, the CAFE GO gene lists and the alternative tree figures. Before v2.5.2 this cutoff was --go_cutoff."
+            "description": "Branch p-value cutoff. A family that passes --cafe_family_pvalue changes significantly on a branch when that branch's p-value (*_branch_probabilities.tab) is at most this value. Used for the significant-family tables, the CAFE GO gene lists and the alternative tree figures. Before v2.7.0 this cutoff was --go_cutoff."
         },
         "orthofinder_msa_dir": {
             "type": "string",
