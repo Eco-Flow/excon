@@ -3,6 +3,7 @@
 ## [v2.7.0] - unreleased
 
 ### Fixed
+- **CAFE stopped with an error when no gene family was significant.** CAFE5 lists only significant families in `_branch_probabilities.tab`, so with none it has a header and no rows, and `cafe_sig_families.R` failed (`Incompatible join types: x.HOG (logical) and i.HOG (character)`). Family ids are now always read as text, and the run continues with no significant changes. Seen in CI, where whether any family is significant varies from run to run.
 - **A `CAFE_PREP` failure that wasn't a CAFE5 convergence failure skipped every CAFE step, while the run still reported success.** Its error strategy retried exit status 1 (CAFE5 didn't converge) and ignored *any* other failure. That included the container not starting (125, seen on CI when an image pull failed), running out of memory (137) or being killed by the scheduler. Those now stop the run, with a message, so it can be fixed and `-resume`d. A real convergence failure is handled as before: retry with stricter filtering, then continue without CAFE, now with a warning.
 - **CAFE GO ignored `--go_cutoff` when choosing significant families.** `bin/cafe_go_prep.pl` read the cutoff into `$pval`, then reused that name for each family's branch p-value, and compared against a hardcoded `0.05`. A family now counts as significant on a branch when its branch p-value is at most `--go_cutoff`, and the column notes in the summary state that cutoff. Runs with the default `--go_cutoff 0.05` are unaffected.
 
