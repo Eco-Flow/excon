@@ -15,6 +15,6 @@ process CAFE_PLOT_ALTVIZ {
 
     script:
     """
-    ${projectDir}/bin/cafe_plot_altviz.R ${cafe_dir} ${cafe_summary}
+    ${projectDir}/bin/cafe_plot_altviz.R ${cafe_dir} ${cafe_summary} ${params.cafe_family_pvalue} ${params.cafe_branch_pvalue}
     """
 }

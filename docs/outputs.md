@@ -44,7 +44,7 @@ Produced by [CAFEPlotter](https://github.com/moshi4/CafePlotter) from the best-f
 
 ### Significant HOG Tree (`cafe_sig_hog_tree.pdf/svg`)
 
-Same layout as the cafeplotter summary tree but restricted to **statistically significant** gene families only (branch p ≤ 0.05). Each leaf and internal node is annotated with `+expanded / −contracted` counts from `CAFE_summary.txt`. This is the figure to use when reporting how many families changed significantly on each lineage.
+Same layout as the cafeplotter summary tree but restricted to **statistically significant** gene families only: family-wide p ≤ `--cafe_family_pvalue` and branch p ≤ `--cafe_branch_pvalue` (both 0.05 by default). Each leaf and internal node is annotated with `+expanded / −contracted` counts from `CAFE_summary.txt`. This is the figure to use when reporting how many families changed significantly on each lineage.
 
 ---
 
@@ -69,6 +69,20 @@ For each significantly evolving orthogroup, a tree shows the gene count at each 
 ![OG0000003 gene family](images/OG0000003_gene_family.png)
 
 *Example: OG0000003 — massive expansion in* M. pneumoniae *(+16 genes, ***) and contraction in* M. genitalium *(−3 genes, **), consistent with genome size differences in this clade.*
+
+---
+
+## KEGG Pathway Enrichment (`results/cafe_kegg/`, with `--cafe_kegg`)
+
+| File | Description |
+|------|-------------|
+| `kegg_enrichment.tsv` | Every pathway found in at least one significantly changed family, per node and direction |
+| `kegg_enrichment_significant.tsv` | The rows with `padj_BH` ≤ `--cafe_kegg_padj` |
+| `kegg_enrichment_summary.txt` | How many sets were tested and how many pathways passed (also in the run log) |
+
+Columns: `node` (species or CAFE5 node id), `direction` (`expansion` / `contraction`), `pathway` (KEGG `map#####` id), `pathway_name`, `fg_with_pathway` / `fg_annotated` (significant families with this pathway / with any pathway), `bg_with_pathway` / `bg_annotated` (the same for the background: modelled families, for a species those containing it), `fold_enrichment`, `pvalue` (one-sided hypergeometric), `padj_BH` (Benjamini-Hochberg over every pathway in the background) and `families` (the significant families with the pathway).
+
+`OG_annotation_summary.tsv` (with `--run_eggnog`) also has a new `KEGG_Pathway` column: the representative gene's `map#####` pathways.
 
 ---
 
@@ -117,7 +131,7 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 | Column | Description |
 |--------|-------------|
 | `Species/Node` | Leaf species name or ancestral node number (matches `cafe_node_label_guide.pdf`) |
-| `Total_HOGs_significant` | Gene families with a significant branch p-value (p ≤ 0.05) |
+| `Total_HOGs_significant` | Gene families significant on this branch: family-wide p ≤ `--cafe_family_pvalue` and branch p ≤ `--cafe_branch_pvalue` (both 0.05 by default) |
 | `Expansion_HOGs_significant` | Significant families with a net positive size change |
 | `Contraction_HOGs_significant` | Significant families with a net negative size change |
 | `Expansion_genes_significant` | Sum of gene count increases across all significant expanding families |
@@ -133,15 +147,83 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 
 | File | Description |
 |------|-------------|
-| `model_selection.tsv` | -lnL, AIC and BIC for k = 1 to `--cafe_max_k` rate categories (uniform root); the best k by AIC |
+| `cafe_model_parameters.tsv` | The fitted parameters of every model compared (k = 1 to `--cafe_max_k` with a uniform root, and the best k with a Poisson root): k, root distribution, Poisson root mean, λ, α (k > 1), the error model's ε, -lnL, CAFE5's largest allowed λ for the tree, `BEST` for the selected model, and `fixed_parameters`: which were given rather than estimated (`--cafe_fixed_lambda`, `--cafe_fixed_alpha`, `--cafe_error_model`, `--cafe_poisson`) |
+| `model_selection.tsv` | -lnL, AIC and BIC for k = 1 to `--cafe_max_k` rate categories (uniform root); the best k by AIC. `Note` reads `best_k_at_cafe_max_k` when the best k is the largest tested |
+| `k_boundary_warning.txt` | Written only when the best k is the largest tested: a larger `--cafe_max_k` may fit better |
 | `best_k.txt` | That k |
 | `cafe_model_comparison.tsv` | Uniform vs Poisson root at the best k: parameters, -lnL, AIC, BIC, number of families; selected by AIC |
 | `best_model.txt` | Selected model: `uniform` or `poisson`. Its CAFE5 output is in `results/cafe/best/` |
 | `root_split_warning.txt` | Only when one species is alone on one side of the root: the two branches next to the root, whose expansions/contractions mostly reflect the root-size prior |
-| `families_not_modelled.tsv` | Only when CAFE5 dropped families for having no genes on one side of the root: which ones (`--cafe_zero_root` keeps them) |
+| `families_not_modelled.tsv` | Only when CAFE5 dropped families for having no genes on one side of the root: which ones (`--cafe_zero_root` fits them) |
 | `root_filter_warning.txt` | How many families that was |
 
-Families left out of the main run for their size (`max_copies_ge_100`, `differential_gt_threshold` in `results/cafe/base/hog_filtering_report.tsv`) are fitted one at a time; their counts and merged results are in `results/cafe/large_families/`, with `large_families.txt` saying how many there were (or that there were none), and the run log says how many were fitted.
+Families left out of the main run for their size (`max_copies_ge_<N>` for `--cafe_max_copies` N, default 100, or `differential_gt_threshold` in `results/cafe/base/hog_filtering_report.tsv`) are fitted one at a time, with λ fixed to the main families' estimate (`--cafe_large_mode fixed`, default) or each with its own (`per_family`); their counts and merged results are in `results/cafe/large_families/`, with `large_families.txt` saying how many there were (or that there were none), and the run log says how many were fitted.
+
+---
+
+## Significant Families (`results/cafe/significant_families/`)
+
+A family changes significantly on a branch when **both** its family-wide p-value (CAFE5's `*_family_results.txt`) is at most `--cafe_family_pvalue` **and** that branch's p-value (`*_branch_probabilities.tab`) is at most `--cafe_branch_pvalue`. Both default to 0.05. This follows CAFE5, which gives branch p-values only for families significant overall. The same rule is used for these tables, the CAFE GO gene lists, `CAFE_summary.txt` and the significant-family tree figures.
+
+| File | Description |
+|------|-------------|
+| `changes_per_node.tsv` | Every branch where a family's size changed, from the main model |
+| `significant_changes_per_node.tsv` | The rows that pass both cutoffs |
+| `combined_changes_per_node.tsv` | Both tables' rows for the main model and the large-family track, with a `source` column |
+| `combined_significant_changes_per_node.tsv` | The rows of that table that pass both cutoffs |
+
+Columns of `changes_per_node.tsv`: `Node` (species, or the CAFE5 node id from `cafe_node_label_guide.pdf`), `HOG`, `change` (gene count change on that branch), `family_pvalue`, `branch_pvalue`, `direction` (`expansion` / `contraction`), `family_significant`, `branch_significant` and `significant` (both). The significant-only tables keep the first six. Before v2.5.2 the branch p-value column was called `pvalue`, there was no family p-value, and only the branch p-value was tested, against `--go_cutoff`.
+
+---
+
+## Zero-root Sensitivity Run (`results/cafe/zero_root/`, with `--cafe_zero_root`)
+
+The main model drops families with no genes on one side of the root, as CAFE5 does by default (listed in `cafe/model_comparison/families_not_modelled.tsv`). With `--cafe_zero_root`, just those families are fitted again with CAFE5's `-z`, which allows a family size of zero at the root, with λ fixed to the main families' estimate and the same error model. These results are a sensitivity analysis: CAFE5 doesn't recommend `-z` in general, because these families' root sizes, and so their changes near the root, are poorly determined. They are never merged into the main results.
+
+| File | Description |
+|------|-------------|
+| `zero_root_counts.tsv` | The gene counts of the families fitted |
+| `Out_cafe_zero_root/` | CAFE5's output for them |
+| `cafe_zero_root.log` | CAFE5's log |
+| `significant_families/` | `changes_per_node.tsv` and `significant_changes_per_node.tsv` for these families, with the same cutoffs as the main model |
+
+---
+
+## Transposable-element Filter (`results/cafe/te_filter/`, with `--cafe_te_filter`)
+
+A gene counts as a transposable element (TE) when any of its eggNOG Pfam domains, GO terms or its eggNOG description matches a signature in `--cafe_te_signatures` (default `assets/te_signatures.tsv`: integrase, reverse transcriptase, transposase and related domains; transposition, DNA integration and transposase activity GO terms; TE words in descriptions). A family is removed before CAFE_PREP when at least `--cafe_te_min_fraction` (default 0.5) of its eggNOG-annotated genes are TEs. Families with no annotated genes are kept.
+
+| File | Description |
+|------|-------------|
+| `te_families.tsv` | Every family with at least one TE gene: `n_genes`, `n_annotated` (with an eggNOG hit), `n_te_genes`, `te_fraction` (of the annotated), `removed` (`yes` / `no`) and `evidence` (the signatures that matched most often, with counts) |
+| `te_filter_summary.txt` | How many families were removed, also printed in the run log |
+
+---
+
+## CAFE Family Status (`results/cafe/cafe_family_status.tsv`)
+
+One row per gene family in the orthogroup table, saying what became of it. The run log prints the count for each status.
+
+| Column | Description |
+|--------|-------------|
+| `HOG` | Family ID |
+| `status` | What became of it (below) |
+| `track` | `main` (the main CAFE5 model), `large` (the large-family track) or `none` (not given to CAFE5) |
+| `prep_filter` | `exclusion_reason` from `cafe/base/hog_filtering_report.tsv`: `retained`, `single_species`, `empty_after_subset`, `max_copies_ge_<N>` (`--cafe_max_copies`, default 100) or `differential_gt_threshold` |
+| `n_species_present`, `n_max`, `n_min`, `total_genes`, `differential` | Copied from `hog_filtering_report.tsv` |
+
+| `status` | Meaning |
+|----------|---------|
+| `modelled` | In the selected main model (`cafe/best/`) |
+| `modelled_large` | Fitted by the large-family track |
+| `excluded_single_species` | Genes in one species only, so there is nothing to model |
+| `excluded_empty_after_subset` | No genes in the species analysed (`--cafe_clade` / `--cafe_species`) |
+| `excluded_transposable_element` | Made mostly of transposable elements, removed before CAFE5 (`--cafe_te_filter`; see `cafe/te_filter/`) |
+| `not_present_at_root` | No genes on one side of the root, so CAFE5 dropped it from the main model (`--cafe_zero_root` fits these separately, in `cafe/zero_root/`) |
+| `large_not_present_at_root` | The same, in the large-family track |
+| `large_did_not_converge` | The large-family fit has no finite likelihood (at the fixed λ, or with its own λ in `per_family` mode) |
+| `large_task_failed` | The large-family task failed on every attempt (e.g. ran out of time) |
+| `not_in_results` | Given to CAFE5 but missing from its results for another reason |
 
 ---
 

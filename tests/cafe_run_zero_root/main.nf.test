@@ -1,0 +1,32 @@
+nextflow_process {
+
+    name "CAFE_RUN_ZERO_ROOT"
+    script "../../modules/local/cafe_run_zero_root.nf"
+    process "CAFE_RUN_ZERO_ROOT"
+    tag "cafe_run_zero_root"
+
+    // data/: the main model's count table (OG1 in every species; OG7 only in SpA and
+    // OG8 only in SpC/SpD, so both absent on one side of the root) and the list of
+    // families it dropped, OG7 and OG8.
+
+    test("Fits only the families dropped at the root, with -z and a fixed lambda") {
+        when {
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_run_zero_root/data/hog_gene_counts.tsv")
+                input[1] = file("${baseDir}/tests/cafe_run_zero_root/data/families_not_modelled.tsv")
+                input[2] = file("${baseDir}/tests/cafe_run_zero_root/data/cafe_input_tree.txt")
+                input[3] = file("${baseDir}/tests/cafe_run_zero_root/data/Base_error_model.txt")
+                input[4] = '0.005'
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.counts[0]).readLines()*.split('\t')*.getAt(1) == ['HOG', 'OG7', 'OG8']
+            def dir = process.out.results[0]
+            assert path("${dir}/Base_results.txt").readLines().find { it.startsWith('Lambda:') }.tokenize()[1] == '0.005'
+            assert path("${dir}/Base_family_results.txt").readLines().drop(1)*.split('\t')*.getAt(0).sort() == ['OG7', 'OG8']
+        }
+    }
+}

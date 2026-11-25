@@ -1,0 +1,22 @@
+## emapper
+#query	seed_ortholog	evalue	score	eggNOG_OGs	max_annot_lvl	COG_category	Description	Preferred_name	GOs	EC	KEGG_ko	KEGG_Pathway	KEGG_Module	KEGG_Reaction	KEGG_rclass	BRITE	KEGG_TC	CAZy	BiGG_Reaction	PFAMs
+a1	x	1e-9	40	-	-	-	d	-	-	-	-	ko00010,map00010	-	-	-	-	-	-	-	-
+a2	x	1e-9	40	-	-	-	d	-	-	-	-	ko00010,map00010	-	-	-	-	-	-	-	-
+a3	x	1e-9	40	-	-	-	d	-	-	-	-	ko00010,map00010	-	-	-	-	-	-	-	-
+a4	x	1e-9	40	-	-	-	d	-	-	-	-	ko00010,map00010	-	-	-	-	-	-	-	-
+a5	x	1e-9	40	-	-	-	d	-	-	-	-	ko00010,map00010	-	-	-	-	-	-	-	-
+a6	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-
+a7	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-
+a8	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-
+a9	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-
+a10	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-
+a11	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-
+a12	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-
+a13	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-
+a14	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-
+a15	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-
+a16	x	1e-9	40	-	-	-	d	-	-	-	-	-	-	-	-	-	-	-	-	-
+a17	x	1e-9	40	-	-	-	d	-	-	-	-	-	-	-	-	-	-	-	-	-
+a18	x	1e-9	40	-	-	-	d	-	-	-	-	-	-	-	-	-	-	-	-	-
+a19	x	1e-9	40	-	-	-	d	-	-	-	-	-	-	-	-	-	-	-	-	-
+a20	x	1e-9	40	-	-	-	d	-	-	-	-	ko00020,map00020	-	-	-	-	-	-	-	-

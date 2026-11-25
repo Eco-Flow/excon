@@ -3,9 +3,9 @@
 """
 Concatenate the main-model and large-family significant-families tables into
 one combined report spanning every orthogroup CAFE5 was able to fit — the
-bulk of families under the shared k/lambda model, plus the high-differential
-families that CAFE_RUN_LARGE fits individually (each under its own lambda,
-since they don't share one rate with anything else). A "source" column
+bulk of families under the shared k/lambda model, plus the families too large
+for it, which CAFE_RUN_LARGE fits one at a time (with lambda fixed to the main
+families' estimate, or each with its own: --cafe_large_mode). A "source" column
 records which track produced each row so the two remain distinguishable.
 
 Pure standard library, to match the rest of bin/.
@@ -54,18 +54,21 @@ def main():
     ap.add_argument("--large-sig-changes", required=True)
     ap.add_argument("--out-changes", required=True)
     ap.add_argument("--out-sig-changes", required=True)
+    ap.add_argument("--large-source", default="large_family_fixed_lambda",
+                    help="source label for large-family rows: large_family_fixed_lambda "
+                         "(--cafe_large_mode fixed) or large_family_own_lambda (per_family)")
     args = ap.parse_args()
 
     n_main, n_large = combine(
         args.main_changes, args.large_changes, args.out_changes,
-        "main_model", "large_family_own_lambda",
+        "main_model", args.large_source,
     )
     print("combined_changes_per_node.tsv: %d main-model rows, %d large-family rows"
           % (n_main, n_large))
 
     n_main_sig, n_large_sig = combine(
         args.main_sig_changes, args.large_sig_changes, args.out_sig_changes,
-        "main_model", "large_family_own_lambda",
+        "main_model", args.large_source,
     )
     print("combined_significant_changes_per_node.tsv: %d main-model rows, %d large-family rows"
           % (n_main_sig, n_large_sig))

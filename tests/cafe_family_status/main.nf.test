@@ -1,0 +1,86 @@
+nextflow_process {
+
+    name "CAFE_FAMILY_STATUS"
+    script "../../modules/local/cafe_family_status.nf"
+    process "CAFE_FAMILY_STATUS"
+    tag "cafe_family_status"
+
+    // data/: a hog_filtering_report.tsv with one family of every kind, the change
+    // table of a best model that kept only OG1, and the large-family track's
+    // outcomes for OG4-OG6 (OG7's task left no status, as when it fails every attempt).
+
+    test("Gives every family its final status") {
+        when {
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_family_status/data/hog_filtering_report.tsv")
+                input[1] = file("${baseDir}/assets/NO_FILE")
+                input[2] = file("${baseDir}/tests/cafe_family_status/data/best")
+                input[3] = file("${baseDir}/tests/cafe_family_status/data/hog_gene_counts_large.tsv")
+                input[4] = files("${baseDir}/tests/cafe_family_status/data/large_status/*.tsv")
+                """
+            }
+        }
+        then {
+            assert process.success
+            def rows = path(process.out.status[0]).readLines()*.split('\t')
+            assert rows[0] as List == ['HOG', 'status', 'track', 'prep_filter', 'n_species_present', 'n_max', 'n_min', 'total_genes', 'differential']
+            assert rows.drop(1).collectEntries { [(it[0]): it[1..3]] } == [
+                OG1: ['modelled',                    'main',  'retained'],
+                OG2: ['not_present_at_root',         'main',  'retained'],
+                OG3: ['excluded_single_species',     'none',  'single_species'],
+                OG4: ['modelled_large',              'large', 'max_copies_ge_100'],
+                OG5: ['large_did_not_converge',      'large', 'differential_gt_threshold'],
+                OG6: ['large_not_present_at_root',   'large', 'max_copies_ge_100'],
+                OG7: ['large_task_failed',           'large', 'max_copies_ge_100'],
+                OG8: ['excluded_empty_after_subset', 'none',  'empty_after_subset'],
+            ]
+            def summary = path(process.out.summary[0]).text
+            assert summary.contains('8 families in the orthogroup table')
+            assert summary.contains('large_task_failed            1')
+        }
+    }
+
+    test("Runs with no large families") {
+        when {
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_family_status/data/hog_filtering_report.tsv")
+                input[1] = file("${baseDir}/assets/NO_FILE")
+                input[2] = file("${baseDir}/tests/cafe_family_status/data/best")
+                input[3] = file("${baseDir}/assets/NO_FILE")
+                input[4] = []
+                """
+            }
+        }
+        then {
+            assert process.success
+            def status = path(process.out.status[0]).readLines()*.split('\t').collectEntries { [(it[0]): it[1]] }
+            // Sent nowhere: the large-family table is absent, so not a failed task
+            assert status.OG7 == 'not_in_results'
+            assert status.OG1 == 'modelled'
+        }
+    }
+
+    test("Lists the families removed as transposable elements") {
+        when {
+            params { cafe_te_filter = true }
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_family_status/data/hog_filtering_report.tsv")
+                input[1] = file("${baseDir}/tests/cafe_family_status/data/te_families.tsv")
+                input[2] = file("${baseDir}/tests/cafe_family_status/data/best")
+                input[3] = file("${baseDir}/assets/NO_FILE")
+                input[4] = []
+                """
+            }
+        }
+        then {
+            assert process.success
+            def status = path(process.out.status[0]).readLines()*.split('\t').collectEntries { [(it[0]): it[1]] }
+            assert status.OG90 == 'excluded_transposable_element'
+            assert !status.containsKey('OG91')   // kept: CAFE_PREP's report covers it
+            assert status.OG1 == 'modelled'
+        }
+    }
+}
