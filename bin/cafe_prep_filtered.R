@@ -21,6 +21,8 @@ max_differential <- if (length(args) >= 1) as.numeric(args[1]) else
   as.numeric(Sys.getenv("CAFE_MAX_DIFF", "50"))
 scale_factor <- if (length(args) >= 2) as.numeric(args[2]) else 1000
 is_dated     <- if (length(args) >= 3) tolower(args[3]) %in% c("true", "1", "yes") else FALSE
+# args[4] = --cafe_max_copies (default 100)
+MAX_COPIES   <- if (length(args) >= 4) as.integer(args[4]) else 100L
 
 cat("================================================\n")
 cat("CAFE PREP with Differential Filtering\n")
@@ -109,10 +111,10 @@ if (length(empty_hogs) > 0) {
   ))
 }
 
-MAX_COPIES <- 100L
+max_copies_reason <- paste0('max_copies_ge_', MAX_COPIES)
 reason <- rep('retained', nrow(stats))
 reason[stats$differential > max_differential]  <- 'differential_gt_threshold'
-reason[stats$n_max >= MAX_COPIES]              <- 'max_copies_ge_100'
+reason[stats$n_max >= MAX_COPIES]              <- max_copies_reason
 reason[stats$n_species_present == 1]           <- 'single_species'
 reason[stats$n_species_present == 0]           <- 'empty_after_subset'
 stats[, exclusion_reason := reason]
