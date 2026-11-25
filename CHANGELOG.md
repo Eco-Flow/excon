@@ -1,5 +1,7 @@
 # Changelog
 
+## [v2.7.0] - unreleased
+
 ## [v2.6.0] - 2026-11-24 - Extra features
 
 New options, a new kind of input, and CI. Every addition is opt-in: a run with the same inputs and options gives the same results as v2.5.1.
