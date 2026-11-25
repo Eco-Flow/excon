@@ -4,12 +4,23 @@ process CAFE_PREP {
     container 'ecoflowucl/cafe:r-4.3.1' // R 4.3.1; CAFE5 1.1.0 (cafe5 has no --version: from /opt/CAFE5/config.h)
 
 
+    // Exit 1 is the script's own signal that CAFE5 didn't converge: retry with stricter
+    // differential filtering, and after the last attempt carry on without CAFE.
+    // Any other failure (the container didn't start, out of memory, killed by the
+    // scheduler) stops the run, where it can be seen and -resumed, instead of skipping
+    // every CAFE step while the run reports success. It isn't retried here, because
+    // each retry also tightens the filtering, which would change the results.
     errorStrategy {
-        if (task.attempt <= 3 && task.exitStatus == 1) {
-            log.warn "CAFE_PREP: convergence failed on attempt ${task.attempt} — retrying with stricter differential filtering"
-            return 'retry'
+        if (task.exitStatus == 1) {
+            if (task.attempt <= 3) {
+                log.warn "CAFE_PREP: convergence failed on attempt ${task.attempt} — retrying with stricter differential filtering"
+                return 'retry'
+            }
+            log.warn "CAFE_PREP: CAFE5 did not converge after ${task.attempt} attempts — continuing without the CAFE analysis"
+            return 'ignore'
         }
-        return 'ignore'
+        log.error "CAFE_PREP failed with exit status ${task.exitStatus}, which is not a CAFE5 convergence failure (e.g. 125: the container didn't start; 137: out of memory). Stopping, so CAFE isn't silently skipped; fix the cause and -resume."
+        return 'finish'
     }
     maxRetries 3
 

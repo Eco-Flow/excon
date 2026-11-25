@@ -605,6 +605,7 @@ workflow {
         CAFE_SELECT_K(
             CAFE_RUN_K.out.results.map { k, d -> d }.collect()
         )
+        CAFE_SELECT_K.out.warnings.subscribe { f -> log.warn(f.text.trim()) }
 
         // Read the integer out of best_k.txt for passing to CAFE_RUN_BEST
         best_k_ch = CAFE_SELECT_K.out.best_k

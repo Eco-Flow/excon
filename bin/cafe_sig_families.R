@@ -78,6 +78,11 @@ chg  <- fread(f_chg[1],  header = TRUE, check.names = FALSE)
 id_name <- names(prob)[1]
 setnames(prob, id_name, "HOG")
 setnames(chg,  names(chg)[1], "HOG")
+# Family ids are text. CAFE5 lists in _branch_probabilities.tab only the families
+# significant overall, so when none is, the table has a header and no rows; fread
+# then reads its id column as logical, and the merge below fails on mixed types.
+prob[, HOG := as.character(HOG)]
+chg[,  HOG := as.character(HOG)]
 
 # Map each CAFE column header to a node id: internal nodes -> "<24>" become "24",
 # tips -> "Species<1>" become "Species".

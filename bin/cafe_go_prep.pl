@@ -3,7 +3,7 @@ use warnings;
 use strict;
 use Scalar::Util qw(looks_like_number);
 
-my $pval        = $ARGV[0];
+my $cutoff      = $ARGV[0];   # branch p-value cutoff (--go_cutoff)
 my $type        = $ARGV[1];
 my $go_max_plot = $ARGV[2];
 # "modelled_background": each species' GO background is only the families CAFE5
@@ -188,7 +188,7 @@ foreach my $species (keys %PVALUE_DATA){
         my $pval=$PVALUE_DATA{$species}{$hog};
         #print "HOGGY $hog\n";
         if (looks_like_number($pval) ){
-            if($pval <= 0.05){
+            if($pval <= $cutoff){
                 my $direction=$COUNT_DATA{$species}{$hog};
                 #print "HERE $direction\n";
                 $SPECIES_TOTAL{$species}++;
@@ -384,9 +384,9 @@ print $out1
 "#\n" .
 "# Column definitions:\n" .
 "#   Species/Node                  : Leaf species or internal ancestral node (number matches cafe_node_label_guide.pdf)\n" .
-"#   Total_HOGs_significant        : Number of gene families with a significant branch p-value (p <= 0.05)\n" .
-"#   Expansion_HOGs_significant    : Significant gene families (p <= 0.05) with a net positive gene count change (expansion)\n" .
-"#   Contraction_HOGs_significant  : Significant gene families (p <= 0.05) with a net negative gene count change (contraction)\n" .
+"#   Total_HOGs_significant        : Number of gene families with a significant branch p-value (p <= ${cutoff})\n" .
+"#   Expansion_HOGs_significant    : Significant gene families (p <= ${cutoff}) with a net positive gene count change (expansion)\n" .
+"#   Contraction_HOGs_significant  : Significant gene families (p <= ${cutoff}) with a net negative gene count change (contraction)\n" .
 "#   Expansion_genes_significant   : Sum of gene count changes across all significant expanding families (total genes gained)\n" .
 "#   Contraction_genes_significant : Sum of gene count changes across all significant contracting families (negative; total genes lost)\n" .
 "#   Expansion_HOGs_total          : Gene families with any positive gene count change, regardless of significance (no p-value filter)\n" .
