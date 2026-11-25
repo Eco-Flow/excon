@@ -21,12 +21,10 @@ name: nf-test
 # and Singularity (Apptainer) with the minimum.
 
 on:
+  # No paths-ignore: a skipped workflow never reports confirm-pass, and a PR
+  # that requires it could then never merge. A docs-only PR runs only
+  # nf-test-changes, which finds no related tests, and confirm-pass passes.
   pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
-      - "**/*.png"
-      - "**/*.svg"
   push:
     branches: [main]
   release:
@@ -129,6 +127,32 @@ jobs:
         with:
           apptainer-version: 1.5.5
 
+      - name: Download Nextflow's plugins, retrying
+        # Each test starts Nextflow, which downloads its plugins (nf-schema and others)
+        # on first use, and a failed download fails that test. A launch with --help
+        # fetches them all into ~/.nextflow without running anything, so do that first.
+        run: |
+          for i in 1 2 3 4 5; do
+            nextflow -q run main.nf -profile test,${{ matrix.profile }} --help > /dev/null && exit 0
+            echo "Attempt $i failed; retrying in 30 s"
+            sleep 30
+          done
+          echo "::warning::Could not download Nextflow's plugins; each test will try again."
+
+      - name: Download the Singularity images, retrying
+        if: matrix.profile == 'singularity'
+        # Image downloads (quay.io, depot.galaxyproject.org) sometimes break off and
+        # fail whichever test needed the image. utils/pull_singularity_images.sh fetches
+        # every image the pipeline uses into the cache, under the names Nextflow looks
+        # for, and a re-run fetches only those still missing.
+        run: |
+          for i in 1 2 3; do
+            utils/pull_singularity_images.sh "$NXF_SINGULARITY_CACHEDIR" && exit 0
+            echo "Attempt $i left images missing; retrying in 30 s"
+            sleep 30
+          done
+          echo "::warning::Some Singularity images could not be downloaded; the tests will try again."
+
       - name: Run nf-test
         id: run_nf_test
         continue-on-error: ${{ matrix.NXF_VER == 'latest-everything' }}
@@ -146,8 +170,9 @@ jobs:
       - name: Offline image names match Nextflow's
         # utils/pull_singularity_images.sh re-creates Nextflow's file naming for
         # cached Singularity images (for offline use, docs/offline.md). Every image
-        # Nextflow cached in this job must have a name the script would give it,
-        # or offline runs would look for files the script never wrote.
+        # in the cache after the tests must have a name the script gives it: the
+        # script filled the cache first, so if Nextflow names an image differently
+        # it pulls its own copy under that name, and the check below fails.
         if: matrix.profile == 'singularity'
         run: |
           shopt -s nullglob
