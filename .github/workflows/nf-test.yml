@@ -21,12 +21,10 @@ name: nf-test
 # and Singularity (Apptainer) with the minimum.
 
 on:
+  # No paths-ignore: a skipped workflow never reports confirm-pass, and a PR
+  # that requires it could then never merge. A docs-only PR runs only
+  # nf-test-changes, which finds no related tests, and confirm-pass passes.
   pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
-      - "**/*.png"
-      - "**/*.svg"
   push:
     branches: [main]
   release:
