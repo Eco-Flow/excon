@@ -43,6 +43,7 @@ The general pipeline logic is as follows:
 * Optionally fits the families dropped at the root in a separate `-z` sensitivity run `[CAFE_RUN_ZERO_ROOT]` (see `--cafe_zero_root`).
 * Tabulates the fitted parameters of every model compared `[CAFE_MODEL_PARAMETERS]`.
 * Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
+* Optionally tests the significantly changed families for KEGG pathway enrichment `[CAFE_KEGG_ENRICHMENT]` (see `--cafe_kegg`).
 * Records what became of every gene family: modelled, filtered out and why, or dropped `[CAFE_FAMILY_STATUS]`.
 
 ### Optional — GO enrichment (`--run_eggnog` or `--predownloaded_gofiles`)
@@ -614,6 +615,21 @@ geneB    GO:0003674
 
 This lets you skip EggNOG entirely if you already have GO annotations (e.g. from a previous run, a public database, or another annotation tool).
 
+### KEGG pathway enrichment (optional, requires `--run_eggnog`)
+
+`--cafe_kegg` tests the gene families CAFE5 found significantly expanded or contracted on each
+species and internal node for enrichment in KEGG pathways. Each family's pathways are its
+genes' eggNOG `KEGG_Pathway` annotations. The background is the families CAFE5 modelled (for a
+species, those that contain it), as for CAFE GO, and only families with at least one pathway
+count. The test is a one-sided hypergeometric test with Benjamini-Hochberg correction over
+every pathway in the background. Results are in `results/cafe_kegg/`.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--cafe_kegg` | Run KEGG pathway enrichment of the CAFE results | `false` |
+| `--cafe_kegg_padj` | BH-adjusted p-value cutoff for `kegg_enrichment_significant.tsv` | `0.05` |
+| `--cafe_kegg_pathway_names` | TSV of pathway ids and names (`map00010<TAB>Glycolysis / Gluconeogenesis`, as `https://rest.kegg.jp/list/pathway` returns). Without it, the names are downloaded from KEGG at run time; offline, the name column is left empty | `null` |
+
 ### GO enrichment analysis (optional, requires GO annotation)
 
 | Parameter | Description | Default |
@@ -760,6 +776,7 @@ results/
 │       └── best_model.txt            # "uniform" or "poisson"
 ├── cafe_plot/
 │   └── cafe_plotter/                # Expansion/contraction plots for best model
+├── cafe_kegg/                       # [optional, --cafe_kegg] KEGG pathway enrichment per node and direction
 ├── cafe_go/
 │   └── <algo>_cutoff<val>_type<val>/  # One subfolder per GO parameter combination
 │       ├── CAFE_summary.txt           # Summary of expansions/contractions per branch
