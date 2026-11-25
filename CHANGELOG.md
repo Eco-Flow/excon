@@ -2,6 +2,9 @@
 
 ## [v2.7.0] - unreleased
 
+### Fixed
+- **The OrthoFinder options were documented, and validated, for OrthoFinder 2.5.5 rather than 3.2.** The README, the schema and `nextflow.config` now give 3.2's defaults (`-M msa`, `-A famsa`) and values, and 2.5.5's for `--orthofinder_v2`. `--orthofinder_msa_prog` now accepts `famsa`, and `--orthofinder_tree` accepts 3.2's `fasttree_fastest` and `iqtree3`. `--orthofinder_search` accepts `diamond_ultra_sens`, and `mmseqs` instead of `mmseqs2`, which no OrthoFinder version accepts. The README now says that excon's OrthoFinder 3.2 search step runs DIAMOND only, so `blast` and `mmseqs` need `--orthofinder_v2`.
+
 ## [v2.7.0-edge] - 2026-11-25 - CAFE improvements
 
 A pre-release of v2.7.0, with OrthoFinder 3.2 and a reworked CAFE analysis, to try before they become the default. Run it with `-r v2.7.0-edge`; without `-r`, excon still runs the latest full release, v2.6.0. **Results change from v2.6.0**, as listed under Changed: OrthoFinder 3.2 can build a different species tree, a branch counts as significant only if its family is significant too, and large families are fitted with the main families' λ.

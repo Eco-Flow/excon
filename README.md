@@ -223,13 +223,13 @@ annotation noise.
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.2. v2 produces Hierarchical Orthogroups (`N0.tsv`) which have lower copy-number variance and are better suited to CAFE5. v3 produces flat orthogroups (`Orthogroups.tsv`). Recommended for large datasets (>30 species) or when CAFE5 fails to converge. | `false` |
-| `--orthofinder_method` | Gene tree inference method: `msa` or `dendroblast` | `msa` |
-| `--orthofinder_search` | Sequence search program: `diamond`, `blast`, or `mmseqs2` | `diamond` |
-| `--orthofinder_msa_prog` | MSA program (requires `--orthofinder_method msa`): `mafft` or `muscle` | `mafft` |
-| `--orthofinder_tree` | Tree inference method (requires `--orthofinder_method msa`): `fasttree`, `raxml`, `raxml-ng`, or `iqtree` | `fasttree` |
+| `--orthofinder_method` | Gene tree inference method (`-M`): `msa` or `dendroblast` | `msa` (OrthoFinder 3.2); `dendroblast` with `--orthofinder_v2` |
+| `--orthofinder_search` | Sequence search program (`-S`): `diamond` or `diamond_ultra_sens`. `blast` and `mmseqs` only with `--orthofinder_v2`: excon's OrthoFinder 3.2 search step runs DIAMOND only | `diamond` |
+| `--orthofinder_msa_prog` | MSA program (`-A`, with `-M msa`): `famsa`, `mafft` or `muscle`; with `--orthofinder_v2`, `mafft` or `muscle` | `famsa` (OrthoFinder 3.2); `mafft` with `--orthofinder_v2` |
+| `--orthofinder_tree` | Gene tree program (`-T`, with `-M msa`): `fasttree`, `fasttree_fastest`, `raxml` or `iqtree3`; with `--orthofinder_v2`, `fasttree`, `raxml`, `raxml-ng` or `iqtree` | `fasttree` |
 | `--orthofinder_blast_results` | Path to a blast `WorkingDirectory` from a previous `ORTHOFINDER_BLAST` run (published to `results/orthofinder_blast/`). Skips the DIAMOND search and runs only orthogroup inference and phylogeny — useful for resuming after a failed phylogeny stage or retrying with different tree options | `null` |
 
-> **Note:** `-A` and `-T` are only valid when `-M msa` is set. If you set `--orthofinder_msa_prog` or `--orthofinder_tree` without `--orthofinder_method msa`, OrthoFinder will error.
+> **Note:** `-A` and `-T` only work with `-M msa`. OrthoFinder stops with an error if `--orthofinder_msa_prog` or `--orthofinder_tree` is combined with `--orthofinder_method dendroblast`. With `--orthofinder_v2` they also need `--orthofinder_method msa`, since OrthoFinder 2.5.5 defaults to DendroBLAST.
 
 > **OrthoFinder 3's 200-second stall timer.** OrthoFinder 3.1.3–3.2 stop with
 > `ERROR: Stalled for 200.0s` when 200 seconds pass without any species finishing its
@@ -244,8 +244,9 @@ annotation noise.
 
 ### Species tree with IQ-TREE2 (optional)
 
-By default the species tree passed to CAFE5 is the one OrthoFinder infers itself (STAG/STRIDE
-over per-orthogroup gene trees, built with FastTree unless `--orthofinder_tree` says otherwise).
+By default the species tree passed to CAFE5 is the one OrthoFinder infers and roots itself.
+OrthoFinder 3.2 builds it from a concatenated alignment of single-copy orthogroups (with `-M msa`,
+its default); OrthoFinder 2.5.5 (`--orthofinder_v2`) uses STAG over the per-orthogroup gene trees.
 `--iqtree_species_tree` replaces that with a supermatrix maximum-likelihood tree, which is the
 more standard approach for a published species phylogeny:
 
@@ -291,9 +292,9 @@ Outputs are written to `results/species_tree/`:
 | `supermatrix/partitions.txt` | Partition boundaries, one per orthogroup |
 
 > **No particular `--orthofinder_method` is needed.** The single-copy orthogroups are aligned
-> by the pipeline itself, so this works with OrthoFinder's default (DendroBLAST) mode as well
-> as `-M msa`. The default is considerably faster, since `-M msa` aligns *every* orthogroup and
-> builds a gene tree for each, while only the single-copy ones are needed here.
+> by the pipeline itself, so this works with `--orthofinder_method dendroblast` as well as with
+> `-M msa` (OrthoFinder 3.2's default). DendroBLAST is considerably faster, since `-M msa` aligns
+> *every* orthogroup and builds a gene tree for each, while only the single-copy ones are needed here.
 > `--iqtree_species_tree` cannot be combined with `--input_tree`/`--input_orthogroups`, since
 > those skip OrthoFinder entirely.
 

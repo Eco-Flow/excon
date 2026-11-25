@@ -263,22 +263,22 @@
         "orthofinder_method": {
             "type": "string",
             "enum": ["msa", "dendroblast"],
-            "description": "OrthoFinder gene tree inference method (-M). 'msa' additionally writes MultipleSequenceAlignments/, which --iqtree_species_tree requires."
+            "description": "OrthoFinder gene tree inference method (-M). OrthoFinder 3.2 defaults to 'msa', 2.5.5 (--orthofinder_v2) to 'dendroblast', which is much faster. --iqtree_species_tree works with either."
         },
         "orthofinder_msa_prog": {
             "type": "string",
-            "enum": ["mafft", "muscle"],
-            "description": "OrthoFinder MSA program (-A). Requires --orthofinder_method msa."
+            "enum": ["famsa", "mafft", "muscle"],
+            "description": "OrthoFinder MSA program (-A), with -M msa. OrthoFinder 3.2: famsa (default), mafft or muscle. 2.5.5 (--orthofinder_v2): mafft (default) or muscle, and only with --orthofinder_method msa."
         },
         "orthofinder_search": {
             "type": "string",
-            "enum": ["diamond", "blast", "mmseqs2"],
-            "description": "OrthoFinder sequence search program (-S)."
+            "enum": ["diamond", "diamond_ultra_sens", "blast", "mmseqs"],
+            "description": "OrthoFinder sequence search program (-S): diamond (default) or diamond_ultra_sens. blast and mmseqs only with --orthofinder_v2: excon's OrthoFinder 3.2 search step runs DIAMOND only."
         },
         "orthofinder_tree": {
             "type": "string",
-            "enum": ["fasttree", "raxml", "raxml-ng", "iqtree"],
-            "description": "OrthoFinder gene tree inference program (-T). Requires --orthofinder_method msa. Note this sets the per-orthogroup gene tree method inside OrthoFinder; to build the species tree from a concatenated supermatrix instead, use --iqtree_species_tree."
+            "enum": ["fasttree", "fasttree_fastest", "raxml", "iqtree3", "raxml-ng", "iqtree"],
+            "description": "OrthoFinder gene tree inference program (-T), with -M msa. OrthoFinder 3.2: fasttree (default), fasttree_fastest, raxml or iqtree3. 2.5.5 (--orthofinder_v2): fasttree (default), raxml, raxml-ng or iqtree, and only with --orthofinder_method msa. Note this sets the per-orthogroup gene tree method inside OrthoFinder; to build the species tree from a concatenated supermatrix instead, use --iqtree_species_tree."
         },
         "iqtree_species_tree": {
             "type": "boolean",
