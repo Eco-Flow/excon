@@ -108,7 +108,7 @@ process CAFE_MODEL_COMPARE {
     n_dropped=\$(wc -l < not_modelled.txt | tr -d ' ')
     if [ "\$n_dropped" -gt 0 ]; then
         { printf "HOG\\treason\\n"; awk '{ print \$1 "\\tnot present at the root (no genes on one side of it)" }' not_modelled.txt; } > families_not_modelled.tsv
-        printf "WARNING: CAFE5 left out %s of the %s families it was given because they have no genes on one side\\nof the root, so it can't place them there. They are listed in cafe/model_comparison/families_not_modelled.tsv.\\nRun with --cafe_zero_root to keep them (CAFE5's -z).\\n" \\
+        printf "WARNING: CAFE5 left out %s of the %s families it was given because they have no genes on one side\\nof the root, so it can't place them there. They are listed in cafe/model_comparison/families_not_modelled.tsv.\\n--cafe_zero_root fits them in a separate sensitivity run (CAFE5's -z), in cafe/zero_root/.\\n" \\
             "\$n_dropped" "\$(wc -l < input_families.txt | tr -d ' ')" > root_filter_warning.txt
     fi
     rm -f input_families.txt modelled_families.txt not_modelled.txt

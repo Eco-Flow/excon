@@ -45,6 +45,8 @@ include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
 include { CAFE_FAMILY_STATUS } from './modules/local/cafe_family_status.nf'
 include { CAFE_MODEL_PARAMETERS } from './modules/local/cafe_model_parameters.nf'
+include { CAFE_RUN_ZERO_ROOT } from './modules/local/cafe_run_zero_root.nf'
+include { CAFE_SIG_FAMILIES as CAFE_SIG_FAMILIES_ZERO_ROOT } from './modules/local/cafe_sig_families.nf'
 include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
 include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
 include { MERGE_CAFE_LARGE_RESULTS } from './modules/local/merge_cafe_large_results.nf'
@@ -584,19 +586,18 @@ workflow {
         // Explicit combine() rather than passing cafe_tree/error_model as separate
         // positional channels — makes their reuse across every hog_counts item
         // unambiguous rather than relying on Nextflow's implicit broadcast pairing.
-        // --cafe_large_mode fixed: the lambda the main families were fitted with, from
-        // CAFE_PREP's error-model fit (lambda.txt, from the fit without it, when the
-        // error model failed). per_family: '' — each family estimates its own.
-        ch_large_lambda = params.cafe_large_mode == 'per_family' ?
-            Channel.value('') :
-            CAFE_PREP.out.errormodel_results
-                .ifEmpty( file("${projectDir}/assets/NO_FILE") )
-                .combine( CAFE_PREP.out.lambda )
-                .map { em, lambda_txt ->
-                    def line = em.name == 'NO_FILE' ? null : em.readLines().find { it.startsWith('Lambda:') }
-                    def lambda = line ? line.tokenize()[1] : lambda_txt.text.trim()
-                    lambda
-                }
+        // The lambda the main families were fitted with, from CAFE_PREP's error-model
+        // fit (lambda.txt, from the fit without it, when the error model failed). Fixed
+        // for the large-family track (--cafe_large_mode fixed) and the zero-root run.
+        ch_main_lambda = CAFE_PREP.out.errormodel_results
+            .ifEmpty( file("${projectDir}/assets/NO_FILE") )
+            .combine( CAFE_PREP.out.lambda )
+            .map { em, lambda_txt ->
+                def line = em.name == 'NO_FILE' ? null : em.readLines().find { it.startsWith('Lambda:') }
+                line ? line.tokenize()[1] : lambda_txt.text.trim()
+            }
+        // per_family: '' — each family estimates its own
+        ch_large_lambda = params.cafe_large_mode == 'per_family' ? Channel.value('') : ch_main_lambda
 
         CAFE_RUN_LARGE (
             ch_large_family_tables
@@ -679,6 +680,24 @@ workflow {
             CAFE_MODEL_COMPARE.out.best_model,
             CAFE_SELECT_K.out.best_k
         )
+
+        // --cafe_zero_root: the families the main model dropped for having no genes on
+        // one side of the root, fitted separately with -z as a sensitivity analysis
+        if (params.cafe_zero_root) {
+            CAFE_RUN_ZERO_ROOT (
+                CAFE_PREP.out.prepared_counts,
+                CAFE_MODEL_COMPARE.out.not_modelled,
+                CAFE_PREP.out.cafe_tree,
+                CAFE_PREP.out.error_model,
+                ch_main_lambda
+            )
+            CAFE_SIG_FAMILIES_ZERO_ROOT (
+                CAFE_RUN_ZERO_ROOT.out.results,
+                CAFE_PREP.out.N0_table,
+                Channel.fromPath("${projectDir}/assets/NO_FILE"),
+                Channel.fromPath("${projectDir}/assets/NO_FILE")
+            )
+        }
 
         // What became of every family: modelled, left out before CAFE5 and why,
         // dropped at the root, or lost in the large-family track

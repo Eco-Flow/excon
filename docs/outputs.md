@@ -140,7 +140,7 @@ A tab-separated table with one row per species (leaf) and per internal node, pro
 | `cafe_model_comparison.tsv` | Uniform vs Poisson root at the best k: parameters, -lnL, AIC, BIC, number of families; selected by AIC |
 | `best_model.txt` | Selected model: `uniform` or `poisson`. Its CAFE5 output is in `results/cafe/best/` |
 | `root_split_warning.txt` | Only when one species is alone on one side of the root: the two branches next to the root, whose expansions/contractions mostly reflect the root-size prior |
-| `families_not_modelled.tsv` | Only when CAFE5 dropped families for having no genes on one side of the root: which ones (`--cafe_zero_root` keeps them) |
+| `families_not_modelled.tsv` | Only when CAFE5 dropped families for having no genes on one side of the root: which ones (`--cafe_zero_root` fits them) |
 | `root_filter_warning.txt` | How many families that was |
 
 Families left out of the main run for their size (`max_copies_ge_<N>` for `--cafe_max_copies` N, default 100, or `differential_gt_threshold` in `results/cafe/base/hog_filtering_report.tsv`) are fitted one at a time, with λ fixed to the main families' estimate (`--cafe_large_mode fixed`, default) or each with its own (`per_family`); their counts and merged results are in `results/cafe/large_families/`, with `large_families.txt` saying how many there were (or that there were none), and the run log says how many were fitted.
@@ -162,6 +162,19 @@ Columns of `changes_per_node.tsv`: `Node` (species, or the CAFE5 node id from `c
 
 ---
 
+## Zero-root Sensitivity Run (`results/cafe/zero_root/`, with `--cafe_zero_root`)
+
+The main model drops families with no genes on one side of the root, as CAFE5 does by default (listed in `cafe/model_comparison/families_not_modelled.tsv`). With `--cafe_zero_root`, just those families are fitted again with CAFE5's `-z`, which allows a family size of zero at the root, with λ fixed to the main families' estimate and the same error model. These results are a sensitivity analysis: CAFE5 doesn't recommend `-z` in general, because these families' root sizes, and so their changes near the root, are poorly determined. They are never merged into the main results.
+
+| File | Description |
+|------|-------------|
+| `zero_root_counts.tsv` | The gene counts of the families fitted |
+| `Out_cafe_zero_root/` | CAFE5's output for them |
+| `cafe_zero_root.log` | CAFE5's log |
+| `significant_families/` | `changes_per_node.tsv` and `significant_changes_per_node.tsv` for these families, with the same cutoffs as the main model |
+
+---
+
 ## CAFE Family Status (`results/cafe/cafe_family_status.tsv`)
 
 One row per gene family in the orthogroup table, saying what became of it. The run log prints the count for each status.
@@ -180,7 +193,7 @@ One row per gene family in the orthogroup table, saying what became of it. The r
 | `modelled_large` | Fitted by the large-family track |
 | `excluded_single_species` | Genes in one species only, so there is nothing to model |
 | `excluded_empty_after_subset` | No genes in the species analysed (`--cafe_clade` / `--cafe_species`) |
-| `not_present_at_root` | No genes on one side of the root, so CAFE5 dropped it from the main model (`--cafe_zero_root` keeps such families) |
+| `not_present_at_root` | No genes on one side of the root, so CAFE5 dropped it from the main model (`--cafe_zero_root` fits these separately, in `cafe/zero_root/`) |
 | `large_not_present_at_root` | The same, in the large-family track |
 | `large_did_not_converge` | The large-family fit has no finite likelihood (at the fixed λ, or with its own λ in `per_family` mode) |
 | `large_task_failed` | The large-family task failed on every attempt (e.g. ran out of time) |

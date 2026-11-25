@@ -39,6 +39,7 @@ The general pipeline logic is as follows:
 * Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
 * Re-runs CAFE5 at the best k with a Poisson root size distribution (`-p`) `[CAFE_RUN_BEST]`.
 * Compares uniform vs Poisson root at the best k by AIC, selects the winner `[CAFE_MODEL_COMPARE]`.
+* Optionally fits the families dropped at the root in a separate `-z` sensitivity run `[CAFE_RUN_ZERO_ROOT]` (see `--cafe_zero_root`).
 * Tabulates the fitted parameters of every model compared `[CAFE_MODEL_PARAMETERS]`.
 * Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
 * Records what became of every gene family: modelled, filtered out and why, or dropped `[CAFE_FAMILY_STATUS]`.
@@ -483,7 +484,7 @@ warning.
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
 | `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv`/`N0.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
 | `--input_tree_is_dated` | Treat `--input_tree` as an already time-calibrated, ultrametric tree (branch lengths in Myr). Passed to every CAFE5 stage unchanged (no `RESCALE_TREE`, no `chronoMPL()`, no rescaling). λ is then per-Myr. | `false` |
-| `--cafe_zero_root` | Pass CAFE5's `-z/--zero_root` to all CAFE5 calls, retaining families with zero inferred copies at the root (sensitivity analysis). | `false` |
+| `--cafe_zero_root` | Also fit the families the main model drops for having no genes on one side of the root, in a separate sensitivity run with CAFE5's `-z` (λ fixed to the main estimate), published in `cafe/zero_root/` and never merged into the main results. Before v2.5.2 this added `-z` to every CAFE5 call, including the main model. | `false` |
 | `--cafe_focus_clades` | Focus node(s) for alignment/gene-tree retrieval: CAFE node label(s) or `\|`-separated tip-species sets whose MRCA defines a node (robust to CAFE renumbering). | `null` |
 | `--orthofinder_msa_dir` | OrthoFinder `MultipleSequenceAlignments/` dir; with `--orthofinder_genetree_dir` and `--cafe_focus_clades`, copies out alignments/trees of families significantly expanded at the focus node(s). | `null` |
 | `--orthofinder_genetree_dir` | OrthoFinder `Resolved_Gene_Trees/` directory. See `--orthofinder_msa_dir`. | `null` |
@@ -503,8 +504,8 @@ warning.
 >   --orthofinder_genetree_dir Resolved_Gene_Trees/ \
 >   --outdir results_subset
 > ```
-> Add `--cafe_zero_root` for the parallel sensitivity run that keeps zero-at-root families (odorant/
-> gustatory receptors etc.). Set `--cafe_max_differential 20` to match Vizueta et al. 2025.
+> Add `--cafe_zero_root` for a separate sensitivity run of the families absent at the root
+> (odorant/gustatory receptors etc.), in `cafe/zero_root/`. Set `--cafe_max_differential 20` to match Vizueta et al. 2025.
 
 > **When CAFE5 fails to converge.** Families spanning a very wide range of copy numbers give
 > infinite likelihoods, and CAFE5 reports this as `Failed to initialize any reasonable values`
@@ -743,6 +744,7 @@ results/
 │   ├── best/                        # Full CAFE5 results for the winning model (uniform or Poisson)
 │   ├── cafe_family_status.tsv       # What became of every gene family (see Output Guide)
 │   ├── large_families/              # Families too large for the main model, each fitted with λ fixed to the main estimate (--cafe_large_mode)
+│   ├── zero_root/                   # [optional, --cafe_zero_root] Separate -z run of the families dropped at the root
 │   └── model_comparison/
 │       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
 │       ├── cafe_model_parameters.tsv # k, λ, α, ε, root distribution, -lnL of every model compared
