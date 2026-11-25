@@ -1,19 +1,23 @@
 #!/usr/bin/env Rscript
 # cafe_plot_altviz.R
 # Two alternative CAFE result tree figures derived from CAFE_summary.txt:
-#   1. cafe_sig_hog_tree  — significantly evolving gene families per branch (p <= 0.05)
+#   1. cafe_sig_hog_tree  — significantly evolving gene families per branch
+#                           (family p <= --cafe_family_pvalue and branch p <= --cafe_branch_pvalue)
 #   2. cafe_sig_gene_tree — net genes gained/lost in those significant families
 #
 # The standard cafeplotter output shows ALL families (no p-value filter).
 # These figures show only the statistically significant signal.
 #
-# Usage: cafe_plot_altviz.R <cafe_dir> <CAFE_summary.txt>
+# Usage: cafe_plot_altviz.R <cafe_dir> <CAFE_summary.txt> [family p cutoff] [branch p cutoff]
 
 suppressPackageStartupMessages(library(ape))
 
 args         <- commandArgs(trailingOnly = TRUE)
 cafe_dir     <- if (length(args) >= 1) args[1] else "."
 summary_file <- if (length(args) >= 2) args[2] else "CAFE_summary.txt"
+fam_pcut     <- if (length(args) >= 3) args[3] else "0.05"   # --cafe_family_pvalue
+branch_pcut  <- if (length(args) >= 4) args[4] else "0.05"   # --cafe_branch_pvalue
+cut_label    <- paste0("family p ≤ ", fam_pcut, ", branch p ≤ ", branch_pcut)
 
 # ── Tree ───────────────────────────────────────────────────────────────────────
 tree_files <- list.files(cafe_dir, pattern = "_asr\\.tre$", full.names = TRUE)
@@ -139,14 +143,14 @@ ok <- tryCatch({
   save_both(
     "cafe_sig_hog_tree",
     exp_hog, contr_hog,
-    "Significantly evolving gene families per branch (+expanded / −contracted, p ≤ 0.05)"
+    paste0("Significantly evolving gene families per branch (+expanded / −contracted, ", cut_label, ")")
   )
 
   # ── Figure 2: Net genes in significant families ─────────────────────────────
   save_both(
     "cafe_sig_gene_tree",
     exp_gene, contr_gene,
-    "Net genes in significant families per branch (+gained / −lost, p ≤ 0.05)"
+    paste0("Net genes in significant families per branch (+gained / −lost, ", cut_label, ")")
   )
   TRUE
 }, error = function(e) {

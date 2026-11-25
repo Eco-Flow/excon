@@ -44,9 +44,11 @@ def parse_annot_file(path):
             desc      = cols[7]  if cols[7]  not in ("-", "") else ""
             pref      = cols[8]  if cols[8]  not in ("-", "") else ""
             kegg_ko   = cols[11] if len(cols) > 11 and cols[11] not in ("-", "") else ""
+            # map##### ids only; eggNOG lists each pathway as both ko##### and map#####
+            kegg_path = ",".join(p for p in cols[12].split(",") if p.startswith("map")) if len(cols) > 12 and cols[12] not in ("-", "") else ""
             pfams     = cols[-1] if cols[-1] not in ("-", "") else ""
             genes[gene] = dict(score=score, cog=cog, desc=desc, pref=pref,
-                               kegg_ko=kegg_ko, pfams=pfams)
+                               kegg_ko=kegg_ko, kegg_path=kegg_path, pfams=pfams)
     return sp, genes
 
 all_sp_annots = {}   # species -> {gene -> info}
@@ -115,7 +117,7 @@ print("Writing OG_annotation_summary.tsv...", flush=True)
 
 with open("${orthogroups}") as fh, open("OG_annotation_summary.tsv", "w") as out:
     fh.readline()  # skip header
-    out.write("HOG\\trep_species\\trep_gene\\tdescription\\tpreferred_name\\tCOG_category\\tKEGG_ko\\tPFAMs\\n")
+    out.write("HOG\\trep_species\\trep_gene\\tdescription\\tpreferred_name\\tCOG_category\\tKEGG_ko\\tKEGG_Pathway\\tPFAMs\\n")
 
     for line in fh:
         cols = line.rstrip("\\n").split("\\t")
@@ -140,16 +142,16 @@ with open("${orthogroups}") as fh, open("OG_annotation_summary.tsv", "w") as out
         if best_gene is None and genes:
             # Gene present in OG but not annotated
             best_gene  = genes[0]
-            best_info  = dict(cog="", desc="", pref="", kegg_ko="", pfams="")
+            best_info  = dict(cog="", desc="", pref="", kegg_ko="", kegg_path="", pfams="")
 
         if best_gene is None:
             # Rep species has no genes in this OG
-            out.write(f"{og}\\t{rep}\\t-\\t-\\t-\\t-\\t-\\t-\\n")
+            out.write(f"{og}\\t{rep}\\t-\\t-\\t-\\t-\\t-\\t-\\t-\\n")
         else:
             out.write(
                 f"{og}\\t{rep}\\t{best_gene}\\t"
                 f"{best_info['desc']}\\t{best_info['pref']}\\t"
-                f"{best_info['cog']}\\t{best_info['kegg_ko']}\\t"
+                f"{best_info['cog']}\\t{best_info['kegg_ko']}\\t{best_info['kegg_path']}\\t"
                 f"{best_info['pfams']}\\n"
             )
 
@@ -159,6 +161,6 @@ EOF
 
     stub:
     """
-    echo -e "HOG\\trep_species\\trep_gene\\tdescription\\tpreferred_name\\tCOG_category\\tKEGG_ko\\tPFAMs" > OG_annotation_summary.tsv
+    echo -e "HOG\\trep_species\\trep_gene\\tdescription\\tpreferred_name\\tCOG_category\\tKEGG_ko\\tKEGG_Pathway\\tPFAMs" > OG_annotation_summary.tsv
     """
 }

@@ -43,6 +43,12 @@ include { CAFE_PREP } from './modules/local/cafe_prep.nf'
 include { CAFE_LARGE_FAMILY_COUNTS } from './modules/local/cafe_large_family_counts.nf'
 include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
+include { CAFE_FAMILY_STATUS } from './modules/local/cafe_family_status.nf'
+include { CAFE_MODEL_PARAMETERS } from './modules/local/cafe_model_parameters.nf'
+include { CAFE_RUN_ZERO_ROOT } from './modules/local/cafe_run_zero_root.nf'
+include { TE_FAMILY_FILTER } from './modules/local/te_family_filter.nf'
+include { CAFE_KEGG_ENRICHMENT } from './modules/local/cafe_kegg_enrichment.nf'
+include { CAFE_SIG_FAMILIES as CAFE_SIG_FAMILIES_ZERO_ROOT } from './modules/local/cafe_sig_families.nf'
 include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
 include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
 include { MERGE_CAFE_LARGE_RESULTS } from './modules/local/merge_cafe_large_results.nf'
@@ -120,6 +126,20 @@ params {
     cafe_max_differential     : Integer
     cafe_filter_first         : Boolean
     cafe_max_k                : Integer
+    cafe_max_copies           : Integer
+    cafe_large_mode           : String
+    cafe_family_pvalue        : Float
+    cafe_te_filter            : Boolean
+    cafe_kegg                 : Boolean
+    cafe_kegg_padj            : Float
+    cafe_kegg_pathway_names   : String?
+    cafe_te_min_fraction      : Float
+    cafe_te_signatures        : String
+    cafe_fixed_lambda         : Float?
+    cafe_fixed_alpha          : Float?
+    cafe_error_model          : String?
+    cafe_poisson              : Float?
+    cafe_branch_pvalue        : Float
     orthofinder_msa_dir       : String?
     orthofinder_genetree_dir  : String?
     cafe_focus_clades         : String?
@@ -192,6 +212,34 @@ workflow {
       error "ERROR: give either --cafe_clade or --cafe_species, not both."
    }
 
+   if (!(params.cafe_large_mode in ['fixed', 'per_family'])) {
+      error "ERROR: --cafe_large_mode must be 'fixed' or 'per_family', got '${params.cafe_large_mode}'."
+   }
+   if (params.cafe_max_copies < 2) {
+      error "ERROR: --cafe_max_copies must be at least 2, got ${params.cafe_max_copies}."
+   }
+   if (params.cafe_kegg && !params.run_eggnog) {
+      error "ERROR: --cafe_kegg takes KEGG pathways from the eggNOG annotations, so it needs --run_eggnog."
+   }
+   if (params.cafe_te_filter && !params.run_eggnog) {
+      error "ERROR: --cafe_te_filter finds transposable-element families from eggNOG annotations, so it needs --run_eggnog."
+   }
+   if (!(params.cafe_te_min_fraction > 0 && params.cafe_te_min_fraction <= 1)) {
+      error "ERROR: --cafe_te_min_fraction must be greater than 0 and at most 1, got ${params.cafe_te_min_fraction}."
+   }
+   ['cafe_fixed_lambda', 'cafe_fixed_alpha', 'cafe_poisson'].each { p ->
+      if (params[p] != null && !(params[p] > 0)) {
+         error "ERROR: --${p} must be a positive number, got ${params[p]}."
+      }
+   }
+   if (params.cafe_error_model && !file(params.cafe_error_model).exists()) {
+      error "ERROR: --cafe_error_model file not found: ${params.cafe_error_model}"
+   }
+   ['cafe_family_pvalue', 'cafe_branch_pvalue'].each { p ->
+      if (!(params[p] > 0 && params[p] <= 1)) {
+         error "ERROR: --${p} must be greater than 0 and at most 1, got ${params[p]}."
+      }
+   }
    if (!(params.dating_method in ['chronos', 'lsd2'])) {
       error "ERROR: --dating_method must be 'chronos' or 'lsd2', got '${params.dating_method}'."
    }
@@ -527,9 +575,29 @@ workflow {
             ch_tree_for_prep = PRUNE_TREE.out.tree
         }
 
+        // --cafe_te_filter: families made mostly of transposable elements (from the
+        // eggNOG annotations) are removed before CAFE_PREP, so before the error model
+        // and model selection as well
+        if (params.cafe_te_filter) {
+            TE_FAMILY_FILTER (
+                ch_annot_files,
+                ch_orthologues,
+                file(params.cafe_te_signatures, checkIfExists: true)
+            )
+            TE_FAMILY_FILTER.out.summary.subscribe { f -> log.info(f.text.trim()) }
+            ch_orthologues_for_cafe = TE_FAMILY_FILTER.out.orthogroups
+            ch_te_report            = TE_FAMILY_FILTER.out.report
+        } else {
+            ch_orthologues_for_cafe = ch_orthologues
+            ch_te_report            = Channel.fromPath("${projectDir}/assets/NO_FILE")
+        }
+
         CAFE_PREP (
-            ch_orthologues,
-            ch_tree_for_prep
+            ch_orthologues_for_cafe,
+            ch_tree_for_prep,
+            params.cafe_error_model ?
+                Channel.fromPath(params.cafe_error_model, checkIfExists: true) :
+                Channel.fromPath("${projectDir}/assets/NO_FILE")
         )
 
         // Families CAFE_PREP left out for their size (>= 100 copies in a species, or, on
@@ -567,10 +635,24 @@ workflow {
         // Explicit combine() rather than passing cafe_tree/error_model as separate
         // positional channels — makes their reuse across every hog_counts item
         // unambiguous rather than relying on Nextflow's implicit broadcast pairing.
+        // The lambda the main families were fitted with, from CAFE_PREP's error-model
+        // fit (lambda.txt, from the fit without it, when the error model failed). Fixed
+        // for the large-family track (--cafe_large_mode fixed) and the zero-root run.
+        ch_main_lambda = CAFE_PREP.out.errormodel_results
+            .ifEmpty( file("${projectDir}/assets/NO_FILE") )
+            .combine( CAFE_PREP.out.lambda )
+            .map { em, lambda_txt ->
+                def line = em.name == 'NO_FILE' ? null : em.readLines().find { it.startsWith('Lambda:') }
+                line ? line.tokenize()[1] : lambda_txt.text.trim()
+            }
+        // per_family: '' — each family estimates its own
+        ch_large_lambda = params.cafe_large_mode == 'per_family' ? Channel.value('') : ch_main_lambda
+
         CAFE_RUN_LARGE (
             ch_large_family_tables
                 .combine( CAFE_PREP.out.cafe_tree )
                 .combine( CAFE_PREP.out.error_model )
+                .combine( ch_large_lambda )
         )
 
         // Stitch the many single-family runs back into one CAFE5-shaped directory so
@@ -586,9 +668,11 @@ workflow {
         // Say how the large-family track went, including when nothing converged
         ch_large_family_tables.count()
             .combine( CAFE_RUN_LARGE.out.results.count() )
-            .filter { n, fitted -> n > 0 }
-            .subscribe { n, fitted ->
-                def msg = "Large-family track: ${fitted} of ${n} families fitted; see cafe/large_families/ (CAFE_RUN_LARGE logs say why any were dropped)"
+            .combine( ch_large_lambda )
+            .filter { n, fitted, lambda -> n > 0 }
+            .subscribe { n, fitted, lambda ->
+                def how = lambda ? "lambda fixed at ${lambda}" : "each with its own lambda"
+                def msg = "Large-family track: ${fitted} of ${n} families fitted (${how}); see cafe/large_families/ and cafe/cafe_family_status.tsv"
                 fitted < n ? log.warn(msg) : log.info(msg)
             }
 
@@ -605,6 +689,7 @@ workflow {
         CAFE_SELECT_K(
             CAFE_RUN_K.out.results.map { k, d -> d }.collect()
         )
+        CAFE_SELECT_K.out.warnings.subscribe { f -> log.warn(f.text.trim()) }
 
         // Read the integer out of best_k.txt for passing to CAFE_RUN_BEST
         best_k_ch = CAFE_SELECT_K.out.best_k
@@ -634,6 +719,45 @@ workflow {
 
         // Also published to cafe/model_comparison/; shown here so they aren't missed
         CAFE_MODEL_COMPARE.out.warnings.flatten().subscribe { f -> log.warn(f.text.trim()) }
+
+        // Fitted lambda, alpha, epsilon, root distribution and -lnL of every model compared
+        CAFE_MODEL_PARAMETERS (
+            CAFE_RUN_K.out.results.map { k, d -> d }.collect(),
+            CAFE_RUN_BEST.out.results,
+            CAFE_RUN_BEST.out.log,
+            CAFE_PREP.out.error_model,
+            CAFE_MODEL_COMPARE.out.best_model,
+            CAFE_SELECT_K.out.best_k
+        )
+
+        // --cafe_zero_root: the families the main model dropped for having no genes on
+        // one side of the root, fitted separately with -z as a sensitivity analysis
+        if (params.cafe_zero_root) {
+            CAFE_RUN_ZERO_ROOT (
+                CAFE_PREP.out.prepared_counts,
+                CAFE_MODEL_COMPARE.out.not_modelled,
+                CAFE_PREP.out.cafe_tree,
+                CAFE_PREP.out.error_model,
+                ch_main_lambda
+            )
+            CAFE_SIG_FAMILIES_ZERO_ROOT (
+                CAFE_RUN_ZERO_ROOT.out.results,
+                CAFE_PREP.out.N0_table,
+                Channel.fromPath("${projectDir}/assets/NO_FILE"),
+                Channel.fromPath("${projectDir}/assets/NO_FILE")
+            )
+        }
+
+        // What became of every family: modelled, left out before CAFE5 and why,
+        // dropped at the root, or lost in the large-family track
+        CAFE_FAMILY_STATUS (
+            CAFE_PREP.out.filtering_report,
+            ch_te_report,
+            ch_best_results,
+            CAFE_LARGE_FAMILY_COUNTS.out.large_counts.ifEmpty( file("${projectDir}/assets/NO_FILE") ),
+            CAFE_RUN_LARGE.out.status.collect().ifEmpty( [] )
+        )
+        CAFE_FAMILY_STATUS.out.summary.subscribe { f -> log.info(f.text.trim()) }
 
         CAFE_PLOT ( ch_best_results )
         CAFE_NODE_GUIDE ( ch_best_results )
@@ -690,6 +814,20 @@ workflow {
             CAFE_SIG_FAMILIES_LARGE.out.sig_changes
         )
 
+
+        // KEGG pathway enrichment of the significantly expanded / contracted families
+        if (params.cafe_kegg) {
+            CAFE_KEGG_ENRICHMENT (
+                ch_annot_files,
+                CAFE_PREP.out.N0_table,
+                ch_best_results,
+                CAFE_SIG_FAMILIES.out.sig_changes,
+                params.cafe_kegg_pathway_names ?
+                    Channel.fromPath(params.cafe_kegg_pathway_names, checkIfExists: true) :
+                    Channel.fromPath("${projectDir}/assets/NO_FILE")
+            )
+            CAFE_KEGG_ENRICHMENT.out.summary.subscribe { f -> log.info(f.text.trim()) }
+        }
 
         if (params.run_eggnog) {
         OG_ANNOTATION_SUMMARY (

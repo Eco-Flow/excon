@@ -33,12 +33,18 @@ The general pipeline logic is as follows:
 * Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[EXTRACT_SINGLE_COPY]`, `[ALIGN_SINGLE_COPY]`, `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
 * Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it when node ages are supplied, with `ape::chronos` `[DATE_TREE]` or IQ-TREE's LSD2 (subworkflow `[LSD2_DATING]`: `[LSD2_PREPARE]`, `[DATE_TREE_LSD2]`, `[LSD2_CHECK]`) (see `--tree_calibrations`, `--dating_method`).
 * Optionally restricts the analysis to one clade `[PRUNE_TREE]` (see `--cafe_clade` / `--cafe_species`).
+* Optionally removes transposable-element families, using the eggNOG annotations `[TE_FAMILY_FILTER]` (see `--cafe_te_filter`).
 * Prepares gene count input, estimates the error model, and builds an ultrametric tree `[CAFE_PREP]`.
+* Fits the families too large for the main model one at a time, with λ fixed to the main estimate `[CAFE_RUN_LARGE]` (see `--cafe_large_mode`, `--cafe_max_copies`).
 * Runs CAFE5 with k=1 to k=`cafe_max_k` (default 6) rate categories in parallel `[CAFE_RUN_K]`.
 * Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
-* Re-runs CAFE5 at the best k with Poisson birth-death (`-p`) `[CAFE_RUN_BEST]`.
-* Compares uniform vs Poisson model at the best k by likelihood, selects the winner `[CAFE_MODEL_COMPARE]`.
+* Re-runs CAFE5 at the best k with a Poisson root size distribution (`-p`) `[CAFE_RUN_BEST]`.
+* Compares uniform vs Poisson root at the best k by AIC, selects the winner `[CAFE_MODEL_COMPARE]`.
+* Optionally fits the families dropped at the root in a separate `-z` sensitivity run `[CAFE_RUN_ZERO_ROOT]` (see `--cafe_zero_root`).
+* Tabulates the fitted parameters of every model compared `[CAFE_MODEL_PARAMETERS]`.
 * Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
+* Optionally tests the significantly changed families for KEGG pathway enrichment `[CAFE_KEGG_ENRICHMENT]` (see `--cafe_kegg`).
+* Records what became of every gene family: modelled, filtered out and why, or dropped `[CAFE_FAMILY_STATUS]`.
 
 ### Optional — GO enrichment (`--run_eggnog` or `--predownloaded_gofiles`)
 
@@ -465,6 +471,17 @@ warning.
 |-----------|-------------|---------|
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
+| `--cafe_max_copies` | Families with at least this many copies in one species are left out of the main CAFE5 run and fitted by the large-family track instead | `100` |
+| `--cafe_large_mode` | How the large-family track fits them: `fixed` (λ fixed to the main families' estimate, as the CAFE5 tutorial does) or `per_family` (each estimates its own λ, the behaviour before v2.5.2) | `fixed` |
+| `--cafe_te_filter` | Remove gene families made mostly of transposable elements before CAFE5 (before the error model and model selection), using the eggNOG annotations. Needs `--run_eggnog`. See `cafe/te_filter/te_families.tsv` | `false` |
+| `--cafe_te_min_fraction` | Remove a family when at least this fraction of its eggNOG-annotated genes are TEs | `0.5` |
+| `--cafe_te_signatures` | What counts as a TE: Pfam domain patterns, GO terms and description patterns. Copy `assets/te_signatures.tsv`, edit it and pass the copy | `assets/te_signatures.tsv` |
+| `--cafe_fixed_lambda` | Reuse λ from an earlier run (e.g. from its `cafe/model_comparison/cafe_model_parameters.tsv`): fixed in every CAFE5 fit instead of estimated | `null` |
+| `--cafe_fixed_alpha` | Reuse α: fixed in every fit with k > 1. The k = 1 to `--cafe_max_k` sweep still runs | `null` |
+| `--cafe_error_model` | Reuse an error model file (e.g. an earlier run's `cafe/base/Out_cafe_errormodel/Base_error_model.txt`) instead of estimating one | `null` |
+| `--cafe_poisson` | Reuse the Poisson root mean for the Poisson-root model instead of estimating it | `null` |
+| `--cafe_family_pvalue` | Family-wide p-value cutoff: a family's size must change significantly overall before any branch can be called significant. Passed to CAFE5 as `--pvalue`. | `0.05` |
+| `--cafe_branch_pvalue` | Branch p-value cutoff, applied to families that pass `--cafe_family_pvalue`. Used for the significant-family tables, CAFE GO gene lists and tree figures (before v2.5.2, `--go_cutoff` did this). | `0.05` |
 | `--cafe_max_differential` | Maximum gene count differential (max − min copies) for CAFE filtering. `CAFE_PREP` retries with this threshold, halving it on each subsequent retry | `50` |
 | `--cafe_filter_first` | Apply that threshold from the **first** attempt rather than only on retries | `false` |
 | `--tree_calibrations` | TSV of node ages used to time-calibrate the species tree with `ape::chronos`, so CAFE5's λ is per million years. See [Time-calibrating the species tree](#time-calibrating-the-species-tree-optional). Skips `--tree_scale_factor` and `chronoMPL()`. | `null` |
@@ -476,7 +493,7 @@ warning.
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
 | `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv`/`N0.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
 | `--input_tree_is_dated` | Treat `--input_tree` as an already time-calibrated, ultrametric tree (branch lengths in Myr). Passed to every CAFE5 stage unchanged (no `RESCALE_TREE`, no `chronoMPL()`, no rescaling). λ is then per-Myr. | `false` |
-| `--cafe_zero_root` | Pass CAFE5's `-z/--zero_root` to all CAFE5 calls, retaining families with zero inferred copies at the root (sensitivity analysis). | `false` |
+| `--cafe_zero_root` | Also fit the families the main model drops for having no genes on one side of the root, in a separate sensitivity run with CAFE5's `-z` (λ fixed to the main estimate), published in `cafe/zero_root/` and never merged into the main results. Before v2.5.2 this added `-z` to every CAFE5 call, including the main model. | `false` |
 | `--cafe_focus_clades` | Focus node(s) for alignment/gene-tree retrieval: CAFE node label(s) or `\|`-separated tip-species sets whose MRCA defines a node (robust to CAFE renumbering). | `null` |
 | `--orthofinder_msa_dir` | OrthoFinder `MultipleSequenceAlignments/` dir; with `--orthofinder_genetree_dir` and `--cafe_focus_clades`, copies out alignments/trees of families significantly expanded at the focus node(s). | `null` |
 | `--orthofinder_genetree_dir` | OrthoFinder `Resolved_Gene_Trees/` directory. See `--orthofinder_msa_dir`. | `null` |
@@ -496,8 +513,8 @@ warning.
 >   --orthofinder_genetree_dir Resolved_Gene_Trees/ \
 >   --outdir results_subset
 > ```
-> Add `--cafe_zero_root` for the parallel sensitivity run that keeps zero-at-root families (odorant/
-> gustatory receptors etc.). Set `--cafe_max_differential 20` to match Vizueta et al. 2025.
+> Add `--cafe_zero_root` for a separate sensitivity run of the families absent at the root
+> (odorant/gustatory receptors etc.), in `cafe/zero_root/`. Set `--cafe_max_differential 20` to match Vizueta et al. 2025.
 
 > **When CAFE5 fails to converge.** Families spanning a very wide range of copy numbers give
 > infinite likelihoods, and CAFE5 reports this as `Failed to initialize any reasonable values`
@@ -516,22 +533,26 @@ warning.
 > escalated wall time — a retry asking for more than the queue maximum is rejected at submission
 > and fails instantly, which looks like a convergence failure but is not one.
 
-> **What happens to the filtered-out families.** Families above the differential threshold are
-> not discarded — `hog_gene_counts_large.tsv` is analysed separately in `cafe/large_families/`.
-> Each family is run **independently**, fitting its own λ, rather than as one shared batch: a
-> single shared λ cannot explain both a modest and an extreme size differential at once, so
-> lumping every high-differential family together into one CAFE5 call tends to be unfittable
-> regardless of λ. Running them one at a time removes that conflict, since a single family
-> imposes none. The converged per-family runs are stitched back into one CAFE5-shaped directory
-> (`cafe/large_families/Out_cafe_large/`) so `cafe_plot_large/` and `cafe_go_large/` read it exactly
-> like an ordinary CAFE5 result; `large_family_lambda_summary.tsv` records each family's own fitted
-> λ and -lnL, since there is no longer one shared value to report. `CAFE_SIG_FAMILIES` also runs on
-> this merged result, and its output is concatenated with the main model's into
+> **What happens to the filtered-out families.** Families with `--cafe_max_copies` (default 100)
+> or more copies in a species, or above the differential threshold, are not discarded:
+> `hog_gene_counts_large.tsv` is analysed separately in `cafe/large_families/`. By default
+> (`--cafe_large_mode fixed`), each is fitted with **λ fixed** to the value estimated on the main
+> run's families (CAFE_PREP's error-model fit), as the CAFE5 tutorial recommends for families too
+> large to estimate it from. With λ fixed, each family's likelihood, reconstruction and p-value
+> don't depend on the others, so the families run one at a time. That gives the same results as
+> one CAFE5 call, and a family CAFE5 can't fit doesn't stop the rest. With
+> `--cafe_large_mode per_family` (the behaviour before v2.5.2), each family instead estimates its
+> own λ. That fits more of them, but their results are then not on the main model's rate scale
+> (a λ estimated jointly over all large families did not converge). The per-family runs are
+> stitched back into one CAFE5-shaped directory (`cafe/large_families/Out_cafe_large/`), so
+> `cafe_plot_large/` and `cafe_go_large/` read it like an ordinary CAFE5 result.
+> `large_family_lambda_summary.tsv` records each family's λ and -lnL. `CAFE_SIG_FAMILIES` also
+> runs on this merged result, and its output is concatenated with the main model's into
 > `cafe/significant_families/combined_changes_per_node.tsv` /
-> `combined_significant_changes_per_node.tsv`, tagged by a `source` column (`main_model` vs
-> `large_family_own_lambda`) — one report spanning every orthogroup CAFE5 could fit at all. A
-> family that still fails to converge even on its own is dropped from the merge with a warning,
-> rather than failing the run.
+> `combined_significant_changes_per_node.tsv`, tagged by a `source` column (`main_model`, and
+> `large_family_fixed_lambda` or `large_family_own_lambda`). A family that has no finite
+> likelihood is dropped from the merge with a warning, rather than failing the run;
+> `cafe/cafe_family_status.tsv` lists it.
 
 > **Skipping OrthoFinder:** OrthoFinder is the slowest step in the pipeline. If you have already run it
 > (the results are in `results/orthofinder_cafe/ortho_cafe/`), you can reuse the outputs.
@@ -552,8 +573,9 @@ warning.
 
 > **Note on CAFE model selection:** The pipeline runs CAFE5 with k=1 through k=`cafe_max_k` (default 6) 
 > rate categories in parallel, then selects the best k by AIC. It then re-runs the best k with the 
-> Poisson birth-death option (`-p`) and picks the final model by likelihood. Model selection results 
-> (AIC table across k values) are in `results/cafe/model_comparison/`. If scores cannot be parsed 
+> Poisson root distribution (`-p`) and picks the final model by AIC. Model selection results 
+> (AIC table across k values) are in `results/cafe/model_comparison/`. If the best k is the largest
+> tested, the run log and `model_selection.tsv` warn that a larger `--cafe_max_k` may fit better. If scores cannot be parsed 
 > (e.g. on very small datasets), the pipeline defaults to the uniform model.
 
 ### GO annotation (optional)
@@ -593,13 +615,28 @@ geneB    GO:0003674
 
 This lets you skip EggNOG entirely if you already have GO annotations (e.g. from a previous run, a public database, or another annotation tool).
 
+### KEGG pathway enrichment (optional, requires `--run_eggnog`)
+
+`--cafe_kegg` tests the gene families CAFE5 found significantly expanded or contracted on each
+species and internal node for enrichment in KEGG pathways. Each family's pathways are its
+genes' eggNOG `KEGG_Pathway` annotations. The background is the families CAFE5 modelled (for a
+species, those that contain it), as for CAFE GO, and only families with at least one pathway
+count. The test is a one-sided hypergeometric test with Benjamini-Hochberg correction over
+every pathway in the background. Results are in `results/cafe_kegg/`.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--cafe_kegg` | Run KEGG pathway enrichment of the CAFE results | `false` |
+| `--cafe_kegg_padj` | BH-adjusted p-value cutoff for `kegg_enrichment_significant.tsv` | `0.05` |
+| `--cafe_kegg_pathway_names` | TSV of pathway ids and names (`map00010<TAB>Glycolysis / Gluconeogenesis`, as `https://rest.kegg.jp/list/pathway` returns). Without it, the names are downloaded from KEGG at run time; offline, the name column is left empty | `null` |
+
 ### GO enrichment analysis (optional, requires GO annotation)
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `--chromo_go` | Run GO enrichment analysis by chromosome | `null` |
 | `--chromo_go_max_chroms` | Max chromosomes/scaffolds shown per chromosome-GO summary plot, ranked by significant-term count. Trims the plots only — full per-chromosome results are always in the CSV outputs. | `15` |
-| `--go_cutoff` | P-value cutoff for GO enrichment | `0.05` |
+| `--go_cutoff` | P-value cutoff for GO enrichment (GO terms only; which CAFE families count as significant is set by `--cafe_family_pvalue` and `--cafe_branch_pvalue`) | `0.05` |
 | `--go_type` | GO test type (e.g. `none`) | `none` |
 | `--go_max_plot` | Maximum number of GO terms to plot | `10` |
 | `--go_algo` | topGO algorithm and statistic (`classic_fisher`, `weight01_t`, `elim_ks`, `weight_ks`). Results are written to a subfolder named after all three GO settings (e.g. `cafe_go/weight01_t_cutoff0.05_typenone/`), so running with different values preserves all results. | `classic_fisher` |
@@ -726,15 +763,20 @@ results/
 ├── cafe/
 │   ├── base/                        # CAFE_PREP outputs
 │   │   ├── hog_gene_counts.tsv      # Filtered gene count input to CAFE
-│   │   ├── hog_filtering_report.tsv # Filtering report (only present if retry triggered)
+│   │   ├── hog_filtering_report.tsv # Why each family was kept for the main run or left out
 │   │   └── SpeciesTree_rooted_ultra.txt  # Ultrametric tree used by CAFE5
 │   ├── best/                        # Full CAFE5 results for the winning model (uniform or Poisson)
-│   ├── large_families/              # High-differential families, each run independently under its own lambda
+│   ├── cafe_family_status.tsv       # What became of every gene family (see Output Guide)
+│   ├── large_families/              # Families too large for the main model, each fitted with λ fixed to the main estimate (--cafe_large_mode)
+│   ├── te_filter/                   # [optional, --cafe_te_filter] TE families removed before CAFE5, and why
+│   ├── zero_root/                   # [optional, --cafe_zero_root] Separate -z run of the families dropped at the root
 │   └── model_comparison/
 │       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
+│       ├── cafe_model_parameters.tsv # k, λ, α, ε, root distribution, -lnL of every model compared
 │       └── best_model.txt            # "uniform" or "poisson"
 ├── cafe_plot/
 │   └── cafe_plotter/                # Expansion/contraction plots for best model
+├── cafe_kegg/                       # [optional, --cafe_kegg] KEGG pathway enrichment per node and direction
 ├── cafe_go/
 │   └── <algo>_cutoff<val>_type<val>/  # One subfolder per GO parameter combination
 │       ├── CAFE_summary.txt           # Summary of expansions/contractions per branch

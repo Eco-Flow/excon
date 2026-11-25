@@ -25,6 +25,15 @@ def parse_n_families(result_dir):
             return len(lines)
     return None
 
+# The largest k the sweep was asked to test (--cafe_max_k). Passed in rather than
+# read off the directories, so a failed fit at the top k still counts as tested.
+max_k = int(sys.argv[1]) if len(sys.argv) > 1 else None
+# Parameters reused from an earlier run are not estimated, so they don't count:
+# "fixed_lambda" (--cafe_fixed_lambda) and "fixed_alpha" (--cafe_fixed_alpha)
+flags = set(sys.argv[2:])
+lambda_free = 0 if "fixed_lambda" in flags else 1
+alpha_free  = 0 if "fixed_alpha" in flags else 1
+
 dirs = sorted(
     [d for d in os.listdir(".") if re.match(r"Out_cafe_k\d+", d) and os.path.isdir(d)],
     key=lambda d: int(re.search(r"(\d+)", d).group(1))
@@ -42,7 +51,7 @@ for d in dirs:
         print(f"WARNING: no score found in {d} — skipping", file=sys.stderr)
         continue
 
-    n_params   = 1 if k == 1 else 2
+    n_params   = lambda_free + (alpha_free if k > 1 else 0)
     aic        = 2 * n_params + 2 * score
     n_families = parse_n_families(d)
     bic        = (n_params * math.log(n_families) + 2 * score) if n_families else None
@@ -62,15 +71,28 @@ if not rows:
 best_row = min(rows, key=lambda r: r["AIC"])
 best_k   = best_row["k"]
 
+# A best k at the top of the range tested means a larger k might fit better still:
+# the AIC minimum may lie outside the sweep.
+at_upper_limit = max_k is not None and max_k > 1 and best_k == max_k
+
 with open("model_selection.tsv", "w") as fh:
-    fh.write("k\tn_params\tneg_lnL\tAIC\tBIC\tn_families\tSelected\n")
+    fh.write("k\tn_params\tneg_lnL\tAIC\tBIC\tn_families\tSelected\tNote\n")
     for r in sorted(rows, key=lambda r: r["k"]):
         selected = "BEST" if r["k"] == best_k else ""
+        note     = "best_k_at_cafe_max_k" if (selected and at_upper_limit) else ""
         bic_str  = f"{r['BIC']:.4f}" if r["BIC"] is not None else "NA"
         fam_str  = str(r["n_families"]) if r["n_families"] is not None else "NA"
         fh.write(
             f"{r['k']}\t{r['n_params']}\t{r['neg_lnL']:.4f}\t"
-            f"{r['AIC']:.4f}\t{bic_str}\t{fam_str}\t{selected}\n"
+            f"{r['AIC']:.4f}\t{bic_str}\t{fam_str}\t{selected}\t{note}\n"
+        )
+
+if at_upper_limit:
+    with open("k_boundary_warning.txt", "w") as fh:
+        fh.write(
+            f"WARNING: the best number of gamma rate categories (k = {best_k}) is the largest k tested\n"
+            f"(--cafe_max_k {max_k}), so a larger k may fit better. Re-run with a larger --cafe_max_k\n"
+            f"to check (see cafe/model_comparison/model_selection.tsv).\n"
         )
 
 with open("best_k.txt", "w") as fh:

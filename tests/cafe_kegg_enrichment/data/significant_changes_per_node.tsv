@@ -1,0 +1,8 @@
+Node	HOG	change	family_pvalue	branch_pvalue	direction
+SpA	OG01	2	0.001	0.001	expansion
+SpA	OG02	2	0.001	0.001	expansion
+SpA	OG03	2	0.001	0.001	expansion
+SpA	OG06	2	0.001	0.001	expansion
+3	OG01	1	0.001	0.001	expansion
+3	OG02	1	0.001	0.001	expansion
+SpB	OG06	-1	0.001	0.001	contraction

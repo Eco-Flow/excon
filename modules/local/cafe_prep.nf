@@ -4,18 +4,30 @@ process CAFE_PREP {
     container 'ecoflowucl/cafe:r-4.3.1' // R 4.3.1; CAFE5 1.1.0 (cafe5 has no --version: from /opt/CAFE5/config.h)
 
 
+    // Exit 1 is the script's own signal that CAFE5 didn't converge: retry with stricter
+    // differential filtering, and after the last attempt carry on without CAFE.
+    // Any other failure (the container didn't start, out of memory, killed by the
+    // scheduler) stops the run, where it can be seen and -resumed, instead of skipping
+    // every CAFE step while the run reports success. It isn't retried here, because
+    // each retry also tightens the filtering, which would change the results.
     errorStrategy {
-        if (task.attempt <= 3 && task.exitStatus == 1) {
-            log.warn "CAFE_PREP: convergence failed on attempt ${task.attempt} — retrying with stricter differential filtering"
-            return 'retry'
+        if (task.exitStatus == 1) {
+            if (task.attempt <= 3) {
+                log.warn "CAFE_PREP: convergence failed on attempt ${task.attempt} — retrying with stricter differential filtering"
+                return 'retry'
+            }
+            log.warn "CAFE_PREP: CAFE5 did not converge after ${task.attempt} attempts — continuing without the CAFE analysis"
+            return 'ignore'
         }
-        return 'ignore'
+        log.error "CAFE_PREP failed with exit status ${task.exitStatus}, which is not a CAFE5 convergence failure (e.g. 125: the container didn't start; 137: out of memory). Stopping, so CAFE isn't silently skipped; fix the cause and -resume."
+        return 'finish'
     }
     maxRetries 3
 
     input:
     path table
     path tree_newick
+    path user_error_model, stageAs: 'user_error_model/*'  // --cafe_error_model, or NO_FILE
 
     output:
     path("hog_gene_counts.tsv"),                         emit: prepared_counts
@@ -26,6 +38,9 @@ process CAFE_PREP {
     path("Out_cafe"),                                    emit: results
     path("Out_cafe/Base_count.tab"),                     emit: result_nftest
     path("Out_cafe_errormodel/Base_error_model.txt"),    emit: error_model
+    // The error-model fit's lambda (and epsilon): the lambda the large-family track
+    // fixes in --cafe_large_mode fixed. Absent when the error model failed.
+    path("Out_cafe_errormodel/Base_results.txt"),        emit: errormodel_results, optional: true
     path("hog_filtering_report.tsv"),                    emit: filtering_report
     path("lambda.txt"),                                  emit: lambda
     path("cafe_base.log"),                               emit: base_log
@@ -46,10 +61,18 @@ process CAFE_PREP {
     // A tree from DATE_TREE is already ultrametric and in Myr, so it is handled
     // exactly like a user-supplied dated tree.
     def is_dated         = (params.input_tree_is_dated || params.tree_calibrations) ? 'true' : 'false'
-    def z_flag           = params.cafe_zero_root ? '-z' : ''
     // Matches maxRetries below: the final attempt must not exit 1, or the run ends
     // with no result at all rather than one lacking an error model.
     def can_retry        = task.attempt <= 3
+    def max_copies       = params.cafe_max_copies
+    // --cafe_fixed_lambda: fixed in both fits here, so lambda.txt and the error-model
+    // fit report it, and the large-family track uses it
+    def l_flag           = params.cafe_fixed_lambda != null ? "--fixed_lambda ${params.cafe_fixed_lambda}" : ''
+    // --cafe_error_model: use that file rather than estimate one (no space after -e)
+    // (decided from the parameter: the staged NO_FILE placeholder sits under
+    // user_error_model/, so its name can't be compared reliably)
+    def given_em         = params.cafe_error_model ? true : false
+    def e_flag           = given_em ? "-e${user_error_model}" : '-e'
     """
     export PATH=\$PATH:/usr/bin
     set -e
@@ -64,10 +87,10 @@ process CAFE_PREP {
     # scale the tree by the factor squared.
     if [ "${use_filtering}" = "true" ]; then
         echo "CAFE_PREP attempt ${task.attempt}: applying differential filtering (threshold: ${max_differential})"
-        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential} 1 ${is_dated}
+        Rscript ${projectDir}/bin/cafe_prep_filtered.R ${max_differential} 1 ${is_dated} ${max_copies}
     else
         echo "CAFE_PREP attempt ${task.attempt}: no filtering"
-        Rscript ${projectDir}/bin/cafe_prep.R 1 ${is_dated}
+        Rscript ${projectDir}/bin/cafe_prep.R 1 ${is_dated} ${max_copies}
     fi
 
     # ---------------------------------------------------------------
@@ -82,7 +105,7 @@ process CAFE_PREP {
         -i hog_gene_counts.tsv \\
         -t cafe_input_tree.txt \\
         --cores ${task.cpus} \\
-        ${z_flag} \\
+        ${l_flag} \\
         -o Out_cafe \\
         2>&1 | tee cafe_base.log
     cafe5_exit=\${PIPESTATUS[0]}
@@ -104,7 +127,10 @@ process CAFE_PREP {
         exit 1
     fi
 
-    if ! grep -q "Final -lnL:" cafe_base.log; then
+    # With --cafe_fixed_lambda nothing is optimised, so CAFE5 logs no "Final -lnL:";
+    # a finite likelihood in its results file is the sign of success instead.
+    if ! grep -q "Final -lnL:" cafe_base.log && \\
+       ! { [ -n "${l_flag}" ] && grep -qE "Final Likelihood \\(-lnL\\):[[:space:]]+[0-9]" Out_cafe/Base_results.txt; }; then
         echo "ERROR: CAFE5 produced no likelihood score — retrying with filtering" >&2
         exit 1
     fi
@@ -114,7 +140,7 @@ process CAFE_PREP {
 
 
     # ---------------------------------------------------------------
-    # Stage 2: estimate error model
+    # Stage 2: estimate error model (or, with --cafe_error_model, fit lambda with the given one)
     # Quantifies assembly/annotation error in gene family counts.
     # The resulting Base_error_model.txt is passed to CAFE_RUN_K so
     # that all downstream k-sweep runs correct for this error.
@@ -127,12 +153,19 @@ process CAFE_PREP {
         -i hog_gene_counts.tsv \\
         -t cafe_input_tree.txt \\
         --cores ${task.cpus} \\
-        ${z_flag} \\
-        -e \\
+        ${l_flag} \\
+        ${e_flag} \\
         -o Out_cafe_errormodel \\
         2>&1 | tee cafe_errormodel.log
     errormodel_exit=\${PIPESTATUS[0]}
     set -e
+
+    # With --cafe_error_model CAFE5 reads the model rather than writing one; publish
+    # the one used under the usual name
+    if [ "${given_em}" = "true" ] && [ \$errormodel_exit -eq 0 ]; then
+        mkdir -p Out_cafe_errormodel
+        cp -f ${user_error_model} Out_cafe_errormodel/Base_error_model.txt
+    fi
 
     # A failed error model is non-fatal — downstream processes handle an empty file
     # via the optional NO_FILE fallback pattern. CAFE5 can also exit 0 without writing

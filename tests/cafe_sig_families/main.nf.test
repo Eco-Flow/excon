@@ -1,0 +1,63 @@
+nextflow_process {
+
+    name "CAFE_SIG_FAMILIES"
+    script "../../modules/local/cafe_sig_families.nf"
+    process "CAFE_SIG_FAMILIES"
+    tag "cafe_sig_families"
+
+    // data/Out_cafe: synthetic CAFE5 tables. OG1 is significant overall (family p 0.004)
+    // and on SpA and node 5, but not on SpC (branch p 0.2). OG2 has a small branch p on
+    // SpA (0.01) but family p 0.08. OG3 is not significant (family p 0.5) and has no
+    // branch p-values, as CAFE5 writes none for such families under the gamma model.
+
+    test("A branch is significant only when the family and the branch both pass") {
+        when {
+            params {
+                cafe_family_pvalue = 0.05
+                cafe_branch_pvalue = 0.05
+            }
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_sig_families/data/Out_cafe")
+                input[1] = file("${baseDir}/tests/cafe_sig_families/data/N0.tsv")
+                input[2] = file("${baseDir}/assets/NO_FILE")
+                input[3] = file("${baseDir}/assets/NO_FILE")
+                """
+            }
+        }
+        then {
+            assert process.success
+            def all = path(process.out.changes[0]).readLines()*.split('\t', -1)
+            assert all[0] as List == ['Node', 'HOG', 'change', 'family_pvalue', 'branch_pvalue', 'direction',
+                                      'family_significant', 'branch_significant', 'significant']
+            def byKey = all.drop(1).collectEntries { [("${it[0]}:${it[1]}".toString()): it] }
+            assert byKey['SpA:OG2'][6..8] as List == ['FALSE', 'TRUE', 'FALSE']   // family fails
+            assert byKey['SpC:OG1'][6..8] as List == ['TRUE', 'FALSE', 'FALSE']   // branch fails
+            assert byKey['SpA:OG3'][6..8] as List == ['FALSE', 'FALSE', 'FALSE']
+            def sig = path(process.out.sig_changes[0]).readLines()*.split('\t', -1)
+            assert sig.drop(1).collect { "${it[0]}:${it[1]}".toString() }.sort() == ['5:OG1', 'SpA:OG1']
+        }
+    }
+
+    test("A looser family cutoff admits OG2") {
+        when {
+            params {
+                cafe_family_pvalue = 0.1
+                cafe_branch_pvalue = 0.05
+            }
+            process {
+                """
+                input[0] = file("${baseDir}/tests/cafe_sig_families/data/Out_cafe")
+                input[1] = file("${baseDir}/tests/cafe_sig_families/data/N0.tsv")
+                input[2] = file("${baseDir}/assets/NO_FILE")
+                input[3] = file("${baseDir}/assets/NO_FILE")
+                """
+            }
+        }
+        then {
+            assert process.success
+            def sig = path(process.out.sig_changes[0]).readLines()*.split('\t', -1)
+            assert sig.drop(1).collect { "${it[0]}:${it[1]}".toString() }.sort() == ['5:OG1', 'SpA:OG1', 'SpA:OG2']
+        }
+    }
+}

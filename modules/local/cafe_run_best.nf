@@ -19,9 +19,14 @@ process CAFE_RUN_BEST {
     script:
     def run_label = use_poisson ? "k${best_k}_poisson" : "k${best_k}"
     def k_flag    = best_k > 1  ? "-k ${best_k}" : ""
-    def p_flag    = use_poisson ? "-p" : ""
+    // -p estimates the Poisson root mean; --cafe_poisson gives it instead
+    def p_flag    = !use_poisson ? "" : (params.cafe_poisson != null ? "--poisson=${params.cafe_poisson}" : "-p")
     def e_flag    = error_model.size() > 0 ? "-e${error_model}" : ""
-    def z_flag    = params.cafe_zero_root ? "-z" : ""
+    // Family-wide significance (--cafe_family_pvalue). Under the gamma model CAFE5
+    // writes branch p-values only for families significant at this level.
+    def P_flag = "--pvalue ${params.cafe_family_pvalue}"
+    def l_flag = params.cafe_fixed_lambda != null ? "--fixed_lambda ${params.cafe_fixed_lambda}" : ""
+    def a_flag = (best_k > 1 && params.cafe_fixed_alpha != null) ? "--fixed_alpha ${params.cafe_fixed_alpha}" : ""
     """
     cafe5 \\
         -i ${hog_counts} \\
@@ -30,7 +35,9 @@ process CAFE_RUN_BEST {
         ${k_flag} \\
         ${p_flag} \\
         ${e_flag} \\
-        ${z_flag} \\
+        ${P_flag} \\
+        ${l_flag} \\
+        ${a_flag} \\
         -o Out_cafe_${run_label} \\
         2>&1 | tee cafe_${run_label}.log
     cafe5_exit=\${PIPESTATUS[0]}
