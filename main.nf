@@ -46,6 +46,8 @@ include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
 include { CAFE_FAMILY_STATUS } from './modules/local/cafe_family_status.nf'
 include { CAFE_MODEL_PARAMETERS } from './modules/local/cafe_model_parameters.nf'
 include { CAFE_RUN_ZERO_ROOT } from './modules/local/cafe_run_zero_root.nf'
+include { TE_FAMILY_FILTER } from './modules/local/te_family_filter.nf'
+include { CAFE_KEGG_ENRICHMENT } from './modules/local/cafe_kegg_enrichment.nf'
 include { CAFE_SIG_FAMILIES as CAFE_SIG_FAMILIES_ZERO_ROOT } from './modules/local/cafe_sig_families.nf'
 include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
 include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
@@ -127,6 +129,12 @@ params {
     cafe_max_copies           : Integer
     cafe_large_mode           : String
     cafe_family_pvalue        : Float
+    cafe_te_filter            : Boolean
+    cafe_kegg                 : Boolean
+    cafe_kegg_padj            : Float
+    cafe_kegg_pathway_names   : String?
+    cafe_te_min_fraction      : Float
+    cafe_te_signatures        : String
     cafe_fixed_lambda         : Float?
     cafe_fixed_alpha          : Float?
     cafe_error_model          : String?
@@ -209,6 +217,15 @@ workflow {
    }
    if (params.cafe_max_copies < 2) {
       error "ERROR: --cafe_max_copies must be at least 2, got ${params.cafe_max_copies}."
+   }
+   if (params.cafe_kegg && !params.run_eggnog) {
+      error "ERROR: --cafe_kegg takes KEGG pathways from the eggNOG annotations, so it needs --run_eggnog."
+   }
+   if (params.cafe_te_filter && !params.run_eggnog) {
+      error "ERROR: --cafe_te_filter finds transposable-element families from eggNOG annotations, so it needs --run_eggnog."
+   }
+   if (!(params.cafe_te_min_fraction > 0 && params.cafe_te_min_fraction <= 1)) {
+      error "ERROR: --cafe_te_min_fraction must be greater than 0 and at most 1, got ${params.cafe_te_min_fraction}."
    }
    ['cafe_fixed_lambda', 'cafe_fixed_alpha', 'cafe_poisson'].each { p ->
       if (params[p] != null && !(params[p] > 0)) {
@@ -558,8 +575,25 @@ workflow {
             ch_tree_for_prep = PRUNE_TREE.out.tree
         }
 
+        // --cafe_te_filter: families made mostly of transposable elements (from the
+        // eggNOG annotations) are removed before CAFE_PREP, so before the error model
+        // and model selection as well
+        if (params.cafe_te_filter) {
+            TE_FAMILY_FILTER (
+                ch_annot_files,
+                ch_orthologues,
+                file(params.cafe_te_signatures, checkIfExists: true)
+            )
+            TE_FAMILY_FILTER.out.summary.subscribe { f -> log.info(f.text.trim()) }
+            ch_orthologues_for_cafe = TE_FAMILY_FILTER.out.orthogroups
+            ch_te_report            = TE_FAMILY_FILTER.out.report
+        } else {
+            ch_orthologues_for_cafe = ch_orthologues
+            ch_te_report            = Channel.fromPath("${projectDir}/assets/NO_FILE")
+        }
+
         CAFE_PREP (
-            ch_orthologues,
+            ch_orthologues_for_cafe,
             ch_tree_for_prep,
             params.cafe_error_model ?
                 Channel.fromPath(params.cafe_error_model, checkIfExists: true) :
@@ -718,6 +752,7 @@ workflow {
         // dropped at the root, or lost in the large-family track
         CAFE_FAMILY_STATUS (
             CAFE_PREP.out.filtering_report,
+            ch_te_report,
             ch_best_results,
             CAFE_LARGE_FAMILY_COUNTS.out.large_counts.ifEmpty( file("${projectDir}/assets/NO_FILE") ),
             CAFE_RUN_LARGE.out.status.collect().ifEmpty( [] )
@@ -779,6 +814,20 @@ workflow {
             CAFE_SIG_FAMILIES_LARGE.out.sig_changes
         )
 
+
+        // KEGG pathway enrichment of the significantly expanded / contracted families
+        if (params.cafe_kegg) {
+            CAFE_KEGG_ENRICHMENT (
+                ch_annot_files,
+                CAFE_PREP.out.N0_table,
+                ch_best_results,
+                CAFE_SIG_FAMILIES.out.sig_changes,
+                params.cafe_kegg_pathway_names ?
+                    Channel.fromPath(params.cafe_kegg_pathway_names, checkIfExists: true) :
+                    Channel.fromPath("${projectDir}/assets/NO_FILE")
+            )
+            CAFE_KEGG_ENRICHMENT.out.summary.subscribe { f -> log.info(f.text.trim()) }
+        }
 
         if (params.run_eggnog) {
         OG_ANNOTATION_SUMMARY (

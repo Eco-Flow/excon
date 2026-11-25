@@ -1,0 +1,24 @@
+# Signatures of transposable-element genes in eggNOG-mapper annotations, used by
+# --cafe_te_filter. A gene matches if any of its Pfam domains, GO terms or its
+# description matches a line here. Copy this file, edit it and pass it with
+# --cafe_te_signatures to change what counts.
+#
+# type          pattern                     note
+# pfam: a regular expression matched against each whole Pfam domain name
+pfam	rve(_\d+)?	integrase core domain (retrotransposons, DNA transposons)
+pfam	RVT_\d+|RVT_thumb|RVT_connect	reverse transcriptase (LTR and non-LTR retrotransposons)
+pfam	Transposase_.*|Transpos_assoc	transposases
+pfam	DDE_.*|DDE_Tnp_.*	DDE transposases
+pfam	HTH_Tnp_.*|Tnp_.*|Dimer_Tnp_hAT|MULE	transposase domains (hAT, Mutator, ...)
+pfam	Retrotrans_gag|gag_pre-integrs|Integrase_H2C2	retrotransposon gag and integrase
+pfam	Helitron_like_N|PIF1_like_TE	Helitrons
+# go: an exact GO term
+go	GO:0032196	transposition
+go	GO:0006313	DNA-templated transposition
+go	GO:0032197	retrotransposition
+go	GO:0004803	transposase activity
+go	GO:0015074	DNA integration
+# description: a case-insensitive regular expression matched against the eggNOG description
+description	transpos	transposon, transposase, retrotransposon
+description	reverse transcriptase
+description	\bgag-pol\b|\bpol polyprotein\b|\bLINE-1\b|\bpiggyBac\b|\bmariner\b|\bhelitron\b

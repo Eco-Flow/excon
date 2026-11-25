@@ -373,6 +373,40 @@
             "enum": ["fixed", "per_family"],
             "description": "How the large-family track fits the families left out of the main run for their size. 'fixed' (default): lambda is fixed to the value estimated on the main run's families (CAFE_PREP's error-model fit), as the CAFE5 tutorial recommends for large families. 'per_family': each family estimates its own lambda, as before v2.5.2; its results then aren't on the same rate scale as the main model's."
         },
+        "cafe_kegg": {
+            "type": "boolean",
+            "default": false,
+            "description": "KEGG pathway enrichment of the gene families CAFE5 found significantly expanded or contracted, per species/node and direction. Each family's pathways are its genes' eggNOG KEGG_Pathway annotations; the test is hypergeometric with Benjamini-Hochberg correction, against the families CAFE5 modelled (for a species, those containing it). Needs --run_eggnog. Results in cafe_kegg/."
+        },
+        "cafe_kegg_padj": {
+            "type": "number",
+            "default": 0.05,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "BH-adjusted p-value cutoff for cafe_kegg/kegg_enrichment_significant.tsv. kegg_enrichment.tsv lists every pathway tested."
+        },
+        "cafe_kegg_pathway_names": {
+            "type": "string",
+            "format": "file-path",
+            "description": "TSV of KEGG pathway ids and names (id<TAB>name, as https://rest.kegg.jp/list/pathway returns). Without it the names are downloaded from KEGG at run time; if that fails (e.g. offline), the name column is left empty."
+        },
+        "cafe_te_filter": {
+            "type": "boolean",
+            "default": false,
+            "description": "Remove gene families made mostly of transposable elements before CAFE5 (before the error model and model selection). A gene counts as a TE when its eggNOG Pfam domains, GO terms or description match --cafe_te_signatures. Needs --run_eggnog. Removed families are listed in cafe/te_filter/te_families.tsv and as excluded_transposable_element in cafe/cafe_family_status.tsv."
+        },
+        "cafe_te_min_fraction": {
+            "type": "number",
+            "default": 0.5,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "With --cafe_te_filter, remove a family when at least this fraction of its eggNOG-annotated genes are TEs. Families with no annotated genes are kept."
+        },
+        "cafe_te_signatures": {
+            "type": "string",
+            "format": "file-path",
+            "description": "TSV of TE signatures for --cafe_te_filter: Pfam domain regular expressions, GO terms and description regular expressions. Defaults to assets/te_signatures.tsv; copy and edit it to change what counts as a TE."
+        },
         "cafe_fixed_lambda": {
             "type": "number",
             "description": "Fix lambda (CAFE5 --fixed_lambda) in every CAFE5 fit instead of estimating it, e.g. to reuse the value from an earlier run's cafe/model_comparison/cafe_model_parameters.tsv. The large-family track and the zero-root run then use it too."

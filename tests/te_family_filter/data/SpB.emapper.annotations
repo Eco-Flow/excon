@@ -1,0 +1,7 @@
+#query	seed_ortholog	evalue	score	eggNOG_OGs	max_annot_lvl	COG_category	Description	Preferred_name	GOs	EC	KEGG_ko	KEGG_Pathway	KEGG_Module	KEGG_Reaction	KEGG_rclass	BRITE	KEGG_TC	CAZy	BiGG_Reaction	PFAMs
+b1	x	1e-10	50	-	-	-	Transposase IS4	-	GO:0004803	-	-	-	-	-	-	-	-	-	-	-
+b2	x	1e-10	50	-	-	-	reverse transcriptase	-	-	-	-	-	-	-	-	-	-	-	-	RVT_1
+b3	x	1e-10	50	-	-	-	Gag-pol	-	-	-	-	-	-	-	-	-	-	-	-	-
+b4	x	1e-10	50	-	-	-	Kinase	-	-	-	-	-	-	-	-	-	-	-	-	Pkinase
+b6	x	1e-10	50	-	-	-	Kinase	-	-	-	-	-	-	-	-	-	-	-	-	Pkinase
+b7	x	1e-10	50	-	-	-	Kinase	-	-	-	-	-	-	-	-	-	-	-	-	Pkinase
