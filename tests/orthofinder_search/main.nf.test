@@ -1,0 +1,71 @@
+nextflow_process {
+
+    name "ORTHOFINDER_PHYLO"
+    script "../../modules/local/orthofinder_phylo.nf"
+    process "ORTHOFINDER_PHYLO"
+    config "./nextflow.config"
+    tag "orthofinder_search"
+
+    // data/: the first 150 proteins (by accession) of three Chlamydia RefSeq proteomes.
+    // ORTHOFINDER_BLAST runs the search commands OrthoFinder writes for the program in
+    // meta.search (-S); ORTHOFINDER_PHYLO restarts from its results with -b. DIAMOND,
+    // the default, is run by the pipeline tests.
+
+    test("BLAST searches feed the -b restart") {
+        setup {
+            run("ORTHOFINDER_BLAST") {
+                script "../../modules/local/orthofinder_blast.nf"
+                process {
+                    """
+                    input[0] = [ [id: 'blast', search: 'blast'], files("${baseDir}/tests/orthofinder_search/data/*.fa") ]
+                    """
+                }
+            }
+        }
+        when {
+            process {
+                """
+                input[0] = ORTHOFINDER_BLAST.out.working_dir
+                """
+            }
+        }
+        then {
+            assert process.success
+            def og = path(process.out.orthologues[0]).readLines()
+            assert og[0].tokenize('\t') == ['Orthogroup', 'Chlamydia_pecorum', 'Chlamydia_psittaci', 'Chlamydia_suis']
+            assert og.size() > 50
+            def wd = file(process.out.working[0][1]).list() as List
+            assert wd.findAll { it ==~ /Blast\d+_\d+\.txt(\.gz)?/ }.size() == 9
+        }
+    }
+
+    test("MMseqs2 searches feed the -b restart, without MMseqs2's databases") {
+        setup {
+            run("ORTHOFINDER_BLAST") {
+                script "../../modules/local/orthofinder_blast.nf"
+                process {
+                    """
+                    input[0] = [ [id: 'mmseqs', search: 'mmseqs'], files("${baseDir}/tests/orthofinder_search/data/*.fa") ]
+                    """
+                }
+            }
+        }
+        when {
+            process {
+                """
+                input[0] = ORTHOFINDER_BLAST.out.working_dir
+                """
+            }
+        }
+        then {
+            assert process.success
+            def og = path(process.out.orthologues[0]).readLines()
+            assert og[0].tokenize('\t') == ['Orthogroup', 'Chlamydia_pecorum', 'Chlamydia_psittaci', 'Chlamydia_suis']
+            assert og.size() > 50
+            def wd = file(process.out.working[0][1]).list() as List
+            assert wd.findAll { it ==~ /Blast\d+_\d+\.txt(\.gz)?/ }.size() == 9
+            // The ~0.9 GB-per-species index and the per-pair databases are removed
+            assert !wd.any { it.startsWith('mmseqsDB') || it.startsWith('tmpBlast') || it.contains('.txt.db') }
+        }
+    }
+}

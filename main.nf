@@ -475,7 +475,7 @@ workflow {
             ch_orthologues     = ORTHOFINDER_V2_CAFE.out.orthologues
             ch_orthofinder_dir = ORTHOFINDER_V2_CAFE.out.orthofinder
         } else {
-            // Stage 1: reciprocal DIAMOND blast (CPU-heavy, parallelisable)
+            // Stage 1: the all-against-all sequence search, DIAMOND by default (CPU-heavy, parallelisable)
             // Stage 2: orthogroup inference + phylogeny (different resource profile)
             if (params.orthofinder_blast_results) {
                 // Resume from a pre-computed blast WorkingDirectory (e.g. from a previous run)

@@ -224,10 +224,10 @@ annotation noise.
 |-----------|-------------|---------|
 | `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.2. v2 produces Hierarchical Orthogroups (`N0.tsv`) which have lower copy-number variance and are better suited to CAFE5. v3 produces flat orthogroups (`Orthogroups.tsv`). Recommended for large datasets (>30 species) or when CAFE5 fails to converge. | `false` |
 | `--orthofinder_method` | Gene tree inference method (`-M`): `msa` or `dendroblast` | `msa` (OrthoFinder 3.2); `dendroblast` with `--orthofinder_v2` |
-| `--orthofinder_search` | Sequence search program (`-S`): `diamond` or `diamond_ultra_sens`. `blast` and `mmseqs` only with `--orthofinder_v2`: excon's OrthoFinder 3.2 search step runs DIAMOND only | `diamond` |
+| `--orthofinder_search` | Sequence search program (`-S`): `diamond`, `diamond_ultra_sens`, `blast` or `mmseqs`. DIAMOND is much faster than BLAST | `diamond` |
 | `--orthofinder_msa_prog` | MSA program (`-A`, with `-M msa`): `famsa`, `mafft` or `muscle`; with `--orthofinder_v2`, `mafft` or `muscle` | `famsa` (OrthoFinder 3.2); `mafft` with `--orthofinder_v2` |
 | `--orthofinder_tree` | Gene tree program (`-T`, with `-M msa`): `fasttree`, `fasttree_fastest`, `raxml` or `iqtree3`; with `--orthofinder_v2`, `fasttree`, `raxml`, `raxml-ng` or `iqtree` | `fasttree` |
-| `--orthofinder_blast_results` | Path to a blast `WorkingDirectory` from a previous `ORTHOFINDER_BLAST` run (published to `results/orthofinder_blast/`). Skips the DIAMOND search and runs only orthogroup inference and phylogeny — useful for resuming after a failed phylogeny stage or retrying with different tree options | `null` |
+| `--orthofinder_blast_results` | Path to a blast `WorkingDirectory` from a previous `ORTHOFINDER_BLAST` run (published to `results/orthofinder_blast/`). Skips the sequence search and runs only orthogroup inference and phylogeny — useful for resuming after a failed phylogeny stage or retrying with different tree options | `null` |
 
 > **Note:** `-A` and `-T` only work with `-M msa`. OrthoFinder stops with an error if `--orthofinder_msa_prog` or `--orthofinder_tree` is combined with `--orthofinder_method dendroblast`. With `--orthofinder_v2` they also need `--orthofinder_method msa`, since OrthoFinder 2.5.5 defaults to DendroBLAST.
 
