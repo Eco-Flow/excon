@@ -5,8 +5,12 @@
 #
 # Reads the best CAFE5 output directory (Base_*_branch_probabilities.tab,
 # Base_*_change.tab and Base_*_asr.tre) and the OrthoFinder N0.tsv, and writes:
-#   * changes_per_node.tsv             — every branch with a non-zero change
-#   * significant_changes_per_node.tsv — the subset with branch p-value <= cutoff
+#   * changes_per_node.tsv             — every branch with a non-zero change, with the
+#                                        family's family-wide p-value (*_family_results.txt)
+#                                        and the branch p-value, and whether each passes
+#   * significant_changes_per_node.tsv — the subset where both pass: family-wide
+#                                        p-value <= family cutoff AND branch p-value <=
+#                                        branch cutoff
 #   * (if focus clades + OrthoFinder dirs supplied) focus_families/<node>/... plus
 #     focus_families_manifest.tsv, holding the MSA (.fa) and gene tree of every
 #     family SIGNIFICANTLY EXPANDED at each focus node.
@@ -14,13 +18,14 @@
 # Positional args (from cafe_sig_families.nf):
 #   args[1] = CAFE results directory (e.g. Out_cafe)
 #   args[2] = N0.tsv path
-#   args[3] = p-value cutoff (default 0.05)
+#   args[3] = branch p-value cutoff (--cafe_branch_pvalue, default 0.05)
 #   args[4] = focus clade spec, '|'-separated. Each clade is either a bare CAFE
 #             node label (integer, as in cafe_node_label_guide.pdf) or a
 #             comma-separated set of >=2 tip species whose MRCA defines the node.
 #             "" / "NA" to skip focus extraction.
 #   args[5] = OrthoFinder MSA directory (per-OG *.fa), or "NA"/missing to skip
 #   args[6] = OrthoFinder gene-tree directory (per-OG *_tree.txt), or "NA"/missing
+#   args[7] = family-wide p-value cutoff (--cafe_family_pvalue, default 0.05)
 
 suppressPackageStartupMessages({
   library(ape)
@@ -34,6 +39,7 @@ pcut      <- if (length(args) >= 3) as.numeric(args[3]) else 0.05
 focus_arg <- if (length(args) >= 4) args[4] else ""
 msa_dir   <- if (length(args) >= 5) args[5] else "NA"
 tree_dir  <- if (length(args) >= 6) args[6] else "NA"
+fam_pcut  <- if (length(args) >= 7) as.numeric(args[7]) else 0.05
 
 is_na <- function(x) is.null(x) || is.na(x) || x %in% c("", "NA", "NO_FILE")
 
@@ -58,14 +64,17 @@ read_cafe_asr <- function(path) {
 f_prob <- list.files(cafe_dir, pattern = "_branch_probabilities\\.tab$", full.names = TRUE)
 f_chg  <- list.files(cafe_dir, pattern = "_change\\.tab$",               full.names = TRUE)
 f_asr  <- list.files(cafe_dir, pattern = "_asr\\.tre$",                  full.names = TRUE)
+f_fam  <- list.files(cafe_dir, pattern = "_family_results\\.txt$",       full.names = TRUE)
 
 if (length(f_prob) == 0 || length(f_chg) == 0) {
   # Model did not converge / no tables — write empty outputs so the pipeline continues.
   fwrite(data.table(Node = character(), HOG = character(), change = integer(),
-                    pvalue = numeric(), direction = character(), significant = logical()),
+                    family_pvalue = numeric(), branch_pvalue = numeric(), direction = character(),
+                    family_significant = logical(), branch_significant = logical(),
+                    significant = logical()),
          "changes_per_node.tsv", sep = "\t")
   fwrite(data.table(Node = character(), HOG = character(), change = integer(),
-                    pvalue = numeric(), direction = character()),
+                    family_pvalue = numeric(), branch_pvalue = numeric(), direction = character()),
          "significant_changes_per_node.tsv", sep = "\t")
   cat("No CAFE branch tables found in", cafe_dir, "— empty outputs written.\n")
   quit(status = 0)
@@ -113,16 +122,37 @@ long <- merge(chg_l[, .(HOG, Node, change)],
               prob_l[, .(HOG, Node, pvalue)],
               by = c("HOG", "Node"), all = TRUE)
 long <- long[!is.na(change) & change != 0]
-long[, direction   := ifelse(change > 0, "expansion", "contraction")]
-long[, significant := !is.na(pvalue) & pvalue <= pcut]
+long[, direction := ifelse(change > 0, "expansion", "contraction")]
+setnames(long, "pvalue", "branch_pvalue")
 
-setorder(long, Node, pvalue, -change)
-fwrite(long[, .(Node, HOG, change, pvalue, direction, significant)],
+# Family-wide p-value: *_family_results.txt, "#FamilyID<tab>pvalue<tab>Significant at ..."
+# (the gamma model appends per-category columns). A family with no row has none.
+fam <- data.table(HOG = character(), family_pvalue = numeric())
+if (length(f_fam) > 0) {
+  fr <- fread(f_fam[1], header = TRUE, check.names = FALSE, colClasses = "character")
+  if (ncol(fr) >= 2 && nrow(fr) > 0)
+    fam <- data.table(HOG = fr[[1]], family_pvalue = suppressWarnings(as.numeric(fr[[2]])))
+} else {
+  cat("WARNING: no *_family_results.txt in", cafe_dir,
+      "— no family can pass the family-wide cutoff.\n")
+}
+long <- merge(long, fam, by = "HOG", all.x = TRUE)
+
+# CAFE5 reports branch p-values only for families significant overall (at its
+# --pvalue), so the family test comes first and the branch test within it.
+long[, family_significant := !is.na(family_pvalue) & family_pvalue <= fam_pcut]
+long[, branch_significant := !is.na(branch_pvalue) & branch_pvalue <= pcut]
+long[, significant        := family_significant & branch_significant]
+
+setorder(long, Node, branch_pvalue, -change)
+fwrite(long[, .(Node, HOG, change, family_pvalue, branch_pvalue, direction,
+                family_significant, branch_significant, significant)],
        "changes_per_node.tsv", sep = "\t")
-fwrite(long[significant == TRUE, .(Node, HOG, change, pvalue, direction)],
+fwrite(long[significant == TRUE, .(Node, HOG, change, family_pvalue, branch_pvalue, direction)],
        "significant_changes_per_node.tsv", sep = "\t")
 cat("Wrote changes_per_node.tsv (", nrow(long), " changed branches) and ",
-    "significant_changes_per_node.tsv (", sum(long$significant), " significant).\n", sep = "")
+    "significant_changes_per_node.tsv (", sum(long$significant), " significant: family p <= ",
+    fam_pcut, " and branch p <= ", pcut, ").\n", sep = "")
 
 ## ------------------------------------------------------------------
 ## Focus-node extraction of alignments / gene trees
@@ -220,7 +250,8 @@ for (fc in focus) {
     if (!is.na(tree_src)) file.copy(tree_src, file.path(outdir, basename(tree_src)), overwrite = TRUE)
     manifest <- rbind(manifest, data.table(
       focus_node = node, focus_label = fc$label, HOG = hog, OG = og,
-      change = sub$change[i], pvalue = sub$pvalue[i],
+      change = sub$change[i], family_pvalue = sub$family_pvalue[i],
+      branch_pvalue = sub$branch_pvalue[i],
       msa_file  = if (is.na(msa_src))  "" else basename(msa_src),
       tree_file = if (is.na(tree_src)) "" else basename(tree_src),
       msa_found  = !is.na(msa_src),
@@ -237,7 +268,7 @@ if (nrow(manifest) > 0) {
 } else {
   fwrite(data.table(focus_node = character(), focus_label = character(),
                     HOG = character(), OG = character(), change = integer(),
-                    pvalue = numeric(), msa_file = character(),
+                    family_pvalue = numeric(), branch_pvalue = numeric(), msa_file = character(),
                     tree_file = character(), msa_found = logical(),
                     tree_found = logical()),
          "focus_families_manifest.tsv", sep = "\t")

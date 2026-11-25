@@ -38,6 +38,7 @@ The general pipeline logic is as follows:
 * Compares all k runs by AIC and selects the best k `[CAFE_SELECT_K]`.
 * Re-runs CAFE5 at the best k with a Poisson root size distribution (`-p`) `[CAFE_RUN_BEST]`.
 * Compares uniform vs Poisson root at the best k by AIC, selects the winner `[CAFE_MODEL_COMPARE]`.
+* Tabulates the fitted parameters of every model compared `[CAFE_MODEL_PARAMETERS]`.
 * Plots gene family expansions and contractions for the best model `[CAFE_PLOT]`.
 * Records what became of every gene family: modelled, filtered out and why, or dropped `[CAFE_FAMILY_STATUS]`.
 
@@ -466,6 +467,8 @@ warning.
 |-----------|-------------|---------|
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
+| `--cafe_family_pvalue` | Family-wide p-value cutoff: a family's size must change significantly overall before any branch can be called significant. Passed to CAFE5 as `--pvalue`. | `0.05` |
+| `--cafe_branch_pvalue` | Branch p-value cutoff, applied to families that pass `--cafe_family_pvalue`. Used for the significant-family tables, CAFE GO gene lists and tree figures (before v2.5.2, `--go_cutoff` did this). | `0.05` |
 | `--cafe_max_differential` | Maximum gene count differential (max − min copies) for CAFE filtering. `CAFE_PREP` retries with this threshold, halving it on each subsequent retry | `50` |
 | `--cafe_filter_first` | Apply that threshold from the **first** attempt rather than only on retries | `false` |
 | `--tree_calibrations` | TSV of node ages used to time-calibrate the species tree with `ape::chronos`, so CAFE5's λ is per million years. See [Time-calibrating the species tree](#time-calibrating-the-species-tree-optional). Skips `--tree_scale_factor` and `chronoMPL()`. | `null` |
@@ -601,7 +604,7 @@ This lets you skip EggNOG entirely if you already have GO annotations (e.g. from
 |-----------|-------------|---------|
 | `--chromo_go` | Run GO enrichment analysis by chromosome | `null` |
 | `--chromo_go_max_chroms` | Max chromosomes/scaffolds shown per chromosome-GO summary plot, ranked by significant-term count. Trims the plots only — full per-chromosome results are always in the CSV outputs. | `15` |
-| `--go_cutoff` | P-value cutoff for GO enrichment | `0.05` |
+| `--go_cutoff` | P-value cutoff for GO enrichment (GO terms only; which CAFE families count as significant is set by `--cafe_family_pvalue` and `--cafe_branch_pvalue`) | `0.05` |
 | `--go_type` | GO test type (e.g. `none`) | `none` |
 | `--go_max_plot` | Maximum number of GO terms to plot | `10` |
 | `--go_algo` | topGO algorithm and statistic (`classic_fisher`, `weight01_t`, `elim_ks`, `weight_ks`). Results are written to a subfolder named after all three GO settings (e.g. `cafe_go/weight01_t_cutoff0.05_typenone/`), so running with different values preserves all results. | `classic_fisher` |
@@ -735,6 +738,7 @@ results/
 │   ├── large_families/              # High-differential families, each run independently under its own lambda
 │   └── model_comparison/
 │       ├── cafe_model_comparison.tsv # Uniform vs Poisson comparison at best k
+│       ├── cafe_model_parameters.tsv # k, λ, α, ε, root distribution, -lnL of every model compared
 │       └── best_model.txt            # "uniform" or "poisson"
 ├── cafe_plot/
 │   └── cafe_plotter/                # Expansion/contraction plots for best model

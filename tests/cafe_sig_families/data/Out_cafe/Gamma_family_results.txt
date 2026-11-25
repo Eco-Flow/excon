@@ -1,0 +1,4 @@
+#FamilyID	pvalue	Significant at 0.05
+OG1	0.004	y
+OG2	0.08	n
+OG3	0.5	n

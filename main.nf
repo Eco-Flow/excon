@@ -44,6 +44,7 @@ include { CAFE_LARGE_FAMILY_COUNTS } from './modules/local/cafe_large_family_cou
 include { CAFE_RUN_K } from './modules/local/cafe_run_k.nf'
 include { CAFE_SELECT_K } from './modules/local/cafe_select_k.nf'
 include { CAFE_FAMILY_STATUS } from './modules/local/cafe_family_status.nf'
+include { CAFE_MODEL_PARAMETERS } from './modules/local/cafe_model_parameters.nf'
 include { CAFE_RUN_BEST } from './modules/local/cafe_run_best.nf'
 include { CAFE_RUN_LARGE } from './modules/local/cafe_run_large.nf'
 include { MERGE_CAFE_LARGE_RESULTS } from './modules/local/merge_cafe_large_results.nf'
@@ -121,6 +122,8 @@ params {
     cafe_max_differential     : Integer
     cafe_filter_first         : Boolean
     cafe_max_k                : Integer
+    cafe_family_pvalue        : Float
+    cafe_branch_pvalue        : Float
     orthofinder_msa_dir       : String?
     orthofinder_genetree_dir  : String?
     cafe_focus_clades         : String?
@@ -193,6 +196,11 @@ workflow {
       error "ERROR: give either --cafe_clade or --cafe_species, not both."
    }
 
+   ['cafe_family_pvalue', 'cafe_branch_pvalue'].each { p ->
+      if (!(params[p] > 0 && params[p] <= 1)) {
+         error "ERROR: --${p} must be greater than 0 and at most 1, got ${params[p]}."
+      }
+   }
    if (!(params.dating_method in ['chronos', 'lsd2'])) {
       error "ERROR: --dating_method must be 'chronos' or 'lsd2', got '${params.dating_method}'."
    }
@@ -636,6 +644,16 @@ workflow {
 
         // Also published to cafe/model_comparison/; shown here so they aren't missed
         CAFE_MODEL_COMPARE.out.warnings.flatten().subscribe { f -> log.warn(f.text.trim()) }
+
+        // Fitted lambda, alpha, epsilon, root distribution and -lnL of every model compared
+        CAFE_MODEL_PARAMETERS (
+            CAFE_RUN_K.out.results.map { k, d -> d }.collect(),
+            CAFE_RUN_BEST.out.results,
+            CAFE_RUN_BEST.out.log,
+            CAFE_PREP.out.error_model,
+            CAFE_MODEL_COMPARE.out.best_model,
+            CAFE_SELECT_K.out.best_k
+        )
 
         // What became of every family: modelled, left out before CAFE5 and why,
         // dropped at the root, or lost in the large-family track

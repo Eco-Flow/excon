@@ -361,6 +361,20 @@
             "default": false,
             "description": "Pass CAFE5's -z/--zero_root option to every CAFE5 call (base, error-model, k-sweep, best-model and large-family runs), retaining families inferred to have zero copies at the analysis root. CAFE5 does not generally recommend this; use as a sensitivity analysis alongside the default run."
         },
+        "cafe_family_pvalue": {
+            "type": "number",
+            "default": 0.05,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Family-wide p-value cutoff. A family's size must change significantly overall (CAFE5's family-wide p-value, from *_family_results.txt) before any of its branches can be called significant. Passed to CAFE5 as --pvalue, which also decides which families get branch p-values under the gamma model."
+        },
+        "cafe_branch_pvalue": {
+            "type": "number",
+            "default": 0.05,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Branch p-value cutoff. A family that passes --cafe_family_pvalue changes significantly on a branch when that branch's p-value (*_branch_probabilities.tab) is at most this value. Used for the significant-family tables, the CAFE GO gene lists and the alternative tree figures. Before v2.5.2 this cutoff was --go_cutoff."
+        },
         "orthofinder_msa_dir": {
             "type": "string",
             "format": "directory-path",

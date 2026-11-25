@@ -29,6 +29,9 @@ process CAFE_RUN_LARGE {
     script:
     def e_flag = error_model.size() > 0 ? "-e${error_model}" : ""
     def z_flag = params.cafe_zero_root ? "-z" : ""
+    // Family-wide significance (--cafe_family_pvalue). Under the gamma model CAFE5
+    // writes branch p-values only for families significant at this level.
+    def P_flag = "--pvalue ${params.cafe_family_pvalue}"
     def outdir = "Out_cafe_large_${hog_counts.baseName}"
     def logf   = "cafe_large_${hog_counts.baseName}.log"
     """
@@ -44,6 +47,7 @@ process CAFE_RUN_LARGE {
         --cores ${task.cpus} \\
         ${e_flag} \\
         ${z_flag} \\
+        ${P_flag} \\
         -o ${outdir} \\
         2>&1 | tee ${logf} || true
 

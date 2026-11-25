@@ -55,6 +55,7 @@
                 "cafe/model_comparison/best_k.txt",
                 "cafe/model_comparison/best_model.txt",
                 "cafe/model_comparison/cafe_model_comparison.tsv",
+                "cafe/model_comparison/cafe_model_parameters.tsv",
                 "cafe/model_comparison/families_not_modelled.tsv",
                 "cafe/model_comparison/model_selection.tsv",
                 "cafe/model_comparison/root_filter_warning.txt",
