@@ -11,6 +11,7 @@ Many HPC clusters give compute nodes no internet access. excon runs there, but a
 | Genomes given as NCBI accessions (2-column input rows) | `NCBIGENOMEDOWNLOAD` | Download them yourself and use 3-column rows (`name,genome.fna,annotation.gff`) |
 | The eggNOG database (~45 GB) | `EGGNOG_DOWNLOAD`, with `--run_eggnog` | Download it once and pass `--eggnog_data_dir` |
 | BUSCO lineage datasets | `BUSCO_BUSCO`, with `--stats` | Download the lineage and pass `--busco_lineage <name>` and `--busco_lineages_path` |
+| KEGG pathway names | `CAFE_KEGG_ENRICHMENT`, with `--cafe_kegg` | Save the list once (`curl -o kegg_pathways.tsv https://rest.kegg.jp/list/pathway`) and pass `--cafe_kegg_pathway_names kegg_pathways.tsv`. Without it, an offline run still finishes, with the pathway-name column empty |
 
 Everything else runs offline.
 
@@ -36,7 +37,7 @@ Many clusters don't allow long-running processes on login nodes. Ask your admini
 
    Running Nextflow here also downloads Nextflow's own files and plugins into `~/.nextflow`. That directory needs to be readable from the offline nodes (or copy it there, or set `NXF_HOME` to a shared path for both runs).
 
-2. **Download the other inputs** in the table above that your run needs: genomes, the eggNOG database (`bin/download_eggnog_db.sh`), and BUSCO lineages.
+2. **Download the other inputs** in the table above that your run needs: genomes, the eggNOG database (`bin/download_eggnog_db.sh`), BUSCO lineages and KEGG pathway names.
 
 3. **On the offline nodes**, point Nextflow at the images and tell it not to look online:
 

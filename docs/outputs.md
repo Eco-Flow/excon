@@ -172,7 +172,7 @@ A family changes significantly on a branch when **both** its family-wide p-value
 | `combined_changes_per_node.tsv` | Both tables' rows for the main model and the large-family track, with a `source` column |
 | `combined_significant_changes_per_node.tsv` | The rows of that table that pass both cutoffs |
 
-Columns of `changes_per_node.tsv`: `Node` (species, or the CAFE5 node id from `cafe_node_label_guide.pdf`), `HOG`, `change` (gene count change on that branch), `family_pvalue`, `branch_pvalue`, `direction` (`expansion` / `contraction`), `family_significant`, `branch_significant` and `significant` (both). The significant-only tables keep the first six. Before v2.5.2 the branch p-value column was called `pvalue`, there was no family p-value, and only the branch p-value was tested, against `--go_cutoff`.
+Columns of `changes_per_node.tsv`: `Node` (species, or the CAFE5 node id from `cafe_node_label_guide.pdf`), `HOG`, `change` (gene count change on that branch), `family_pvalue`, `branch_pvalue`, `direction` (`expansion` / `contraction`), `family_significant`, `branch_significant` and `significant` (both). The significant-only tables keep the first six. Before v2.7.0 the branch p-value column was called `pvalue`, there was no family p-value, and only the branch p-value was tested, against `--go_cutoff`.
 
 ---
 

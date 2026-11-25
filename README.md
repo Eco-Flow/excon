@@ -471,7 +471,7 @@ warning.
 | `--skip_cafe` | Skip CAFE analysis | `null` |
 | `--cafe_max_k` | Maximum number of k rate categories to test (runs k=1 through k=N in parallel) | `6` |
 | `--cafe_max_copies` | Families with at least this many copies in one species are left out of the main CAFE5 run and fitted by the large-family track instead | `100` |
-| `--cafe_large_mode` | How the large-family track fits them: `fixed` (λ fixed to the main families' estimate, as the CAFE5 tutorial does) or `per_family` (each estimates its own λ, the behaviour before v2.5.2) | `fixed` |
+| `--cafe_large_mode` | How the large-family track fits them: `fixed` (λ fixed to the main families' estimate, as the CAFE5 tutorial does) or `per_family` (each estimates its own λ, the behaviour before v2.7.0) | `fixed` |
 | `--cafe_te_filter` | Remove gene families made mostly of transposable elements before CAFE5 (before the error model and model selection), using the eggNOG annotations. Needs `--run_eggnog`. See `cafe/te_filter/te_families.tsv` | `false` |
 | `--cafe_te_min_fraction` | Remove a family when at least this fraction of its eggNOG-annotated genes are TEs | `0.5` |
 | `--cafe_te_signatures` | What counts as a TE: Pfam domain patterns, GO terms and description patterns. Copy `assets/te_signatures.tsv`, edit it and pass the copy | `assets/te_signatures.tsv` |
@@ -480,7 +480,7 @@ warning.
 | `--cafe_error_model` | Reuse an error model file (e.g. an earlier run's `cafe/base/Out_cafe_errormodel/Base_error_model.txt`) instead of estimating one | `null` |
 | `--cafe_poisson` | Reuse the Poisson root mean for the Poisson-root model instead of estimating it | `null` |
 | `--cafe_family_pvalue` | Family-wide p-value cutoff: a family's size must change significantly overall before any branch can be called significant. Passed to CAFE5 as `--pvalue`. | `0.05` |
-| `--cafe_branch_pvalue` | Branch p-value cutoff, applied to families that pass `--cafe_family_pvalue`. Used for the significant-family tables, CAFE GO gene lists and tree figures (before v2.5.2, `--go_cutoff` did this). | `0.05` |
+| `--cafe_branch_pvalue` | Branch p-value cutoff, applied to families that pass `--cafe_family_pvalue`. Used for the significant-family tables, CAFE GO gene lists and tree figures (before v2.7.0, `--go_cutoff` did this). | `0.05` |
 | `--cafe_max_differential` | Maximum gene count differential (max − min copies) for CAFE filtering. `CAFE_PREP` retries with this threshold, halving it on each subsequent retry | `50` |
 | `--cafe_filter_first` | Apply that threshold from the **first** attempt rather than only on retries | `false` |
 | `--tree_calibrations` | TSV of node ages used to time-calibrate the species tree with `ape::chronos`, so CAFE5's λ is per million years. See [Time-calibrating the species tree](#time-calibrating-the-species-tree-optional). Skips `--tree_scale_factor` and `chronoMPL()`. | `null` |
@@ -492,7 +492,7 @@ warning.
 | `--input_tree` | Path to a pre-computed rooted species tree (Newick format) — skips OrthoFinder when used with `--input_orthogroups` | `null` |
 | `--input_orthogroups` | Path to a pre-computed `Orthogroups.tsv`/`N0.tsv` from a previous OrthoFinder run — skips OrthoFinder when used with `--input_tree` | `null` |
 | `--input_tree_is_dated` | Treat `--input_tree` as an already time-calibrated, ultrametric tree (branch lengths in Myr). Passed to every CAFE5 stage unchanged (no `RESCALE_TREE`, no `chronoMPL()`, no rescaling). λ is then per-Myr. | `false` |
-| `--cafe_zero_root` | Also fit the families the main model drops for having no genes on one side of the root, in a separate sensitivity run with CAFE5's `-z` (λ fixed to the main estimate), published in `cafe/zero_root/` and never merged into the main results. Before v2.5.2 this added `-z` to every CAFE5 call, including the main model. | `false` |
+| `--cafe_zero_root` | Also fit the families the main model drops for having no genes on one side of the root, in a separate sensitivity run with CAFE5's `-z` (λ fixed to the main estimate), published in `cafe/zero_root/` and never merged into the main results. Before v2.7.0 this added `-z` to every CAFE5 call, including the main model. | `false` |
 | `--cafe_focus_clades` | Focus node(s) for alignment/gene-tree retrieval: CAFE node label(s) or `\|`-separated tip-species sets whose MRCA defines a node (robust to CAFE renumbering). | `null` |
 | `--orthofinder_msa_dir` | OrthoFinder `MultipleSequenceAlignments/` dir; with `--orthofinder_genetree_dir` and `--cafe_focus_clades`, copies out alignments/trees of families significantly expanded at the focus node(s). | `null` |
 | `--orthofinder_genetree_dir` | OrthoFinder `Resolved_Gene_Trees/` directory. See `--orthofinder_msa_dir`. | `null` |
@@ -540,7 +540,7 @@ warning.
 > large to estimate it from. With λ fixed, each family's likelihood, reconstruction and p-value
 > don't depend on the others, so the families run one at a time. That gives the same results as
 > one CAFE5 call, and a family CAFE5 can't fit doesn't stop the rest. With
-> `--cafe_large_mode per_family` (the behaviour before v2.5.2), each family instead estimates its
+> `--cafe_large_mode per_family` (the behaviour before v2.7.0), each family instead estimates its
 > own λ. That fits more of them, but their results are then not on the main model's rate scale
 > (a λ estimated jointly over all large families did not converge). The per-family runs are
 > stitched back into one CAFE5-shaped directory (`cafe/large_families/Out_cafe_large/`), so
