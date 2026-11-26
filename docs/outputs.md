@@ -18,7 +18,7 @@ results/
 ├── chromo_go/               # [optional] GO enrichment by chromosome (!won't work for mycoplasma!, only one chr)
 ├── eggnogmapper/            # [optional] EggNOG GO annotations
 ├── proteomes/               # Per-species proteomes (the gene IDs used throughout)
-├── orthofinder_cafe/        # OrthoFinder species tree and orthogroups
+├── orthofinder_cafe/        # OrthoFinder species tree and orthogroups (ortho_cafe/; with --orthofinder_core, ortho_cafe/ is the core run and ortho_cafe_assign/ has all species)
 ├── species_tree/            # [optional, --iqtree_species_tree] IQ-TREE2 species tree
 ├── busco/                   # [optional, --stats] BUSCO completeness
 ├── agat/                    # [optional, --stats] Annotation statistics
