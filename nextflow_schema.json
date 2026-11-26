@@ -258,7 +258,13 @@
         "orthofinder_v2": {
             "type": "boolean",
             "default": false,
-            "description": "Use OrthoFinder v2.5.5 instead of v3.2. Recommended for large datasets where v3 stalls or fails."
+            "description": "Use OrthoFinder v2.5.5 instead of v3.2, as a fallback if an OrthoFinder 3 run fails or stalls. For many species, use --orthofinder_core instead."
+        },
+        "orthofinder_core": {
+            "type": "string",
+            "format": "file-path",
+            "exists": true,
+            "description": "File of core species, one per line, named as in the sample sheets' first column. OrthoFinder runs on these species only, and every other species is then assigned to their orthogroups with orthofinder --assign. OrthoFinder recommends this above about 100 species, with about 64 core species that cover the tree. Results: orthofinder_cafe/ortho_cafe_assign/."
         },
         "orthofinder_method": {
             "type": "string",

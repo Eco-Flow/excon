@@ -1,0 +1,8 @@
+# Core species for tests/orthofinder_core.nf.test: 6 of the 10 Chlamydia species of
+# -profile test, spread over the tree. The other 4 are assigned to their orthogroups.
+Chlamydia_trachomatis
+Chlamydia_suis
+Chlamydia_pneumoniae
+Chlamydia_pecorum
+Chlamydia_psittaci
+Chlamydia_gallinacea

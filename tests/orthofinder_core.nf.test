@@ -1,0 +1,44 @@
+nextflow_pipeline {
+
+    name "Test pipeline with OrthoFinder core/assign"
+    script "../main.nf"
+    tag "pipeline"
+    tag "orthofinder_core"
+    profile "test"
+
+    // -profile test with --orthofinder_core: OrthoFinder runs on 6 of the 10 Chlamydia
+    // species (data/test_core_species.txt), and the other 4 are assigned to their
+    // orthogroups. Not a snapshot: default.nf.test already snapshots the run's outputs;
+    // this checks that all 10 species reach CAFE through the assign step.
+
+    test("-profile test --orthofinder_core: 6 core species, 4 assigned") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+                orthofinder_core = "${projectDir}/data/test_core_species.txt"
+                // the CI runner's size (also set in conf/test.config)
+                max_cpus = 4
+                max_memory = '14.GB'
+            }
+        }
+
+        then {
+            def core     = ['Chlamydia_trachomatis', 'Chlamydia_suis', 'Chlamydia_pneumoniae', 'Chlamydia_pecorum', 'Chlamydia_psittaci', 'Chlamydia_gallinacea']
+            def assigned = ['Chlamydia_muridarum', 'Chlamydia_caviae', 'Chlamydia_felis', 'Chlamydia_abortus']
+            def species  = { tsv -> path(tsv).readLines()[0].split('\t').findAll { it.startsWith('Chlamydia_') }.collect { it.replace('.clean', '') }.sort() }
+            def ran      = { name -> workflow.trace.succeeded().findAll { it.name.startsWith("${name} (") || it.name.contains(":${name} (") }*.name }
+
+            assert workflow.success
+            assertAll(
+                { assert ran('ORTHOFINDER_ASSIGN_CAFE').size() == 1 },
+                // the core run has the core species only; the assign run has all 10
+                { assert species("${params.outdir}/orthofinder_cafe/ortho_cafe/Orthogroups/Orthogroups.GeneCount.tsv") == core.sort() },
+                { assert species("${params.outdir}/orthofinder_cafe/ortho_cafe_assign/Orthogroups/Orthogroups.GeneCount.tsv") == (core + assigned).sort() },
+                // CAFE ran on the gene families of all 10, with all 10 in its tree
+                { assert (core + assigned).every { sp -> path("${params.outdir}/cafe/base/Out_cafe/Base_asr.tre").text.contains(sp) } },
+                { assert file("${params.outdir}/cafe/best").list().size() > 0 }
+            )
+        }
+    }
+}

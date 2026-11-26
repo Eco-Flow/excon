@@ -29,7 +29,7 @@ The general pipeline logic is as follows:
 * Sanitises GFF annotations and extracts longest isoform `[AGAT_SPKEEPLONGESTISOFORM]`.
 * Gets the protein sequences `[GFFREAD]`.
 * Renames the genes to gene name (as some will be isoform name) `RENAME_FASTA`.
-* Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`).
+* Finds orthologous genes across species `[ORTHOFINDER_CAFE]`, or accepts a pre-computed tree and orthogroups to skip this step (see `--input_tree` / `--input_orthogroups`). For many species, runs OrthoFinder on a core set and assigns the others to its orthogroups `[ORTHOFINDER_ASSIGN]` (see `--orthofinder_core`).
 * Optionally re-infers the species tree with IQ-TREE2 from a concatenated single-copy orthogroup alignment `[EXTRACT_SINGLE_COPY]`, `[ALIGN_SINGLE_COPY]`, `[CONCAT_SINGLE_COPY]`, `[IQTREE_SPECIES_TREE]`, `[ROOT_TREE]` (see `--iqtree_species_tree`).
 * Rescales OrthoFinder branch lengths and converts to an ultrametric tree for CAFE `[RESCALE_TREE]`, `[CAFE_PREP]`, or time-calibrates it when node ages are supplied, with `ape::chronos` `[DATE_TREE]` or IQ-TREE's LSD2 (subworkflow `[LSD2_DATING]`: `[LSD2_PREPARE]`, `[DATE_TREE_LSD2]`, `[LSD2_CHECK]`) (see `--tree_calibrations`, `--dating_method`).
 * Optionally restricts the analysis to one clade `[PRUNE_TREE]` (see `--cafe_clade` / `--cafe_species`).
@@ -222,7 +222,8 @@ annotation noise.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.2. v2 produces Hierarchical Orthogroups (`N0.tsv`) which have lower copy-number variance and are better suited to CAFE5. v3 produces flat orthogroups (`Orthogroups.tsv`). Recommended for large datasets (>30 species) or when CAFE5 fails to converge. | `false` |
+| `--orthofinder_core` | File of core species, one per line, named as in the sample sheets. OrthoFinder runs on these only, and the other species are assigned to their orthogroups. For more than about 100 species; see [Many species: OrthoFinder core/assign](#many-species-orthofinder-coreassign-optional) | `null` |
+| `--orthofinder_v2` | Use OrthoFinder v2.5.5 instead of v3.2, as a fallback if an OrthoFinder 3 run fails or stalls. For many species, use `--orthofinder_core` instead: 2.5.5 also compares every species with every other | `false` |
 | `--orthofinder_method` | Gene tree inference method (`-M`): `msa` or `dendroblast` | `msa` (OrthoFinder 3.2); `dendroblast` with `--orthofinder_v2` |
 | `--orthofinder_search` | Sequence search program (`-S`): `diamond`, `diamond_ultra_sens`, `blast` or `mmseqs`. DIAMOND is much faster than BLAST | `diamond` |
 | `--orthofinder_msa_prog` | MSA program (`-A`, with `-M msa`): `famsa`, `mafft` or `muscle`; with `--orthofinder_v2`, `mafft` or `muscle` | `famsa` (OrthoFinder 3.2); `mafft` with `--orthofinder_v2` |
@@ -241,6 +242,51 @@ annotation noise.
 > if that didn't take, so the pipeline's own OrthoFinder 3.2 run is not affected. Running
 > OrthoFinder 3 yourself, or in another pipeline, it is. If an OrthoFinder 3 run still fails or
 > stalls, `--orthofinder_v2` runs OrthoFinder 2.5.5 instead, which has no such timer.
+
+### Many species: OrthoFinder core/assign (optional)
+
+OrthoFinder compares every species with every other, so its run time grows with the square of
+the number of species: about 10,000 searches for 100 species, about 1,000,000 for 1,000. For more
+than about 100 species, [OrthoFinder recommends](https://orthofinder.github.io/OrthoFinder/faq)
+running it on a core set and assigning the others to the core's orthogroups. excon warns when
+there are more than 100 species and no core set.
+
+`--orthofinder_core` takes a file of core species, one per line (lines starting with `#` are
+ignored), named as in the first column of `--input` / `--input_proteins`:
+
+```bash
+nextflow run main.nf \
+  --input input.csv \
+  --orthofinder_core core_species.txt \
+  -profile singularity
+```
+
+1. `[ORTHOFINDER_BLAST]` and `[ORTHOFINDER_PHYLO]` run OrthoFinder on the core species only.
+2. `[ORTHOFINDER_ASSIGN]` runs `orthofinder --assign` with every other species: it adds their genes
+   to the core orthogroups from profiles of them (SHOOT), without an all-against-all search, and
+   clusters the genes that fit none with the standard workflow. The species tree, of all species,
+   comes from ASTRAL-Pro over the gene trees.
+3. CAFE and everything after it use the combined results, as without the option.
+
+**Choosing the core.** OrthoFinder recommends about 64 core species for more than 100 species
+(16 for fewer), covering the phylogenetic diversity of the whole set: a core from one clade gives
+less accurate orthogroups and a longer run. Include an outgroup if you have one.
+
+**What to expect.** On the 10 *Chlamydia* species of `-profile test`, with 6 as the core, both the
+gene counts and the species tree had all 10 species, the tree had the same topology as a full run,
+and 92% of orthogroups were identical; each species' genes in orthogroups were within 4 of the full
+run's. CAFE results therefore differ a little from a full OrthoFinder run. The time saved grows with
+the number of species; with 10 there is none.
+
+Notes:
+- The core results are published to `results/orthofinder_cafe/ortho_cafe/`, and the results for all
+  species to `results/orthofinder_cafe/ortho_cafe_assign/`. Use the latter with `--orthofinder_results`.
+- `--orthofinder_msa_prog` and `--orthofinder_tree` apply to both steps. When unset, the assign step
+  uses FAMSA and `FastTree -fastest`, OrthoFinder's choice for `--assign`, to use less memory.
+- It needs OrthoFinder 3 and its alignments, so it can't be combined with `--orthofinder_v2` or
+  `--orthofinder_method dendroblast`. Nor with `--orthofinder_results`, `--orthofinder_blast_results`
+  or `--input_tree` / `--input_orthogroups`, which skip OrthoFinder.
+- The core needs at least 3 species, and at least one species must be left to assign.
 
 ### Species tree with IQ-TREE2 (optional)
 
@@ -802,7 +848,8 @@ results/
 │   ├── *.fna.gz                     # Downloaded genome assemblies
 │   └── *.gff.gz                     # Downloaded annotations
 ├── orthofinder_cafe/
-│   └── ortho_cafe/                  # OrthoFinder results including species tree
+│   ├── ortho_cafe/                  # OrthoFinder results including species tree
+│   └── ortho_cafe_assign/           # [optional, --orthofinder_core] Results for all species, after assigning the non-core ones
 ├── busco/                           # [optional, --stats] BUSCO completeness results
 ├── agat/                            # [optional, --stats] AGAT annotation statistics
 ├── quast/                           # [optional, --stats] Assembly contiguity statistics

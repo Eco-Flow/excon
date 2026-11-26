@@ -32,6 +32,7 @@ include { GUNZIP } from './modules/nf-core/gunzip/main.nf'
 include { ORTHOFINDER_BLAST as ORTHOFINDER_BLAST_CAFE } from './modules/local/orthofinder_blast.nf'
 include { ORTHOFINDER_PHYLO as ORTHOFINDER_PHYLO_CAFE } from './modules/local/orthofinder_phylo.nf'
 include { ORTHOFINDER_V2 as ORTHOFINDER_V2_CAFE } from './modules/local/orthofinder_v2.nf'
+include { ORTHOFINDER_ASSIGN as ORTHOFINDER_ASSIGN_CAFE } from './modules/local/orthofinder_assign.nf'
 include { EXTRACT_SINGLE_COPY } from './modules/local/extract_single_copy.nf'
 include { ALIGN_SINGLE_COPY } from './modules/local/align_single_copy.nf'
 include { CONCAT_SINGLE_COPY } from './modules/local/concat_single_copy.nf'
@@ -106,6 +107,7 @@ params {
     orthofinder_msa_prog      : String?
     orthofinder_search        : String?
     orthofinder_tree          : String?
+    orthofinder_core          : String?
     iqtree_species_tree       : Boolean
     iqtree_outgroup           : String?
     iqtree_args               : String?
@@ -252,6 +254,49 @@ workflow {
 
    if (params.proteome_dir && !params.orthofinder_results) {
       error "ERROR: --proteome_dir is only used alongside --orthofinder_results."
+   }
+
+   // --orthofinder_core: OrthoFinder runs on these species only, and the others are then
+   // assigned to its orthogroups (orthofinder --assign), as OrthoFinder recommends for
+   // more than about 100 species. Species are named by the sample sheets' first column.
+   def all_species      = [params.input, params.input_proteins].findAll { sheet -> sheet }
+      .collectMany { sheet ->
+         file(sheet, checkIfExists: true).readLines()*.trim()
+            .findAll { line -> line && !line.startsWith('#') }
+            .collect { line -> line.split(',')[0].trim() }
+      }
+      .unique()
+   def runs_orthofinder = !use_precomputed && (!params.skip_cafe || params.iqtree_species_tree)
+   def core_species     = []
+   if (params.orthofinder_core) {
+      if (params.orthofinder_results || (params.input_tree && params.input_orthogroups) || params.orthofinder_blast_results) {
+         error "ERROR: --orthofinder_core runs OrthoFinder on the core species and assigns the others to them, so it can't be combined with --orthofinder_results, --orthofinder_blast_results or --input_tree/--input_orthogroups."
+      }
+      if (params.orthofinder_v2) {
+         error "ERROR: --orthofinder_core needs OrthoFinder 3 (orthofinder --assign); OrthoFinder 2.5.5 (--orthofinder_v2) has no assign step."
+      }
+      if (params.orthofinder_method == 'dendroblast') {
+         error "ERROR: --orthofinder_core needs the core run's alignments, so it can't be combined with --orthofinder_method dendroblast (use msa, the default)."
+      }
+      core_species = file(params.orthofinder_core, checkIfExists: true).readLines()*.trim()
+         .findAll { line -> line && !line.startsWith('#') }
+      def repeated = core_species.countBy { sp -> sp }.findAll { _sp, n -> n > 1 }.keySet()
+      if (repeated) {
+         error "ERROR: --orthofinder_core lists these species more than once: ${repeated.join(', ')}."
+      }
+      def unknown = core_species - all_species
+      if (unknown) {
+         error "ERROR: --orthofinder_core lists species that aren't in --input or --input_proteins: ${unknown.join(', ')}. Use the names in the sample sheets' first column."
+      }
+      if (core_species.size() < 3) {
+         error "ERROR: --orthofinder_core needs at least 3 core species, got ${core_species.size()}. OrthoFinder recommends about 64, chosen to cover the tree."
+      }
+      if (core_species.size() == all_species.size()) {
+         error "ERROR: --orthofinder_core lists every species, so there are none to assign. Leave the option out to run OrthoFinder on all of them."
+      }
+      log.info "OrthoFinder core/assign: ${core_species.size()} core species, ${all_species.size() - core_species.size()} to assign to their orthogroups."
+   } else if (runs_orthofinder && !params.orthofinder_v2 && all_species.size() > 100) {
+      log.warn "OrthoFinder will compare all ${all_species.size()} species with each other, which can take days to weeks. For more than about 100 species, OrthoFinder recommends running it on about 64 core species that cover the tree and assigning the others to their orthogroups: list the core species in a file and pass it with --orthofinder_core."
    }
 
    // The supermatrix is built from OrthoFinder's single-copy orthogroups, so there is
@@ -477,13 +522,18 @@ workflow {
         } else {
             // Stage 1: the all-against-all sequence search, DIAMOND by default (CPU-heavy, parallelisable)
             // Stage 2: orthogroup inference + phylogeny (different resource profile)
+            // Stage 3, with --orthofinder_core: stages 1 and 2 run on the core species only,
+            // and the other species are then assigned to the core's orthogroups.
+            ch_core_fastas = params.orthofinder_core ?
+                merge_ch.filter { meta, fasta -> meta.id in core_species } :
+                merge_ch
             if (params.orthofinder_blast_results) {
                 // Resume from a pre-computed blast WorkingDirectory (e.g. from a previous run)
                 ch_blast_wd = Channel.fromPath(params.orthofinder_blast_results, checkIfExists: true)
                     .map { d -> [ [id: "ortho_cafe"], d ] }
             } else {
                 ORTHOFINDER_BLAST_CAFE (
-                    merge_ch
+                    ch_core_fastas
                         .map { meta, fasta -> fasta }
                         .collect()
                         .map { files -> [ [id: "ortho_cafe"], files ] }
@@ -492,9 +542,23 @@ workflow {
             }
 
             ORTHOFINDER_PHYLO_CAFE ( ch_blast_wd )
-            ch_speciestree     = ORTHOFINDER_PHYLO_CAFE.out.speciestree
-            ch_orthologues     = ORTHOFINDER_PHYLO_CAFE.out.orthologues
-            ch_orthofinder_dir = ORTHOFINDER_PHYLO_CAFE.out.orthofinder
+
+            if (params.orthofinder_core) {
+                ORTHOFINDER_ASSIGN_CAFE (
+                    ORTHOFINDER_PHYLO_CAFE.out.orthofinder,
+                    merge_ch
+                        .filter { meta, fasta -> !(meta.id in core_species) }
+                        .map { meta, fasta -> fasta }
+                        .collect()
+                )
+                ch_speciestree     = ORTHOFINDER_ASSIGN_CAFE.out.speciestree
+                ch_orthologues     = ORTHOFINDER_ASSIGN_CAFE.out.orthologues
+                ch_orthofinder_dir = ORTHOFINDER_ASSIGN_CAFE.out.orthofinder
+            } else {
+                ch_speciestree     = ORTHOFINDER_PHYLO_CAFE.out.speciestree
+                ch_orthologues     = ORTHOFINDER_PHYLO_CAFE.out.orthologues
+                ch_orthofinder_dir = ORTHOFINDER_PHYLO_CAFE.out.orthofinder
+            }
         }
 
         // Optionally replace the OrthoFinder species tree with an IQ-TREE2 tree

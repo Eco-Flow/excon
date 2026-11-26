@@ -2,13 +2,19 @@
 
 ## [v2.7.0] - unreleased
 
+### Changed
+- **`--orthofinder_v2` is no longer recommended for large datasets**, only as a fallback if an OrthoFinder 3 run fails or stalls: OrthoFinder 2.5.5 also compares every species with every other. For many species, use `--orthofinder_core`. The README's claim that OrthoFinder 3 gives flat orthogroups, unlike 2.5.5's hierarchical ones, is removed: since 3.1, `Orthogroups.tsv` holds what 2.5.5 wrote to `N0.tsv`. ([#175](https://github.com/Eco-Flow/excon/issues/175))
+
+### Added
+- **`--orthofinder_core`: OrthoFinder's core/assign workflow, for many species.** A file of core species, one per line. OrthoFinder runs on those only, and a new `ORTHOFINDER_ASSIGN` step then adds every other species to their orthogroups with `orthofinder --assign`, without an all-against-all search. CAFE and the later steps use the combined results. OrthoFinder recommends this above about 100 species, with about 64 core species covering the tree. The core run is published to `orthofinder_cafe/ortho_cafe/` and the results for all species to `orthofinder_cafe/ortho_cafe_assign/`. The run stops if a core species isn't in the sample sheets, if fewer than 3 are given or none is left to assign, or with `--orthofinder_v2`, `--orthofinder_method dendroblast` or options that skip OrthoFinder. ([#175](https://github.com/Eco-Flow/excon/issues/175))
+- **A warning when OrthoFinder would compare more than 100 species** with each other, which can take days to weeks, suggesting `--orthofinder_core`.
+- **`tests/orthofinder_assign/`**, an nf-test of `ORTHOFINDER_ASSIGN` adding two species to a three-species core, and **`tests/orthofinder_core.nf.test`**, a pipeline test of `-profile test` with 6 of its 10 species as the core (`data/test_core_species.txt`), checking that all 10 reach CAFE.
+- **`tests/orthofinder_search/`**, an nf-test of `ORTHOFINDER_BLAST` with BLAST and with MMseqs2, each followed by `ORTHOFINDER_PHYLO`'s `-b` restart from its results.
+
 ### Fixed
 - **`--orthofinder_search blast` and `--orthofinder_search mmseqs` stopped the run with OrthoFinder 3.2** (`OrthoFinder -op wrote no DIAMOND commands`). `ORTHOFINDER_BLAST` ran only the DIAMOND lines of the search commands OrthoFinder writes; it now runs every line, whatever the program. MMseqs2's databases (an index of about 0.9 GB per species, however small the proteome) and temporary files are removed once the searches finish, so they are neither published nor copied into `ORTHOFINDER_PHYLO`. `--orthofinder_v2` was not affected. ([#177](https://github.com/Eco-Flow/excon/issues/177))
 - **With `-profile conda`, `ORTHOFINDER_BLAST` and `ORTHOFINDER_PHYLO` installed OrthoFinder 3.1.3**, from the vendored nf-core module's environment file, while their containers have 3.2. OrthoFinder 3.1's `-op` prints the search commands instead of writing `blast_commands.txt`, so the search step failed. Both now install 3.2.
 - **The OrthoFinder options were documented, and validated, for OrthoFinder 2.5.5 rather than 3.2.** The README, the schema and `nextflow.config` now give 3.2's defaults (`-M msa`, `-A famsa`) and values, and 2.5.5's for `--orthofinder_v2`. `--orthofinder_msa_prog` now accepts `famsa`, and `--orthofinder_tree` accepts 3.2's `fasttree_fastest` and `iqtree3`. `--orthofinder_search` accepts `diamond_ultra_sens`, and `mmseqs` instead of `mmseqs2`, which no OrthoFinder version accepts.
-
-### Added
-- **`tests/orthofinder_search/`**, an nf-test of `ORTHOFINDER_BLAST` with BLAST and with MMseqs2, each followed by `ORTHOFINDER_PHYLO`'s `-b` restart from its results.
 
 ## [v2.7.0-edge] - 2026-11-25 - CAFE improvements
 

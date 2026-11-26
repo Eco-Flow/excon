@@ -1,0 +1,54 @@
+nextflow_process {
+
+    name "ORTHOFINDER_ASSIGN"
+    script "../../modules/local/orthofinder_assign.nf"
+    process "ORTHOFINDER_ASSIGN"
+    tag "orthofinder_assign"
+
+    // Core: the three Chlamydia proteomes of tests/orthofinder_search/data (150 proteins
+    // each), through ORTHOFINDER_BLAST and ORTHOFINDER_PHYLO. Assigned: two more species
+    // in data/, cut the same way. OrthoFinder recommends a core of 16-64 species; three is
+    // enough to check the step.
+
+    test("Assigns two species to a three-species core") {
+        setup {
+            run("ORTHOFINDER_BLAST") {
+                script "../../modules/local/orthofinder_blast.nf"
+                process {
+                    """
+                    input[0] = [ [id: 'core'], files("${baseDir}/tests/orthofinder_search/data/*.fa") ]
+                    """
+                }
+            }
+            run("ORTHOFINDER_PHYLO") {
+                script "../../modules/local/orthofinder_phylo.nf"
+                process {
+                    """
+                    input[0] = ORTHOFINDER_BLAST.out.working_dir
+                    """
+                }
+            }
+        }
+        when {
+            process {
+                """
+                input[0] = ORTHOFINDER_PHYLO.out.orthofinder
+                input[1] = files("${baseDir}/tests/orthofinder_assign/data/*.fa")
+                """
+            }
+        }
+        then {
+            def all = ['Chlamydia_abortus', 'Chlamydia_muridarum', 'Chlamydia_pecorum', 'Chlamydia_psittaci', 'Chlamydia_suis']
+            assert process.success
+            // Both the gene counts and the species tree have every species, core and assigned
+            def og = path(process.out.orthologues[0]).readLines()
+            assert og[0].tokenize('\t').drop(1).sort() == all
+            assert og.size() > 100
+            def tree = path(process.out.speciestree[0]).text
+            assert all.every { sp -> tree.contains(sp) }
+            // Published as <id>_assign, with OrthoFinder's usual layout
+            assert file(process.out.orthofinder[0][1]).name == 'core_assign'
+            assert path("${process.out.orthofinder[0][1]}/Orthogroups/Orthogroups.GeneCount.tsv").exists()
+        }
+    }
+}
