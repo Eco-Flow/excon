@@ -3,7 +3,12 @@
 ## [v2.7.0] - unreleased
 
 ### Fixed
-- **The OrthoFinder options were documented, and validated, for OrthoFinder 2.5.5 rather than 3.2.** The README, the schema and `nextflow.config` now give 3.2's defaults (`-M msa`, `-A famsa`) and values, and 2.5.5's for `--orthofinder_v2`. `--orthofinder_msa_prog` now accepts `famsa`, and `--orthofinder_tree` accepts 3.2's `fasttree_fastest` and `iqtree3`. `--orthofinder_search` accepts `diamond_ultra_sens`, and `mmseqs` instead of `mmseqs2`, which no OrthoFinder version accepts. The README now says that excon's OrthoFinder 3.2 search step runs DIAMOND only, so `blast` and `mmseqs` need `--orthofinder_v2`.
+- **`--orthofinder_search blast` and `--orthofinder_search mmseqs` stopped the run with OrthoFinder 3.2** (`OrthoFinder -op wrote no DIAMOND commands`). `ORTHOFINDER_BLAST` ran only the DIAMOND lines of the search commands OrthoFinder writes; it now runs every line, whatever the program. MMseqs2's databases (an index of about 0.9 GB per species, however small the proteome) and temporary files are removed once the searches finish, so they are neither published nor copied into `ORTHOFINDER_PHYLO`. `--orthofinder_v2` was not affected. ([#177](https://github.com/Eco-Flow/excon/issues/177))
+- **With `-profile conda`, `ORTHOFINDER_BLAST` and `ORTHOFINDER_PHYLO` installed OrthoFinder 3.1.3**, from the vendored nf-core module's environment file, while their containers have 3.2. OrthoFinder 3.1's `-op` prints the search commands instead of writing `blast_commands.txt`, so the search step failed. Both now install 3.2.
+- **The OrthoFinder options were documented, and validated, for OrthoFinder 2.5.5 rather than 3.2.** The README, the schema and `nextflow.config` now give 3.2's defaults (`-M msa`, `-A famsa`) and values, and 2.5.5's for `--orthofinder_v2`. `--orthofinder_msa_prog` now accepts `famsa`, and `--orthofinder_tree` accepts 3.2's `fasttree_fastest` and `iqtree3`. `--orthofinder_search` accepts `diamond_ultra_sens`, and `mmseqs` instead of `mmseqs2`, which no OrthoFinder version accepts.
+
+### Added
+- **`tests/orthofinder_search/`**, an nf-test of `ORTHOFINDER_BLAST` with BLAST and with MMseqs2, each followed by `ORTHOFINDER_PHYLO`'s `-b` restart from its results.
 
 ## [v2.7.0-edge] - 2026-11-25 - CAFE improvements
 

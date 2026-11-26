@@ -3,7 +3,9 @@ process ORTHOFINDER_PHYLO {
     label 'process_high'
     label 'process_med_long'
 
-    conda "${moduleDir}/../nf-core/orthofinder/environment.yml"
+    // The same OrthoFinder as the container. (modules/nf-core/orthofinder/environment.yml
+    // pins 3.1.3, whose -op prints the search commands instead of writing them to a file.)
+    conda "bioconda::orthofinder=3.2"
     container {
         workflow.containerEngine == 'singularity' && !task.ext?.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/orthofinder:3.2--hdfd78af_0' :

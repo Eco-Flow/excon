@@ -189,7 +189,7 @@
           "type": "string",
           "format": "directory-path",
           "exists": true,
-          "description": "Path to a pre-computed blast WorkingDirectory produced by a previous ORTHOFINDER_BLAST run (saved to results/orthofinder_blast/). Skips the DIAMOND search step and runs only orthogroup inference and phylogeny. Useful for resuming after a failed phylogeny stage or re-running with different tree-inference options."
+          "description": "Path to a pre-computed blast WorkingDirectory produced by a previous ORTHOFINDER_BLAST run (saved to results/orthofinder_blast/). Skips the sequence search step and runs only orthogroup inference and phylogeny. Useful for resuming after a failed phylogeny stage or re-running with different tree-inference options."
         },
         "groups": {
           "type": "string",
@@ -273,7 +273,7 @@
         "orthofinder_search": {
             "type": "string",
             "enum": ["diamond", "diamond_ultra_sens", "blast", "mmseqs"],
-            "description": "OrthoFinder sequence search program (-S): diamond (default) or diamond_ultra_sens. blast and mmseqs only with --orthofinder_v2: excon's OrthoFinder 3.2 search step runs DIAMOND only."
+            "description": "OrthoFinder sequence search program (-S): diamond (default), diamond_ultra_sens, blast or mmseqs."
         },
         "orthofinder_tree": {
             "type": "string",
